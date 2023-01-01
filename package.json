@@ -11,9 +11,14 @@
   "license": "ISC",
   "dependencies": {
     "clipboardy": "^2.3.0",
+    "cpy": "^8.1.2",
+    "escape-filename": "^1.1.2",
     "express": "^4.18.2",
+    "fsprogress": "^1.0.0",
+    "lock-your-windows": "^0.0.1",
     "node-notifier": "^10.0.1",
     "nodemon": "^2.0.20",
-    "open": "^8.4.0"
+    "open": "^8.4.0",
+    "trash": "^7.2.0"
   }
 }
