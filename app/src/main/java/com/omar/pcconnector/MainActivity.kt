@@ -1,46 +1,39 @@
 package com.omar.pcconnector
 
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.material3.Button
-import androidx.compose.material3.Text
-import com.omar.pcconnector.network.detection.DetectionLocalNetworkStrategy
-import com.omar.pcconnector.network.detection.DetectionStrategy
-import com.omar.pcconnector.ui.theme.PCConnectorTheme
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import com.omar.pcconnector.ui.detection.DetectionScreen
+import com.omar.pcconnector.ui.main.MainApp
+import com.omar.pcconnector.ui.theme.AppTheme
+import dagger.hilt.android.AndroidEntryPoint
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.create
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-
-    //lateinit var connectivity: Connectivity
-
-    private val retrofitClient = Retrofit.Builder()
-        .baseUrl("http://172.17.83.15:6543")
-        .addConverterFactory(GsonConverterFactory.create())
-        .build()
-
-    private val service = retrofitClient.create<Api>()
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        //connectivity = Connectivity(applicationContext)
-        findHosts()
+
+
         setContent {
-            PCConnectorTheme {
+            AppTheme {
+                var isDetectionScreen by rememberSaveable { mutableStateOf(true) }
+                if (isDetectionScreen)
+                    DetectionScreen(onSwitchScreen = { isDetectionScreen = false })
+                else
+                    MainApp()
             }
         }
     }
 
-    private fun findHosts() {
-        val detectionString: DetectionStrategy = DetectionLocalNetworkStrategy()
-        Log.i("HOSTS", "Detected Hosts: ${detectionString.getAvailableHosts()}")
-    }
+
 }

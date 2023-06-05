@@ -18,7 +18,7 @@ private const val PORT = 4285
  *
  * How this class works:
  *      1- It finds all the networks the device is connected to (WIFI, Mobile Data, Device Hotspot, ..etc)
- *      2- It sends a broadcast message to all devices in the network, stating that it is discovering servers
+ *      2- It sends an IP broadcast message to all devices in the network, stating that it is discovering servers
  *      3- If a server is present on a network, it will then respond with its status (name, ip, port)
  */
 class DetectionLocalNetworkStrategy() : DetectionStrategy {
