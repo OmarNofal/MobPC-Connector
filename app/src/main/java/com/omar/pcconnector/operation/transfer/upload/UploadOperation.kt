@@ -1,4 +1,4 @@
-package com.omar.pcconnector.operation.upload
+package com.omar.pcconnector.operation.transfer.upload
 
 import android.content.ContentResolver
 import androidx.documentfile.provider.DocumentFile
@@ -113,7 +113,11 @@ class UploadOperation(
         TODO("Not yet implemented")
     }
 
-    private val _progress = MutableStateFlow<UploadOperationState>(UploadOperationState.Initializing(listOf()))
+    private val _progress = MutableStateFlow<UploadOperationState>(
+        UploadOperationState.Initializing(
+            listOf()
+        )
+    )
 
     override val progress: StateFlow<UploadOperationState>
         get() = _progress

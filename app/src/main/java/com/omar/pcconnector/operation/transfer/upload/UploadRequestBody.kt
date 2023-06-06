@@ -1,4 +1,4 @@
-package com.omar.pcconnector.operation.upload
+package com.omar.pcconnector.operation.transfer.upload
 
 import android.content.ContentResolver
 import android.net.Uri

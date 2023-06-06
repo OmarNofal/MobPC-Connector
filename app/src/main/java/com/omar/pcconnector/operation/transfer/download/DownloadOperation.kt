@@ -1,11 +1,11 @@
-package com.omar.pcconnector.operation
+package com.omar.pcconnector.operation.transfer.download
 
 import android.content.ContentResolver
-import android.util.Log
 import androidx.documentfile.provider.DocumentFile
 import com.google.gson.JsonParser
 import com.omar.pcconnector.network.api.FileSystemOperations
 import com.omar.pcconnector.network.exceptions.InvalidResponseException
+import com.omar.pcconnector.operation.MonitoredOperation
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -238,7 +238,8 @@ class DownloadOperation(
         totalBytes: Long,
         fileNames: List<String>
     ) {
-        _progress.value = DownloadOperationState.Initialized.Downloaded(numberOfFiles, totalBytes, fileNames)
+        _progress.value =
+            DownloadOperationState.Initialized.Downloaded(numberOfFiles, totalBytes, fileNames)
     }
 
     private val _progress =

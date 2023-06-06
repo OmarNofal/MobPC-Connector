@@ -8,17 +8,20 @@ import androidx.lifecycle.viewModelScope
 import com.omar.pcconnector.model.DirectoryResource
 import com.omar.pcconnector.model.Resource
 import com.omar.pcconnector.network.api.FileSystemOperations
-import com.omar.pcconnector.operation.*
+import com.omar.pcconnector.operation.DeleteOperation
+import com.omar.pcconnector.operation.transfer.download.DownloadOperation
+import com.omar.pcconnector.operation.ListDirectoryOperation
+import com.omar.pcconnector.operation.MakeDirectoriesOperation
+import com.omar.pcconnector.operation.RenameOperation
+import com.omar.pcconnector.operation.transfer.upload.UploadOperation
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import retrofit2.Retrofit
-import java.io.File
 import java.util.Stack
 import javax.inject.Inject
-import kotlin.reflect.typeOf
 
 
 @HiltViewModel
@@ -26,9 +29,11 @@ class FileSystemViewModel @Inject constructor(
     retrofit: Retrofit?
 ) : ViewModel() {
 
-    private val api = retrofit?.create(FileSystemOperations::class.java) ?: throw java.lang.IllegalArgumentException("")
+    private val api = retrofit?.create(FileSystemOperations::class.java)
+        ?: throw java.lang.IllegalArgumentException("")
 
-    private val _state: MutableStateFlow<FileSystemState> = MutableStateFlow(FileSystemState.NormalState("~", listOf(), true))
+    private val _state: MutableStateFlow<FileSystemState> =
+        MutableStateFlow(FileSystemState.NormalState("~", listOf(), true))
     val state: Flow<FileSystemState>
         get() = _state
 
@@ -103,20 +108,40 @@ class FileSystemViewModel @Inject constructor(
         }
     }
 
-    fun download(resource: Resource, destinationFolder: DocumentFile, contentResolver: ContentResolver) {
+    fun download(
+        resource: Resource,
+        destinationFolder: DocumentFile,
+        contentResolver: ContentResolver
+    ) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-            DownloadOperation(api, "${_state.value.currentDirectory}/${resource.name}", destinationFolder, contentResolver).start()
-            }
-            catch (e: Exception) {
+                DownloadOperation(
+                    api,
+                    "${_state.value.currentDirectory}/${resource.name}",
+                    destinationFolder,
+                    contentResolver
+                ).start()
+            } catch (e: Exception) {
                 Log.e("ERR", e.javaClass.kotlin.simpleName.toString())
             }
+
         }
     }
 
+    fun upload(
+        destinationFolder: List<DocumentFile>, contentResolver: ContentResolver
+    ) {
+        viewModelScope.launch {
+            UploadOperation(
+                api,
+                destinationFolder,
+                contentResolver,
+                _state.value.currentDirectory
+            ).start()
+        }
+    }
 
 }
-
 
 
 sealed class FileSystemState(
@@ -129,9 +154,9 @@ sealed class FileSystemState(
         currentDirectory: String,
         directoryStructure: List<Resource>,
         isLoading: Boolean
-    ): FileSystemState(currentDirectory, directoryStructure, isLoading)
+    ) : FileSystemState(currentDirectory, directoryStructure, isLoading)
 
-    class Loading(): FileSystemState("", listOf(), true)
+    class Loading() : FileSystemState("", listOf(), true)
 
 }
 

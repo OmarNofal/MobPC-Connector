@@ -3,10 +3,7 @@ package com.omar.pcconnector.ui.fs
 
 import android.annotation.SuppressLint
 import android.content.ContentResolver
-import android.database.Cursor
 import android.net.Uri
-import android.provider.DocumentsProvider
-import android.provider.OpenableColumns
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
@@ -32,19 +29,20 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.net.toFile
+import androidx.core.app.ActivityOptionsCompat
 import androidx.documentfile.provider.DocumentFile
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.omar.pcconnector.model.DirectoryResource
 import com.omar.pcconnector.model.Resource
+import com.omar.pcconnector.ui.fab.FabItem
+import com.omar.pcconnector.ui.fab.MultiItemFab
 import com.omar.pcconnector.ui.main.FileSystemState
 import com.omar.pcconnector.ui.main.FileSystemViewModel
-import java.io.File
 import kotlin.math.pow
 
 
 /**
- * This is the view which allows the 
+ * This is the view which allows the
  * user to interact with the file system of the PC
  */
 @Composable
@@ -71,11 +69,11 @@ fun FileSystemUI(
             viewModel::deleteResource,
             viewModel::mkdirs,
             viewModel::download,
+            viewModel::upload
         )
     }
 
 }
-
 
 
 @Composable
@@ -99,22 +97,55 @@ fun FileSystemTree(
     onRename: (Resource, String, Boolean) -> Unit,
     onDelete: (Resource) -> Unit,
     onMakeDir: (String) -> Unit,
-    onResourceDownload: (Resource, DocumentFile, ContentResolver) -> Unit
+    onResourceDownload: (Resource, DocumentFile, ContentResolver) -> Unit,
+    onUpload: (List<DocumentFile>, ContentResolver) -> Unit
 ) {
     val context = LocalContext.current
     var showMkdirDialog by remember {
         mutableStateOf(false)
     }
 
+    val uploadFolderIntent = rememberLauncherForActivityResult(contract = ActivityResultContracts.OpenDocumentTree(), onResult = {
+        if (it == null) return@rememberLauncherForActivityResult
+        else onUpload(listOf(DocumentFile.fromTreeUri(context, it)!!), context.contentResolver)
+    })
+
+    val uploadFileIntent = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenMultipleDocuments(),
+        onResult = {
+            if (it.isEmpty()) return@rememberLauncherForActivityResult
+            onUpload( it.map { DocumentFile.fromSingleUri(context, it)!! }, context.contentResolver)
+        }
+    )
+
     Scaffold(
         floatingActionButton = {
-            FloatingActionButton(onClick = { showMkdirDialog = true }) {
-                Icon(imageVector = Icons.Rounded.CreateNewFolder, contentDescription = "Make a Folder")
+            var isShown by remember { mutableStateOf(false) }
+            MultiItemFab(
+                icon = Icons.Rounded.Add,
+                onClicked = { isShown = !isShown },
+                expanded = isShown,
+                items = listOf(
+                    FabItem("Create a Folder", Icons.Rounded.CreateNewFolder) { showMkdirDialog = true },
+                    FabItem("Upload a Folder", Icons.Rounded.DriveFolderUpload) { uploadFolderIntent.launch(
+                        null
+                    ) },
+                    FabItem("Upload a File", Icons.Rounded.UploadFile) { uploadFileIntent.launch(
+                        arrayOf("*/*")
+                    ) },
+                )
+            ) {
+                isShown = false
             }
         }
-    ) {  _ ->
+    ) { _ ->
 
         LazyColumn(modifier) {
+            if (isLoading) {
+                item {
+                    LinearProgressIndicator(Modifier.fillMaxWidth())
+                }
+            }
 
             item {
                 Text(
@@ -130,7 +161,7 @@ fun FileSystemTree(
                     onClick = { onResourceClicked(it) },
                     onRename = { newName, overwrite -> onRename(it, newName, overwrite) },
                     onDelete = { onDelete(it) },
-                    onDownload = { file -> onResourceDownload(it, file, context.contentResolver)}
+                    onDownload = { file -> onResourceDownload(it, file, context.contentResolver) }
                 )
 
                 if (it != directoryStructure.last()) {
@@ -174,7 +205,10 @@ fun MakeDirDialog(
         text = {
 
             Column {
-                TextField(modifier = Modifier.focusRequester(focusRequester), value = dirName, onValueChange = {dirName = it} )
+                TextField(
+                    modifier = Modifier.focusRequester(focusRequester),
+                    value = dirName,
+                    onValueChange = { dirName = it })
                 Spacer(Modifier.height(4.dp))
                 Text(text = "Tip: Use / to create nested directories")
             }
@@ -182,7 +216,8 @@ fun MakeDirDialog(
         confirmButton = {
             TextButton(onClick = { onConfirm(dirName); onCancel() }) {
                 Text(text = "Create")
-            }},
+            }
+        },
         dismissButton = {
             TextButton(onClick = onCancel) {
                 Text(text = "Cancel")
@@ -196,7 +231,6 @@ fun MakeDirDialog(
 }
 
 
-
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ResourceRow(
@@ -204,7 +238,7 @@ fun ResourceRow(
     resource: Resource,
     onClick: () -> Unit,
     onLongPress: () -> Unit = {},
-    onRename: (String, Boolean) -> Unit = {_, _ ->},
+    onRename: (String, Boolean) -> Unit = { _, _ -> },
     onDelete: () -> Unit = {},
     onDownload: (DocumentFile) -> Unit
 ) {
@@ -284,7 +318,7 @@ fun ResourceRow(
         RenameDialog(
             oldName = resource.name,
             onConfirm = { newName, overwrite -> onRename(newName, overwrite) },
-            onCancel = {showRenameDialog = false}
+            onCancel = { showRenameDialog = false }
         )
 
     if (showDeleteDialog)
@@ -304,13 +338,17 @@ fun DeleteDialog(
 ) {
     AlertDialog(
         onDismissRequest = onCancel,
-        confirmButton = { TextButton(onClick = onConfirm ) {
-            Text(text = "Delete")
-        }},
-        dismissButton = { TextButton(onClick = onCancel) {
-            Text(text = "Cancel")
-        }},
-        text = { Text(text = "Delete $fileName?")}
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text(text = "Delete")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onCancel) {
+                Text(text = "Cancel")
+            }
+        },
+        text = { Text(text = "Delete $fileName?") }
     )
 }
 
@@ -320,6 +358,7 @@ val sizeRanges = arrayOf(
     2.0.pow(20.0).toLong() until 2.0.pow(30.0).toLong() to "MB",
     2.0.pow(30.0).toLong() until Long.MAX_VALUE to "GB"
 )
+
 // Converts size in bytes to human-readable format
 // ex 4096bytes = 4KB
 fun Long.bytesToSizeString(): String {
@@ -328,14 +367,13 @@ fun Long.bytesToSizeString(): String {
 
     val result = try {
         val sizeRange = sizeRanges.first { this in it.first }
-       "${this / sizeRange.first.first} ${sizeRange.second}"
-    } catch(e: NoSuchElementException) {
+        "${this / sizeRange.first.first} ${sizeRange.second}"
+    } catch (e: NoSuchElementException) {
         "Unknown size"
     }
 
     return result
 }
-
 
 
 data class ResourceAction(
@@ -348,9 +386,9 @@ object Actions {
     fun deleteAction(onClick: () -> Unit) = ResourceAction("Delete", Icons.Rounded.Delete, onClick)
     fun renameAction(onClick: () -> Unit) = ResourceAction("Rename", Icons.Rounded.Edit, onClick)
     fun copyAction(onClick: () -> Unit) = ResourceAction("Copy", Icons.Rounded.ContentCopy, onClick)
-    fun downloadAction(onClick: () -> Unit) = ResourceAction("Download", Icons.Rounded.Download, onClick)
+    fun downloadAction(onClick: () -> Unit) =
+        ResourceAction("Download", Icons.Rounded.Download, onClick)
 }
-
 
 
 @Composable
@@ -365,14 +403,21 @@ fun ResourceActionMenu(
 
             DropdownMenuItem(
                 text = {
-                            Row(Modifier.padding(top = 4.dp, bottom = 4.dp, end = 32.dp), verticalAlignment = Alignment.CenterVertically) {
-                                it.actionIcon?.let { icon ->  Icon(imageVector = icon, contentDescription = ""); Spacer(
-                                    modifier = Modifier.width(8.dp)
-                                ) }
-                                Text(text = it.actionName)
-                            }
-                       }, onClick = it.onClick
+                    Row(
+                        Modifier.padding(top = 4.dp, bottom = 4.dp, end = 32.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        it.actionIcon?.let { icon ->
+                            Icon(imageVector = icon, contentDescription = "");
+                            Spacer(modifier = Modifier.width(8.dp))
+                        }
+                        Text(text = it.actionName)
+                    }
+
+                }, onClick = it.onClick
             )
+
+            if (actions.indexOf(it) != actions.lastIndex) Divider(modifier = Modifier.padding(start = 16.dp))
 
         }
     }
@@ -397,18 +442,19 @@ fun RenameDialog(
         text = {
 
             Column {
-                TextField(value = newName, onValueChange = {newName = it} )
+                TextField(value = newName, onValueChange = { newName = it })
                 Spacer(Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(text = "Overwrite?")
-                    Checkbox(checked = overwrite, onCheckedChange = {overwrite = it})
+                    Checkbox(checked = overwrite, onCheckedChange = { overwrite = it })
                 }
             }
         },
         confirmButton = {
             TextButton(onClick = { onConfirm(newName, overwrite); onCancel() }) {
                 Text(text = "Rename")
-            }},
+            }
+        },
         dismissButton = {
             TextButton(onClick = onCancel) {
                 Text(text = "Cancel")
