@@ -1,6 +1,5 @@
 package com.omar.pcconnector.ui.main
 
-import android.content.ContentResolver
 import android.util.Log
 import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.ViewModel
@@ -8,18 +7,17 @@ import androidx.lifecycle.viewModelScope
 import com.omar.pcconnector.model.DirectoryResource
 import com.omar.pcconnector.model.Resource
 import com.omar.pcconnector.network.api.FileSystemOperations
+import com.omar.pcconnector.network.connection.Connection
 import com.omar.pcconnector.operation.DeleteOperation
-import com.omar.pcconnector.operation.transfer.download.DownloadOperation
 import com.omar.pcconnector.operation.ListDirectoryOperation
 import com.omar.pcconnector.operation.MakeDirectoriesOperation
 import com.omar.pcconnector.operation.RenameOperation
-import com.omar.pcconnector.operation.transfer.upload.UploadOperation
+import com.omar.pcconnector.operation.transfer.TransfersManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
-import retrofit2.Retrofit
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.Stack
@@ -28,10 +26,11 @@ import javax.inject.Inject
 
 @HiltViewModel
 class FileSystemViewModel @Inject constructor(
-    retrofit: Retrofit?
+    private val connection: Connection?,
+    private val transfersManager: TransfersManager
 ) : ViewModel() {
 
-    private val api = retrofit?.create(FileSystemOperations::class.java)
+    private val api = connection?.retrofit?.create(FileSystemOperations::class.java)
         ?: throw java.lang.IllegalArgumentException("")
 
     private val _state: MutableStateFlow<FileSystemState> =
@@ -111,35 +110,19 @@ class FileSystemViewModel @Inject constructor(
 
     fun download(
         resource: Resource,
-        destinationFolder: DocumentFile,
-        contentResolver: ContentResolver
+        destinationFolder: DocumentFile
     ) {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                DownloadOperation(
-                    api,
-                    _state.value.currentDirectory.resolve(resource.name),
-                    destinationFolder,
-                    contentResolver
-                ).start()
-            } catch (e: Exception) {
-                Log.e("ERR", e.javaClass.kotlin.simpleName.toString())
-            }
-
-        }
+        transfersManager.download(
+            connection!!,
+            _state.value.currentDirectory.resolve(resource.name),
+            destinationFolder
+        )
     }
 
     fun upload(
-        destinationFolder: List<DocumentFile>, contentResolver: ContentResolver
+        documents: List<DocumentFile>
     ) {
-        viewModelScope.launch {
-            UploadOperation(
-                api,
-                destinationFolder,
-                contentResolver,
-                _state.value.currentDirectory
-            ).start()
-        }
+        transfersManager.upload(documents, connection!!, _state.value.currentDirectory)
     }
 
 }

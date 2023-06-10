@@ -36,11 +36,11 @@ sealed class DownloadOperationState {
 
         class Downloading(
             numberOfFiles: Int,
-            numberOfDownloadedFiles: Int,
+            val numberOfDownloadedFiles: Int,
             totalBytes: Long,
             downloadedBytes: Long,
             fileNames: List<String>,
-            currentDownloadingFile: String
+            val currentDownloadingFile: String
         ) : Initialized(numberOfFiles, totalBytes, downloadedBytes, fileNames)
 
         class Downloaded(
@@ -202,6 +202,7 @@ class DownloadOperation(
                     read = body
                         .inputStream().read(buffer, 0, min(2048, fileSize - fileTotalRead).toInt())
                     fileTotalRead += read
+                    totalRead += read
                     outputFileStream.write(buffer, 0, read)
                     publishProgress(numberOfFiles, files.indexOf(f), totalSize, totalRead, fileName, filesNames)
                 }

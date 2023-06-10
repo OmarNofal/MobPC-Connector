@@ -70,14 +70,20 @@ class UploadOperation(
 
     private suspend fun upload() = withContext(Dispatchers.IO){
 
+
         val fileRequests = documents.flatMap { if (it.isFile) listOf(getFileRequestBody(it, listOf("."))) else getDirectoryRequestBodies(it) }
+        val totalSize = fileRequests.sumOf { it.first.body().contentLength() }
+
         val parts = fileRequests.map { it.first }
         val progresses = fileRequests.map { it.second }
             .merge()
 
         val collectionJob = launch {
             progresses.collect {
-
+                _progress.value = UploadOperationState.Initialized.Uploading(
+                    listOf(""),
+                    it.first, totalSize, (it.second * totalSize).toLong()
+                )
             }
         }
 

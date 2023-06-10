@@ -3,6 +3,8 @@ package com.omar.pcconnector.di
 import android.content.Context
 import android.content.SharedPreferences
 import com.omar.pcconnector.network.connection.AppConnectivity
+import com.omar.pcconnector.network.connection.Connection
+import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -26,7 +28,7 @@ annotation class ConnectivitySharedPreferences
 
 @Module
 @InstallIn(SingletonComponent::class)
-object ConnectivityModule {
+class ConnectivityModule {
 
 
     @Provides
@@ -49,6 +51,11 @@ object ConnectivityModule {
     @Provides
     fun provideRetrofit(connectivity: AppConnectivity): Retrofit? {
         return connectivity.currentConnection.value?.retrofit
+    }
+
+    @Provides
+    fun provideConnection(connectivity: AppConnectivity): Connection? {
+        return connectivity.currentConnection.value
     }
 
 }

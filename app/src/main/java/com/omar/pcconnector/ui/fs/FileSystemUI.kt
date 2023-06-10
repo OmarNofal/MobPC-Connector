@@ -2,7 +2,6 @@ package com.omar.pcconnector.ui.fs
 
 
 import android.annotation.SuppressLint
-import android.content.ContentResolver
 import android.net.Uri
 import android.util.Log
 import android.widget.Toast
@@ -31,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.documentfile.provider.DocumentFile
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.omar.pcconnector.bytesToSizeString
 import com.omar.pcconnector.model.DirectoryResource
 import com.omar.pcconnector.model.Resource
 import com.omar.pcconnector.ui.fab.FabItem
@@ -38,7 +38,6 @@ import com.omar.pcconnector.ui.fab.MultiItemFab
 import com.omar.pcconnector.ui.main.FileSystemState
 import com.omar.pcconnector.ui.main.FileSystemViewModel
 import kotlin.io.path.absolutePathString
-import kotlin.math.pow
 
 
 /**
@@ -97,8 +96,8 @@ fun FileSystemTree(
     onRename: (Resource, String, Boolean) -> Unit,
     onDelete: (Resource) -> Unit,
     onMakeDir: (String) -> Unit,
-    onResourceDownload: (Resource, DocumentFile, ContentResolver) -> Unit,
-    onUpload: (List<DocumentFile>, ContentResolver) -> Unit
+    onResourceDownload: (Resource, DocumentFile) -> Unit,
+    onUpload: (List<DocumentFile>) -> Unit
 ) {
     val context = LocalContext.current
     var showMkdirDialog by remember {
@@ -107,14 +106,14 @@ fun FileSystemTree(
 
     val uploadFolderIntent = rememberLauncherForActivityResult(contract = ActivityResultContracts.OpenDocumentTree(), onResult = {
         if (it == null) return@rememberLauncherForActivityResult
-        else onUpload(listOf(DocumentFile.fromTreeUri(context, it)!!), context.contentResolver)
+        else onUpload(listOf(DocumentFile.fromTreeUri(context, it)!!))
     })
 
     val uploadFileIntent = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenMultipleDocuments(),
         onResult = { it ->
             if (it.isEmpty()) return@rememberLauncherForActivityResult
-            onUpload( it.map { DocumentFile.fromSingleUri(context, it)!! }, context.contentResolver)
+            onUpload( it.map { DocumentFile.fromSingleUri(context, it)!! })
         }
     )
 
@@ -165,7 +164,7 @@ fun FileSystemTree(
                     onClick = { onResourceClicked(it) },
                     onRename = { newName, overwrite -> onRename(it, newName, overwrite) },
                     onDelete = { onDelete(it) },
-                    onDownload = { file -> onResourceDownload(it, file, context.contentResolver) }
+                    onDownload = { file -> onResourceDownload(it, file) }
                 )
 
                 if (it != directoryStructure.last()) {
@@ -358,29 +357,6 @@ fun DeleteDialog(
 }
 
 
-val sizeRanges = arrayOf(
-    2.0.pow(10.0).toLong() until 2.0.pow(20.0).toLong() to "KB",
-    2.0.pow(20.0).toLong() until 2.0.pow(30.0).toLong() to "MB",
-    2.0.pow(30.0).toLong() until Long.MAX_VALUE to "GB"
-)
-
-// Converts size in bytes to human-readable format
-// ex 4096bytes = 4KB
-fun Long.bytesToSizeString(): String {
-
-    if (this in 0 until 1024) return "$this Bytes"
-
-    val result = try {
-        val sizeRange = sizeRanges.first { this in it.first }
-        "${this / sizeRange.first.first} ${sizeRange.second}"
-    } catch (e: NoSuchElementException) {
-        "Unknown size"
-    }
-
-    return result
-}
-
-
 data class ResourceAction(
     val actionName: String,
     val actionIcon: ImageVector?,
@@ -421,8 +397,6 @@ fun ResourceActionMenu(
 
                 }, onClick = it.onClick
             )
-
-            if (actions.indexOf(it) != actions.lastIndex) Divider(modifier = Modifier.padding(start = 16.dp))
 
         }
     }
