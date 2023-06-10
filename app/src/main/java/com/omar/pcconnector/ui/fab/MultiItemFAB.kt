@@ -57,7 +57,7 @@ fun MultiItemFab(
             FabItem(modifier = Modifier, it.label, it.icon, it.onClick, expanded)
         }
         Spacer(Modifier.height(8.dp))
-        FloatingActionButton(onClick = onClicked, ) {
+        FloatingActionButton(onClick = onClicked) {
             val modifier = if (icon in arrayOf(Icons.Rounded.Add, Icons.Filled.Add, Icons.Outlined.Add))
                 Modifier.rotate(iconRotation)
             else

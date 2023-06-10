@@ -5,16 +5,12 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import com.omar.pcconnector.ui.detection.DetectionScreen
 import com.omar.pcconnector.ui.main.MainApp
 import com.omar.pcconnector.ui.theme.AppTheme
 import dagger.hilt.android.AndroidEntryPoint
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
-import retrofit2.create
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {

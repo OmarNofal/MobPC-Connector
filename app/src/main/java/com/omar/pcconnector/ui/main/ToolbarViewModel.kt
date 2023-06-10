@@ -21,7 +21,7 @@ class ToolbarViewModel @Inject constructor(
 ): ViewModel() {
 
     private val api = retrofit?.create(PCOperations::class.java)
-        ?: throw java.lang.IllegalArgumentException("Retrofit instance is null. Make sure the connection is initialized before constructing viewmodel")
+        ?: throw java.lang.IllegalArgumentException("Retrofit instance is null. Make sure the connection is initialized before constructing viewModel")
 
     val serverName = "Omar's Server"
 
@@ -53,11 +53,11 @@ class ToolbarViewModel @Inject constructor(
 
 }
 
-sealed class PCOperationsState {
-
-    object Nothing: PCOperationsState()
-    object LockingPC: PCOperationsState()
-    object ShuttingDownPC: PCOperationsState()
-    object CopyingToClipboard: PCOperationsState()
-    object OpeningLinkInPC: PCOperationsState()
-}
+//sealed class PCOperationsState {
+//
+//    object Nothing: PCOperationsState()
+//    object LockingPC: PCOperationsState()
+//    object ShuttingDownPC: PCOperationsState()
+//    object CopyingToClipboard: PCOperationsState()
+//    object OpeningLinkInPC: PCOperationsState()
+//}

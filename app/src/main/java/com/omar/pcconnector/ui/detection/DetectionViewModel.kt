@@ -1,15 +1,16 @@
 package com.omar.pcconnector.ui.detection
 
-import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.omar.pcconnector.network.connection.AppConnectivity
 import com.omar.pcconnector.network.detection.DetectedHost
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -22,7 +23,7 @@ class DetectionViewModel @Inject constructor(
 
 
     val availableServers: Flow<DetectionScreenState>
-            get() = _availableServers.onEach { it -> Log.i("State Changed", it.toString()) }
+            get() = _availableServers.onEach { Log.i("State Changed", it.toString()) }
     private val _availableServers: MutableStateFlow<DetectionScreenState>
         = MutableStateFlow(DetectionScreenState.NoServers)
 
@@ -48,7 +49,7 @@ class DetectionViewModel @Inject constructor(
         _availableServers.value = DetectionScreenState.NoServers
         flowJob = viewModelScope.launch {
             appConnectivity.getListOfAvailableServers()
-                .catch { _ -> // assume the error is always network-related
+                .catch {   // assume the error is always network-related
                     _availableServers.value = DetectionScreenState.NoNetwork
                 }
                 .collect{ detectedServers ->
@@ -57,8 +58,7 @@ class DetectionViewModel @Inject constructor(
                         _availableServers.value = DetectionScreenState.NoServers
                     else
                         _availableServers.value = DetectionScreenState.AvailableServers(
-                            detectedServers,
-                            appConnectivity.currentConnection.value?.ip
+                            detectedServers
                         )
                 }
         }
@@ -74,8 +74,7 @@ sealed class DetectionScreenState {
     object NoNetwork: DetectionScreenState()
     object NoServers: DetectionScreenState()
     class AvailableServers(
-        val servers: List<DetectedHost>,
-        val connectedServerIP: String?
+        val servers: List<DetectedHost>
     ): DetectionScreenState()
 
 }
