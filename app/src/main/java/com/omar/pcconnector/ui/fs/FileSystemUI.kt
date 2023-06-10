@@ -29,7 +29,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.app.ActivityOptionsCompat
 import androidx.documentfile.provider.DocumentFile
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.omar.pcconnector.model.DirectoryResource
@@ -38,6 +37,7 @@ import com.omar.pcconnector.ui.fab.FabItem
 import com.omar.pcconnector.ui.fab.MultiItemFab
 import com.omar.pcconnector.ui.main.FileSystemState
 import com.omar.pcconnector.ui.main.FileSystemViewModel
+import kotlin.io.path.absolutePathString
 import kotlin.math.pow
 
 
@@ -61,7 +61,7 @@ fun FileSystemUI(
         is FileSystemState.Loading -> LoadingScreen(modifier)
         else -> FileSystemTree(
             modifier = modifier,
-            state.currentDirectory,
+            state.currentDirectory.absolutePathString(),
             state.directoryStructure,
             state.isLoading,
             viewModel::onResourceClicked,
@@ -112,7 +112,7 @@ fun FileSystemTree(
 
     val uploadFileIntent = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenMultipleDocuments(),
-        onResult = {
+        onResult = { it ->
             if (it.isEmpty()) return@rememberLauncherForActivityResult
             onUpload( it.map { DocumentFile.fromSingleUri(context, it)!! }, context.contentResolver)
         }
@@ -126,13 +126,17 @@ fun FileSystemTree(
                 onClicked = { isShown = !isShown },
                 expanded = isShown,
                 items = listOf(
-                    FabItem("Create a Folder", Icons.Rounded.CreateNewFolder) { showMkdirDialog = true },
-                    FabItem("Upload a Folder", Icons.Rounded.DriveFolderUpload) { uploadFolderIntent.launch(
+                    FabItem("Create a Folder", Icons.Rounded.CreateNewFolder) {
+                        isShown = false
+                        showMkdirDialog = true },
+                    FabItem("Upload a Folder", Icons.Rounded.DriveFolderUpload) {
+                        isShown = false
+                        uploadFolderIntent.launch(
                         null
                     ) },
-                    FabItem("Upload a File", Icons.Rounded.UploadFile) { uploadFileIntent.launch(
-                        arrayOf("*/*")
-                    ) },
+                    FabItem("Upload a File", Icons.Rounded.UploadFile) {
+                        isShown = false
+                        uploadFileIntent.launch(arrayOf("*/*")) },
                 )
             ) {
                 isShown = false
@@ -279,7 +283,7 @@ fun ResourceRow(
         Icon(
             imageVector = icon,
             contentDescription = "Directory icon",
-            modifier = Modifier.size(38.dp)
+            modifier = Modifier.size(34.dp)
         )
 
         Spacer(modifier = Modifier.width(16.dp))
@@ -288,7 +292,8 @@ fun ResourceRow(
                 text = resource.name,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Medium,
+                fontSize = 16.sp
             )
 
             val subText =
@@ -408,7 +413,7 @@ fun ResourceActionMenu(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         it.actionIcon?.let { icon ->
-                            Icon(imageVector = icon, contentDescription = "");
+                            Icon(imageVector = icon, contentDescription = "")
                             Spacer(modifier = Modifier.width(8.dp))
                         }
                         Text(text = it.actionName)

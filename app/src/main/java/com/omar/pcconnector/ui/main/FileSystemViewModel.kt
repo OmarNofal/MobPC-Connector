@@ -20,6 +20,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import retrofit2.Retrofit
+import java.nio.file.Path
+import java.nio.file.Paths
 import java.util.Stack
 import javax.inject.Inject
 
@@ -33,17 +35,17 @@ class FileSystemViewModel @Inject constructor(
         ?: throw java.lang.IllegalArgumentException("")
 
     private val _state: MutableStateFlow<FileSystemState> =
-        MutableStateFlow(FileSystemState.NormalState("~", listOf(), true))
+        MutableStateFlow(FileSystemState.NormalState(Paths.get("~"), listOf(), true))
     val state: Flow<FileSystemState>
         get() = _state
 
     private val navigationBackstack: Stack<FileSystemState> = Stack()
 
     init {
-        loadDirectory("~", false)
+        loadDirectory(Paths.get("~"), false)
     }
 
-    private fun loadDirectory(path: String, addToBackstack: Boolean = true) {
+    private fun loadDirectory(path: Path, addToBackstack: Boolean = true) {
         viewModelScope.launch {
             if (addToBackstack) {
                 navigationBackstack.push(_state.value)
@@ -63,8 +65,7 @@ class FileSystemViewModel @Inject constructor(
     fun onResourceClicked(resource: Resource) {
         if (resource is DirectoryResource) {
             val currentPath = _state.value.currentDirectory
-            loadDirectory("$currentPath/${resource.name}")
-
+            loadDirectory(currentPath.resolve(resource.name))
         }
     }
 
@@ -87,7 +88,7 @@ class FileSystemViewModel @Inject constructor(
     fun renameResource(resource: Resource, newName: String, overwrite: Boolean = false) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val filePath = _state.value.currentDirectory + "/" + resource.name
+                val filePath = _state.value.currentDirectory.resolve(resource.name)
                 RenameOperation(api, filePath, newName, overwrite).start()
                 loadDirectory(_state.value.currentDirectory, false)
             } catch (e: NoSuchElementException) {
@@ -99,7 +100,7 @@ class FileSystemViewModel @Inject constructor(
     fun deleteResource(resource: Resource) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val filePath = _state.value.currentDirectory + "/" + resource.name
+                val filePath = _state.value.currentDirectory.resolve(resource.name)
                 DeleteOperation(api, filePath, false).start()
                 loadDirectory(_state.value.currentDirectory, false)
             } catch (e: NoSuchElementException) {
@@ -117,7 +118,7 @@ class FileSystemViewModel @Inject constructor(
             try {
                 DownloadOperation(
                     api,
-                    "${_state.value.currentDirectory}/${resource.name}",
+                    _state.value.currentDirectory.resolve(resource.name),
                     destinationFolder,
                     contentResolver
                 ).start()
@@ -145,18 +146,18 @@ class FileSystemViewModel @Inject constructor(
 
 
 sealed class FileSystemState(
-    val currentDirectory: String,
+    val currentDirectory: Path,
     val directoryStructure: List<Resource>,
     val isLoading: Boolean
 ) {
 
     class NormalState(
-        currentDirectory: String,
+        currentDirectory: Path,
         directoryStructure: List<Resource>,
         isLoading: Boolean
     ) : FileSystemState(currentDirectory, directoryStructure, isLoading)
 
-    class Loading() : FileSystemState("", listOf(), true)
+    class Loading: FileSystemState(Paths.get(""), listOf(), true)
 
 }
 

@@ -3,6 +3,7 @@ package com.omar.pcconnector.operation.transfer.download
 import android.content.ContentResolver
 import androidx.documentfile.provider.DocumentFile
 import com.google.gson.JsonParser
+import com.omar.pcconnector.absolutePath
 import com.omar.pcconnector.network.api.FileSystemOperations
 import com.omar.pcconnector.network.exceptions.InvalidResponseException
 import com.omar.pcconnector.operation.MonitoredOperation
@@ -17,6 +18,8 @@ import java.lang.Long.min
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.charset.Charset
+import java.nio.file.Path
+import kotlin.io.path.absolutePathString
 import kotlin.math.pow
 
 
@@ -66,7 +69,7 @@ private suspend fun BufferedSource.fillBuffer(byteBuffer: ByteBuffer) {
 
 class DownloadOperation(
     private val api: FileSystemOperations,
-    private val path: String,
+    private val pathOnServer: Path,
     private val downloadPath: DocumentFile,
     private val contentResolver: ContentResolver
 ) : MonitoredOperation<DownloadOperationState, Unit>() {
@@ -85,7 +88,7 @@ class DownloadOperation(
 
     override suspend fun start() {
 
-        response = api.download(path).execute()
+        response = api.download(pathOnServer.absolutePath).execute()
 
         val contentDisposition = response.headers().get("Content-Disposition")
         val contentType = response.headers().get("Content-Type")
@@ -175,7 +178,7 @@ class DownloadOperation(
                 val filePath = fileInfo["path"]!!.asString
 
                 val splitPath = filePath.split("\\").toMutableList().apply {
-                    add(0, path.substringAfterLast("/"))
+                    add(0, pathOnServer.fileName.toString())
                 }
 
                 val fileDir = splitPath.fold(

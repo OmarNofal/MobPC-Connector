@@ -1,16 +1,19 @@
 package com.omar.pcconnector.operation
 
+import com.omar.pcconnector.absolutePath
 import com.omar.pcconnector.model.Resource
 import com.omar.pcconnector.network.api.FileSystemOperations
 import com.omar.pcconnector.network.api.getDataOrThrow
 import com.omar.pcconnector.network.api.toDomainResource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.nio.file.Path
+import kotlin.io.path.absolutePathString
 
 
 class ListDirectoryOperation(
     private val api: FileSystemOperations,
-    private val path: String
+    private val path: Path
 ): Operation<List<Resource>>() {
 
     override val name: String
@@ -22,7 +25,7 @@ class ListDirectoryOperation(
     override suspend fun start(): List<Resource> {
         var result = listOf<Resource>()
         withContext(Dispatchers.IO) {
-            result = api.getDirectoryStructure(path).execute().body().getDataOrThrow()!!.map { it.toDomainResource() }
+            result = api.getDirectoryStructure(path.absolutePath).execute().body().getDataOrThrow()!!.map { it.toDomainResource() }
         }
         return result
     }
@@ -37,7 +40,7 @@ class ListDirectoryOperation(
 
 class RenameOperation(
     private val api: FileSystemOperations,
-    private val resourcePath: String,
+    private val resourcePath: Path,
     private val newName: String,
     private val overwrite: Boolean = false
 ): Operation<Unit>() {
@@ -48,7 +51,7 @@ class RenameOperation(
         get() = "Rename $resourcePath to $newName"
 
     override suspend fun start() {
-        api.renameResource(resourcePath, newName, if (overwrite) 1 else 0).execute()
+        api.renameResource(resourcePath.absolutePath, newName, if (overwrite) 1 else 0).execute()
             .body().getDataOrThrow()
     }
 
@@ -62,7 +65,7 @@ class RenameOperation(
 
 class DeleteOperation(
     private val api: FileSystemOperations,
-    private val resourcePath: String,
+    private val resourcePath: Path,
     private val permanentlyDelete: Boolean
 ): Operation<Unit>() {
 
@@ -72,7 +75,7 @@ class DeleteOperation(
         get() = "Deleting $resourcePath"
 
     override suspend fun start() {
-        api.deleteResource(resourcePath, if (permanentlyDelete) 1 else 0).execute()
+        api.deleteResource(resourcePath.absolutePath, if (permanentlyDelete) 1 else 0).execute()
             .body().getDataOrThrow()
     }
 
@@ -84,7 +87,7 @@ class DeleteOperation(
 
 class MakeDirectoriesOperation(
     private val api: FileSystemOperations,
-    private val path: String,
+    private val path: Path,
     private val directoryName: String
 ): Operation<Unit>() {
 
@@ -94,7 +97,7 @@ class MakeDirectoriesOperation(
         get() = "Creating directory $directoryName in $path"
 
     override suspend fun start() {
-        api.makeDirs(path, directoryName).execute()
+        api.makeDirs(path.absolutePath, directoryName).execute()
             .body().getDataOrThrow()
     }
 

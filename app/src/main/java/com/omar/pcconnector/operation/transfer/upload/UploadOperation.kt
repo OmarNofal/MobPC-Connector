@@ -2,6 +2,7 @@ package com.omar.pcconnector.operation.transfer.upload
 
 import android.content.ContentResolver
 import androidx.documentfile.provider.DocumentFile
+import com.omar.pcconnector.absolutePath
 import com.omar.pcconnector.network.api.FileSystemOperations
 import com.omar.pcconnector.network.api.getDataOrThrow
 import com.omar.pcconnector.operation.MonitoredOperation
@@ -18,7 +19,9 @@ import kotlinx.coroutines.withContext
 import okhttp3.MediaType
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
+import java.nio.file.Path
 import java.util.concurrent.CancellationException
+import kotlin.io.path.absolutePathString
 
 
 sealed class UploadOperationState(
@@ -51,7 +54,7 @@ class UploadOperation(
     private val uploadApi: FileSystemOperations,
     private val documents: List<DocumentFile>,
     private val contentResolver: ContentResolver,
-    private val uploadPath: String
+    private val uploadPath: Path
 ): MonitoredOperation<UploadOperationState, Unit>() {
 
     override val name: String
@@ -80,7 +83,7 @@ class UploadOperation(
 
         val destinationPart = MultipartBody.Part.createFormData(
             "dest", null,
-            RequestBody.create(MediaType.get("text/plain"), uploadPath)
+            RequestBody.create(MediaType.get("text/plain"), uploadPath.absolutePath)
         )
         uploadApi.upload(
             parts.toMutableList().apply { add(destinationPart) }

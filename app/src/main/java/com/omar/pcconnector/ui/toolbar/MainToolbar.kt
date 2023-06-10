@@ -8,7 +8,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -31,14 +30,14 @@ fun MainToolbar(
             IconButton(onClick = { menuShown = !menuShown }) {
                 Icon(imageVector = Icons.Rounded.MoreVert, contentDescription = "Actions")
             }
+            val onMenuDismiss = { menuShown = false }
             MainToolbarOverflow(
                 onOpenBrowser = viewModel::openLinkInBrowser,
                 onCopyClipboard = viewModel::copyToPCClipboard,
                 onLockPC = viewModel::lockPC,
-                onShutdownPC = viewModel::shutdownPC,
+                onShutdownPC = { viewModel.shutdownPC(); onMenuDismiss()},
                 showMenu = menuShown,
-                onMenuDismiss = {menuShown = false} ,
-
+                onMenuDismiss = onMenuDismiss ,
             )
         }
     )
@@ -102,7 +101,7 @@ fun MainToolbarOverflow(
                     Text(text = "Lock PC")
                 }
             },
-            onClick = onLockPC
+            onClick = { onLockPC(); onMenuDismiss(); }
         )
 
         DropdownMenuItem(
@@ -116,13 +115,13 @@ fun MainToolbarOverflow(
                     Text("Shutdown PC")
                 }
             },
-            onClick = onShutdownPC
+            onClick = { onShutdownPC(); onMenuDismiss(); }
         )
     }
         if (showURLDialog) {
-            URLDialog(onDismiss = { showURLDialog = false; }, onConfirm = onOpenBrowser)
+            URLDialog(onDismiss = { showURLDialog = false; }, onConfirm = {url, incognito ->  onOpenBrowser(url, incognito);onMenuDismiss();})
         } else if (showClipboardDialog) {
-            ClipboardDialog(onDismiss = { showClipboardDialog = false}, onConfirm = onCopyClipboard)
+            ClipboardDialog(onDismiss = { showClipboardDialog = false}, onConfirm = {text-> onCopyClipboard(text); onMenuDismiss()})
         }
 
 
