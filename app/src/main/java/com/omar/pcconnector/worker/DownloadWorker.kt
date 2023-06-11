@@ -57,18 +57,16 @@ class DownloadWorker(appContext: Context, params: WorkerParameters): CoroutineWo
             downloadOperation.progress.collect {
                 state = it
                 when (it) {
-                    is DownloadOperationState.Initializing -> {}
+                    is DownloadOperationState.Initializing -> { updateProgressLoading() }
                     is DownloadOperationState.Cancelled -> {}
                     is DownloadOperationState.Initialized.Downloading -> {
                         updateProgressDownloading(it)
                         setForegroundAsync(getForegroundInfo())
                     }
-                    else -> {
-                        onFinished()
+                    is DownloadOperationState.Initialized.Downloaded -> {
+                        updateProgressFinished(it)
                     }
                 }
-
-
             }
         }
 
@@ -92,6 +90,23 @@ class DownloadWorker(appContext: Context, params: WorkerParameters): CoroutineWo
                 "totalDownloaded" to state.downloadedBytes,
                 "numOfFiles" to state.numberOfFiles,
                 "currentFile" to state.currentDownloadingFile
+            )
+        )
+    }
+
+    private fun updateProgressFinished(state: DownloadOperationState.Initialized.Downloaded) {
+        setProgressAsync(
+            workDataOf(
+                "state" to "finished",
+                "numberOfFiles" to state.numberOfFiles
+            )
+        )
+    }
+
+    private fun updateProgressLoading() {
+        setProgressAsync(
+            workDataOf(
+                "state" to "loading"
             )
         )
     }
@@ -120,9 +135,6 @@ class DownloadWorker(appContext: Context, params: WorkerParameters): CoroutineWo
         return ForegroundInfo(13, notification)
     }
 
-    private fun onFinished() {
-
-    }
 
     private fun createNotificationChannel(): NotificationChannel {
         val notificationChannel = NotificationChannel(

@@ -81,6 +81,7 @@ class UploadWorker(appContext: Context, params: WorkerParameters): CoroutineWork
         try {
             Log.i(TAG, "Starting upload")
             operation.start()
+            updateProgressFinished(state)
         } catch (e: Exception) {
             collectionJob.cancel()
             Log.e(TAG, "Upload failed ${e.message}")
@@ -123,13 +124,22 @@ class UploadWorker(appContext: Context, params: WorkerParameters): CoroutineWork
         return notificationChannel.also { notificationManager.createNotificationChannel(it) }
     }
 
+    private fun updateProgressFinished(state: UploadOperationState) {
+        setProgressAsync(
+            workDataOf(
+                "state" to "finished",
+                "numberOfFiles" to state.filesNames.size
+            )
+        )
+    }
+
+
     private fun updateProgress(state: UploadOperationState.Initialized.Uploading) {
         setProgressAsync(
             workDataOf(
                 "state" to "uploading",
-                "files" to state.filesNames.toTypedArray(),
                 "totalSize" to state.totalSize,
-                "totalDownloaded" to state.uploadedSize,
+                "totalUploaded" to state.uploadedSize,
                 "currentlyUploading" to state.currentlyUploadingFile
             )
         )
