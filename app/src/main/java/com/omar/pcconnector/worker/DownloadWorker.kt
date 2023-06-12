@@ -1,38 +1,78 @@
 package com.omar.pcconnector.worker
 
-import android.app.Notification
-import android.app.NotificationChannel
-import android.app.NotificationManager
 import android.content.Context
-import android.graphics.drawable.Icon
 import android.util.Log
 import androidx.core.net.toUri
 import androidx.documentfile.provider.DocumentFile
-import androidx.work.CoroutineWorker
-import androidx.work.ForegroundInfo
-import androidx.work.WorkManager
+import androidx.hilt.work.HiltWorker
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.omar.pcconnector.R
-import com.omar.pcconnector.bytesToSizeString
+import com.omar.pcconnector.db.WorkerDao
+import com.omar.pcconnector.db.WorkerException
+import com.omar.pcconnector.db.WorkerType
 import com.omar.pcconnector.network.api.FileSystemOperations
 import com.omar.pcconnector.operation.transfer.download.DownloadOperation
 import com.omar.pcconnector.operation.transfer.download.DownloadOperationState
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.io.FileNotFoundException
+import java.io.IOException
 import java.nio.file.Paths
+import kotlin.random.Random
 
 
-class DownloadWorker(appContext: Context, params: WorkerParameters): CoroutineWorker(appContext, params) {
-
-    init {
-        createNotificationChannel()
-    }
+@HiltWorker
+class DownloadWorker @AssistedInject constructor(
+    @Assisted appContext: Context, @Assisted params: WorkerParameters,
+    workerDao: WorkerDao
+): TransferWorker(appContext, params, workerDao) {
 
     private var state: DownloadOperationState = DownloadOperationState.Initializing
+    override val workerType: WorkerType
+        get() = WorkerType.DOWNLOAD
+
+    override val notificationChannelName: String
+        get() = "Download"
+
+    override val notificationChannelId: String
+        get() = "download_channel_id"
+
+    override val notificationId: Int = Random.nextInt()
+
+    override val notificationIcon: Int = R.drawable.baseline_cloud_download_24
+
+    override fun isInitializing(): Boolean = state is DownloadOperationState.Initializing
+
+    override fun notificationTitle(): String {
+        return when (state) {
+            is DownloadOperationState.Initializing -> "Preparing to Download"
+            is DownloadOperationState.Downloading -> "Downloading ${(state as? DownloadOperationState.Downloading)?.currentDownloadingFile}"
+        }
+    }
+
+    override fun totalSize(): Long {
+        return when (state) {
+            is DownloadOperationState.Initializing -> 0L
+            is DownloadOperationState.Downloading -> (state as? DownloadOperationState.Downloading)?.totalBytes ?: 0
+        }
+    }
+
+    override fun transferredSize(): Long {
+        return when (state) {
+            is DownloadOperationState.Initializing -> 0L
+            is DownloadOperationState.Downloading -> (state as? DownloadOperationState.Downloading)?.downloadedBytes ?: 0
+        }
+    }
+
 
     override suspend fun doWork(): Result {
 
@@ -52,99 +92,62 @@ class DownloadWorker(appContext: Context, params: WorkerParameters): CoroutineWo
             applicationContext.contentResolver
         )
 
-        val scope = CoroutineScope(Dispatchers.Main)
-        val collectionJob = scope.launch {
+
+        val collectionJob = CoroutineScope(Dispatchers.Main).launch {
             downloadOperation.progress.collect {
                 state = it
                 when (it) {
-                    is DownloadOperationState.Initializing -> { updateProgressLoading() }
-                    is DownloadOperationState.Cancelled -> {}
-                    is DownloadOperationState.Initialized.Downloading -> {
-                        updateProgressDownloading(it)
-                        setForegroundAsync(getForegroundInfo())
-                    }
-                    is DownloadOperationState.Initialized.Downloaded -> {
-                        updateProgressFinished(it)
-                    }
+                    is DownloadOperationState.Initializing -> { setToLoading() }
+                    is DownloadOperationState.Downloading -> { updateProgressDownloading(it) }
                 }
+                try {
+                    setForeground(getForegroundInfo())
+                } catch (e: Exception) { return@collect }
             }
         }
 
+
         try {
             downloadOperation.start()
-        } catch (e: Exception) {
-            collectionJob.cancel()
-            Log.e(TAG, e.message.toString())
-            return Result.failure()
+            setToFinished()
         }
+        catch(e: CancellationException) {
+            Log.e(TAG, "Download was cancelled")
+            withContext(NonCancellable) {
+                setToCancelled()
+            }
+        }
+        catch (e: IOException) {
+            return setToFailureAndReturn(WorkerException.IO_EXCEPTION)
+        }
+        catch (e: FileNotFoundException) {
+            return setToFailureAndReturn(WorkerException.CREATE_FILE_EXCEPTION)
+        }
+        catch (e: Exception) {
+            Log.e(TAG, e.stackTraceToString())
+            return setToFailureAndReturn(WorkerException.UNKNOWN_EXCEPTION)
+        }
+        finally {
+            collectionJob.cancel()
+        }
+
 
         return Result.success()
     }
 
 
-    private fun updateProgressDownloading(state: DownloadOperationState.Initialized.Downloading) {
-        setProgressAsync(
+    private suspend fun updateProgressDownloading(state: DownloadOperationState.Downloading) {
+        setToRunningInDatabase()
+        setProgress(
             workDataOf(
                 "state" to "downloading",
                 "totalSize" to state.totalBytes,
-                "totalDownloaded" to state.downloadedBytes,
-                "numOfFiles" to state.numberOfFiles,
+                "totalTransferred" to state.downloadedBytes,
                 "currentFile" to state.currentDownloadingFile
             )
         )
     }
 
-    private fun updateProgressFinished(state: DownloadOperationState.Initialized.Downloaded) {
-        setProgressAsync(
-            workDataOf(
-                "state" to "finished",
-                "numberOfFiles" to state.numberOfFiles
-            )
-        )
-    }
-
-    private fun updateProgressLoading() {
-        setProgressAsync(
-            workDataOf(
-                "state" to "loading"
-            )
-        )
-    }
-
-    override suspend fun getForegroundInfo(): ForegroundInfo {
-        val cancelAction = Notification.Action.Builder(null, "Cancel", WorkManager.getInstance(applicationContext).createCancelPendingIntent(id))
-            .build()
-
-        val downloadingFile = (state as? DownloadOperationState.Initialized.Downloading)?.currentDownloadingFile
-        val totalSize = (state as? DownloadOperationState.Initialized.Downloading)?.totalBytes?.toInt() ?: 1
-        val totalDownloaded = (state as? DownloadOperationState.Initialized.Downloading)?.downloadedBytes?.toInt() ?: 0
-
-        val title = if (downloadingFile == null) "Download in Progress" else "Downloading $downloadingFile"
-
-        val notification = Notification.Builder(applicationContext, "download_channel_id")
-            .setContentTitle(title)
-            .setStyle(Notification.BigTextStyle().bigText("${totalDownloaded.toLong().bytesToSizeString()} / ${totalSize.toLong().bytesToSizeString()}"))
-            .setContentText("${totalDownloaded.toLong().bytesToSizeString()} / ${totalSize.toLong().bytesToSizeString()}")
-            .setProgress(totalSize, totalDownloaded, state is DownloadOperationState.Initializing)
-            .setSmallIcon(Icon.createWithResource(applicationContext, R.drawable.baseline_cloud_download_24))
-            .addAction(cancelAction)
-            .setOnlyAlertOnce(true)
-            .build()
-
-
-        return ForegroundInfo(13, notification)
-    }
-
-
-    private fun createNotificationChannel(): NotificationChannel {
-        val notificationChannel = NotificationChannel(
-            "download_channel_id",
-            "Download",
-            NotificationManager.IMPORTANCE_DEFAULT
-        )
-        val notificationManager = applicationContext.getSystemService(NotificationManager::class.java) as NotificationManager
-        return notificationChannel.also { notificationManager.createNotificationChannel(it) }
-    }
 
     companion object {
         private const val TAG = "Download Worker"

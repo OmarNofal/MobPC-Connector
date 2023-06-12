@@ -84,7 +84,7 @@ fun FabItem(
         animationSpec = TweenSpec(200, 0)
     )
     val translateOffset: Dp by animateDpAsState(
-        targetValue = if (isVisible) 0.dp else 256.dp,
+        targetValue = if (isVisible) 0.dp else 24.dp,
         animationSpec = TweenSpec(200, 0)
     )
 

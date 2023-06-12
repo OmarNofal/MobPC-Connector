@@ -2,34 +2,55 @@ package com.omar.pcconnector.ui.toolbar
 
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.omar.pcconnector.drawAnimatedBorder
 import com.omar.pcconnector.ui.main.ToolbarViewModel
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainToolbar(
-    viewModel: ToolbarViewModel = hiltViewModel()
+    viewModel: ToolbarViewModel = hiltViewModel(),
+    onShowTransfers: () -> Unit,
+    isTransferOngoing: Boolean
 ) {
 
     var menuShown by remember { mutableStateOf(false) }
+
     TopAppBar(title = {
         Text(text = viewModel.serverName)
     },
         colors = TopAppBarDefaults.topAppBarColors(MaterialTheme.colorScheme.primaryContainer),
         scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(),
         actions = {
+
+            IconButton(onClick = onShowTransfers) {
+
+                val colors = listOf(Color(0xFFED4264), Color(0xFFFFEDBC), Color(0xFFED4264))
+
+                Icon(
+                    imageVector = Icons.Rounded.SwapVerticalCircle,
+                    contentDescription = "Actions",
+                    if (isTransferOngoing)
+                    Modifier.drawAnimatedBorder(2.dp, CircleShape, colors, durationMillis = 1000)
+                    else Modifier
+                )
+            }
+
             IconButton(onClick = { menuShown = !menuShown }) {
                 Icon(imageVector = Icons.Rounded.MoreVert, contentDescription = "Actions")
             }
+
             val onMenuDismiss = { menuShown = false }
             MainToolbarOverflow(
                 onOpenBrowser = viewModel::openLinkInBrowser,
@@ -119,7 +140,13 @@ fun MainToolbarOverflow(
         )
     }
         if (showURLDialog) {
-            URLDialog(onDismiss = { showURLDialog = false; }, onConfirm = {url, incognito ->  onOpenBrowser(url, incognito);onMenuDismiss();})
+            URLDialog(
+                onDismiss = { showURLDialog = false },
+                onConfirm = { url, incognito ->
+                    onOpenBrowser(url, incognito)
+                    onMenuDismiss()
+                }
+            )
         } else if (showClipboardDialog) {
             ClipboardDialog(onDismiss = { showClipboardDialog = false}, onConfirm = {text-> onCopyClipboard(text); onMenuDismiss()})
         }
@@ -142,7 +169,6 @@ private fun URLDialog(
             onDismissRequest = onDismiss,
             title = { Text(text = "Enter URL") },
             text = {
-
                 Column {
                     TextField(value = inputText, onValueChange = {inputText = it} )
                     Spacer(Modifier.height(4.dp))

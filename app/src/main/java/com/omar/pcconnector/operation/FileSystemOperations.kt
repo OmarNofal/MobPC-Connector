@@ -8,7 +8,6 @@ import com.omar.pcconnector.network.api.toDomainResource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.nio.file.Path
-import kotlin.io.path.absolutePathString
 
 
 class ListDirectoryOperation(
@@ -30,9 +29,7 @@ class ListDirectoryOperation(
         return result
     }
 
-    override suspend fun cancel() {
-        return
-    }
+
 }
 
 
@@ -55,9 +52,7 @@ class RenameOperation(
             .body().getDataOrThrow()
     }
 
-    override suspend fun cancel() {
-        return
-    }
+
 }
 
 
@@ -79,9 +74,7 @@ class DeleteOperation(
             .body().getDataOrThrow()
     }
 
-    override suspend fun cancel() {
-        return
-    }
+
 }
 
 
@@ -101,7 +94,5 @@ class MakeDirectoriesOperation(
             .body().getDataOrThrow()
     }
 
-    override suspend fun cancel() {
-        return
-    }
+
 }

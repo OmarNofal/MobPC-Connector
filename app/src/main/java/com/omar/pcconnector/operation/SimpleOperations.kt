@@ -1,6 +1,5 @@
 package com.omar.pcconnector.operation
 
-import com.omar.pcconnector.network.api.FileSystemOperations
 import com.omar.pcconnector.network.api.PCOperations
 import com.omar.pcconnector.network.api.getDataOrThrow
 import kotlinx.coroutines.Dispatchers
@@ -23,10 +22,6 @@ class LockPCOperation(
         }
     }
 
-    // Can't be canceled
-    override suspend fun cancel() {
-        return
-    }
 }
 
 
@@ -47,9 +42,6 @@ class CopyToClipboardOperation(
         }
     }
 
-    override suspend fun cancel() {
-        return
-    }
 }
 
 
@@ -69,9 +61,6 @@ class ShutdownPCOperation(
         }
     }
 
-    override suspend fun cancel() {
-        return
-    }
 }
 
 
@@ -93,9 +82,6 @@ class OpenLinkOperation(
         }
     }
 
-    override suspend fun cancel() {
-        return
-    }
 }
 
 

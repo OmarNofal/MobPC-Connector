@@ -10,8 +10,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.launch
@@ -20,34 +18,20 @@ import okhttp3.MediaType
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import java.nio.file.Path
-import java.util.concurrent.CancellationException
-import kotlin.io.path.absolutePathString
 
 
-sealed class UploadOperationState(
-    val filesNames: List<String>
-) {
-    sealed class Initialized(
-        filesNames: List<String>,
-    ): UploadOperationState(filesNames) {
+sealed class UploadOperationState {
+    class Uploading(
+        val currentlyUploadingFile: String,
+        val totalSize: Long,
+        val uploadedSize: Long
+    ): UploadOperationState()
 
-        class Uploading(
-            filesNames: List<String>,
-            val currentlyUploadingFile: String,
-            val totalSize: Long,
-            val uploadedSize: Long
-        ): Initialized(filesNames)
-
-    }
-
-    class Initializing(
-        filesNames: List<String>
-    ): UploadOperationState(filesNames)
-    class Failed(filesNames: List<String>): UploadOperationState(filesNames)
+    object Initializing : UploadOperationState()
 }
 
 
-private typealias UploadRequest = Pair<MultipartBody.Part, Flow<Pair<String, Float>>>
+private typealias UploadRequest = Pair<MultipartBody.Part, Flow<Pair<String, Pair<Long, Long>>>>
 private typealias UploadRequests = List<UploadRequest>
 
 class UploadOperation(
@@ -64,12 +48,11 @@ class UploadOperation(
 
     override suspend fun start() {
         if (documents.isEmpty()) throw IllegalArgumentException()
-        if (documents.size > 1 && documents.any {it.isDirectory}) throw Exception("You can upload either 1 directory or multiple files")
+        if (documents.size > 1 && documents.any {it.isDirectory}) throw IllegalArgumentException("You can upload either 1 directory or multiple files")
         upload()
     }
 
-    private suspend fun upload() = withContext(Dispatchers.IO){
-
+    private suspend fun upload() = withContext(Dispatchers.IO) {
 
         val fileRequests = documents.flatMap { if (it.isFile) listOf(getFileRequestBody(it, listOf("."))) else getDirectoryRequestBodies(it) }
         val totalSize = fileRequests.sumOf { it.first.body().contentLength() }
@@ -79,10 +62,23 @@ class UploadOperation(
             .merge()
 
         val collectionJob = launch {
+            var totalUploaded = 0L
+            var currentlyUploadingFile: String? = null
+            var currentFileTotalUploaded: Long
             progresses.collect {
-                _progress.value = UploadOperationState.Initialized.Uploading(
-                    listOf(""),
-                    it.first, totalSize, (it.second * totalSize).toLong()
+                if (currentlyUploadingFile == null) {
+                    currentlyUploadingFile = it.first
+                    return@collect
+                }
+                if (it.first != currentlyUploadingFile) { // we uploaded a file. move on to the next
+                    totalUploaded += it.second.second
+                    currentFileTotalUploaded = 0L
+                    currentlyUploadingFile = it.first
+                } else {
+                    currentFileTotalUploaded = it.second.first
+                }
+                _progress.value = UploadOperationState.Uploading(
+                    it.first, totalSize, totalUploaded + currentFileTotalUploaded
                 )
             }
         }
@@ -91,16 +87,17 @@ class UploadOperation(
             "dest", null,
             RequestBody.create(MediaType.get("text/plain"), uploadPath.absolutePath)
         )
+
         uploadApi.upload(
             parts.toMutableList().apply { add(destinationPart) }
-        ).execute().body().getDataOrThrow()
+        ).getDataOrThrow()
 
         collectionJob.cancel()
     }
 
 
     private fun getFileRequestBody(file: DocumentFile, folders: List<String>): UploadRequest {
-        val progressFlow = MutableStateFlow(-1.0f)
+        val progressFlow = MutableStateFlow(0L to 0L)
         val requestBody = UploadRequestBody(file.uri, contentResolver, progressFlow)
         return  MultipartBody.Part.createFormData(folders.joinToString("/").ifEmpty { "." }, file.name ?: "Unknown", requestBody) to
                 progressFlow.map { progress -> (file.name ?: "Unknown") to progress }
@@ -118,14 +115,8 @@ class UploadOperation(
         return requestBodies
     }
 
-    override suspend fun cancel() {
-        TODO("Not yet implemented")
-    }
-
     private val _progress = MutableStateFlow<UploadOperationState>(
-        UploadOperationState.Initializing(
-            listOf()
-        )
+        UploadOperationState.Initializing
     )
 
     override val progress: StateFlow<UploadOperationState>

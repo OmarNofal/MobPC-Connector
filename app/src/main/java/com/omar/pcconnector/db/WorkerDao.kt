@@ -11,17 +11,29 @@ import kotlinx.coroutines.flow.Flow
 interface WorkerDao {
 
     @Insert
-    fun insertWorker(worker: WorkerEntity)
+    suspend fun insertWorker(worker: WorkerEntity)
+
+    @Query("SELECT workerId FROM WorkerEntity")
+    suspend fun getAllIds(): List<String>
+
+    @Query("DELETE FROM WorkerEntity WHERE workerId = :id")
+    suspend fun deleteWork(id: String)
 
     @Query("SELECT * FROM WorkerEntity WHERE workerId = :id")
-    fun getById(id: String): WorkerEntity
+    suspend fun getById(id: String): WorkerEntity
 
     @Update
-    fun updateWorker(worker: WorkerEntity)
+    suspend fun updateWorker(worker: WorkerEntity)
 
     @Query("SELECT * FROM WorkerEntity WHERE workerStatus IN ('RUNNING', 'STARTING')")
     fun getActiveWorkersFlow(): Flow<List<WorkerEntity>>
 
-    @Query("DELETE FROM WorkerEntity WHERE workerStatus NOT IN ('RUNNING', 'STARTING')")
-    fun deleteNonRunningWorkers()
+    @Query("SELECT * FROM WorkerEntity")
+    fun getAllWorkersFlow(): Flow<List<WorkerEntity>>
+
+//    @Query("SELECT * FROM WorkerEntity")
+//    suspend fun getAllWorkers(): List<WorkerEntity>
+
+    @Query("DELETE FROM WorkerEntity WHERE workerStatus NOT IN ('RUNNING', 'STARTING', 'ENQUEUED')")
+    suspend fun deleteNonRunningWorkers()
 }

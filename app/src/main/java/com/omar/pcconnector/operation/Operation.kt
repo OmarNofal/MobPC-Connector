@@ -5,6 +5,9 @@ import kotlinx.coroutines.flow.StateFlow
 /**
  * Represents any operation that the app can
  * achieve in the server
+ *
+ * Note that the start method is a suspend function so cancelling the job is
+ * the way to cancel the operation itself. It is up to the operation to cancel itself
  */
 abstract class Operation<T> {
 
@@ -28,22 +31,7 @@ abstract class Operation<T> {
      * Start the operation and return the result
      */
     abstract suspend fun start(): T
-
-    /**
-     * Cancel the operation
-     *
-     * Note: For some operations it will be hard to cancel
-     * after [start]. So for those operations, [cancel] most probably
-     * will do nothing
-     */
-    abstract suspend fun cancel()
-
-    enum class State {
-        NOT_STARTED, RUNNING, PAUSED, SUCCESSFUL, UNSUCCESSFUL
-    }
-
 }
-
 
 /**
  * An operation which its progress can be tracked.
@@ -56,6 +44,5 @@ abstract class Operation<T> {
 abstract class MonitoredOperation<S, R> : Operation<R>() {
 
     abstract val progress: StateFlow<S>
-
 
 }

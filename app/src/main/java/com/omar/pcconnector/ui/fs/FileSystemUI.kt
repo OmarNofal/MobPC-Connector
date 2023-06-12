@@ -118,6 +118,7 @@ fun FileSystemTree(
     )
 
     Scaffold(
+        modifier = modifier,
         floatingActionButton = {
             var isShown by remember { mutableStateOf(false) }
             MultiItemFab(
@@ -143,7 +144,7 @@ fun FileSystemTree(
         }
     ) { _ ->
 
-        LazyColumn(modifier) {
+        LazyColumn() {
             if (isLoading) {
                 item {
                     LinearProgressIndicator(Modifier.fillMaxWidth())

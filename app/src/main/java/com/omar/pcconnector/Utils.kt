@@ -1,8 +1,31 @@
 package com.omar.pcconnector
 
-import androidx.work.WorkInfo
-import com.omar.pcconnector.model.TransferState
-import java.lang.IllegalStateException
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.drawOutline
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.unit.Dp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import okio.BufferedSource
+import java.nio.ByteBuffer
 import java.nio.file.Path
 import kotlin.io.path.absolutePathString
 import kotlin.math.pow
@@ -37,29 +60,79 @@ fun Long.bytesToSizeString(): String {
 
 
 
-fun WorkInfo.toUploadTransferState(): TransferState {
-    val state = outputData.getString("state") ?: "loading"
-    if (state == "loading") return TransferState.Initializing
-    if (state == "finished") return TransferState.Finished(outputData.getInt("numberOfFiles", 0))
 
 
-    val totalSize = outputData.getLong("totalSize", -1)
-    val totalUploaded = outputData.getLong("totalUploaded", -1)
-    val currentlyUploading = outputData.getString("currentlyUploading")
-
-    if ((totalSize == -1L) or (totalUploaded == -1L)) throw IllegalStateException()
-    return TransferState.Running(listOf(), currentlyUploading, totalSize, totalUploaded)
+/**
+ * Suspends coroutine until the buffer is filled
+ */
+suspend fun BufferedSource.fillBuffer(byteBuffer: ByteBuffer) {
+    withContext(Dispatchers.IO) {
+        while (byteBuffer.remaining() > 0) {
+            this@fillBuffer.read(byteBuffer)
+        }
+    }
 }
 
-fun WorkInfo.toDownloadTransferState(): TransferState {
-    val state = outputData.getString("state") ?: "loading"
-    if (state == "loading") return TransferState.Initializing
-    if (state == "finished") return TransferState.Finished(outputData.getInt("numberOfFiles", 0))
 
-    val totalSize = outputData.getLong("totalSize", -1)
-    val totalDownloaded = outputData.getLong("totalDownloaded", -1)
-    val currentFile = outputData.getString("currentFile")
 
-    if ((totalSize == -1L) or (totalDownloaded == -1L)) throw IllegalStateException()
-    return TransferState.Running(listOf(), currentFile, totalSize, totalDownloaded)
+fun Modifier.drawAnimatedBorder(
+    strokeWidth: Dp,
+    shape: Shape,
+    gradientColors: List<Color>,
+    brush: (Size) -> Brush = {
+        Brush.sweepGradient(gradientColors)
+    },
+    durationMillis: Int
+) = composed {
+
+    val infiniteTransition = rememberInfiniteTransition(label = "rotation")
+    val angle by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ), label = "rotation"
+    )
+
+    Modifier
+        .clip(shape)
+        .drawWithCache {
+            val strokeWidthPx = strokeWidth.toPx()
+
+            val outline: Outline = shape.createOutline(size, layoutDirection, this)
+
+            onDrawWithContent {
+                // This is actual content of the Composable that this modifier is assigned to
+                drawContent()
+
+                with(drawContext.canvas.nativeCanvas) {
+                    val checkPoint = saveLayer(null, null)
+
+                    // Destination
+
+                    // We draw 2 times of the stroke with since we want actual size to be inside
+                    // bounds while the outer stroke with is clipped with Modifier.clip
+
+                    // 🔥 Using a maskPath with op(this, outline.path, PathOperation.Difference)
+                    // And GenericShape can be used as Modifier.border does instead of clip
+                    drawOutline(
+                        outline = outline,
+                        color = Color.Gray,
+                        style = Stroke(strokeWidthPx * 2)
+                    )
+
+                    // Source
+                    rotate(angle) {
+
+                        drawCircle(
+                            brush = brush(size),
+                            radius = size.width,
+                            blendMode = BlendMode.SrcIn,
+                        )
+                    }
+                    restoreToCount(checkPoint)
+                }
+            }
+        }
 }
