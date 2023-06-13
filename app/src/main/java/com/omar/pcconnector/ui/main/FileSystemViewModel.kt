@@ -3,17 +3,21 @@ package com.omar.pcconnector.ui.main
 import android.util.Log
 import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.omar.pcconnector.model.DirectoryResource
 import com.omar.pcconnector.model.Resource
 import com.omar.pcconnector.network.api.FileSystemOperations
 import com.omar.pcconnector.network.connection.Connection
+import com.omar.pcconnector.operation.CopyResourcesOperation
 import com.omar.pcconnector.operation.DeleteOperation
 import com.omar.pcconnector.operation.ListDirectoryOperation
 import com.omar.pcconnector.operation.MakeDirectoriesOperation
 import com.omar.pcconnector.operation.RenameOperation
 import com.omar.pcconnector.operation.transfer.TransfersManager
-import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,22 +25,25 @@ import kotlinx.coroutines.launch
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.Stack
-import javax.inject.Inject
 
 
-@HiltViewModel
-class FileSystemViewModel @Inject constructor(
-    private val connection: Connection?,
-    private val transfersManager: TransfersManager
+
+@Suppress("UNCHECKED_CAST")
+class FileSystemViewModel @AssistedInject constructor(
+    private val transfersManager: TransfersManager,
+    @Assisted private val connection: Connection
 ) : ViewModel() {
 
-    private val api = connection?.retrofit?.create(FileSystemOperations::class.java)
-        ?: throw java.lang.IllegalArgumentException("")
+    private val api = connection.retrofit.create(FileSystemOperations::class.java)
 
     private val _state: MutableStateFlow<FileSystemState> =
         MutableStateFlow(FileSystemState.NormalState(Paths.get("~"), listOf(), true))
     val state: Flow<FileSystemState>
         get() = _state
+
+    private var _copiedResource = MutableStateFlow<Path?>(null)
+    val copiedResource: Flow<Path?>
+        get() = _copiedResource
 
     private val navigationBackstack: Stack<FileSystemState> = Stack()
 
@@ -108,12 +115,30 @@ class FileSystemViewModel @Inject constructor(
         }
     }
 
+    fun pasteResource() {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                if (_copiedResource.value == null) throw NoSuchElementException()
+                val destPath = _state.value.currentDirectory
+                val srcPath = _copiedResource.value!!
+                CopyResourcesOperation(api, srcPath, destPath, false).start()
+                _copiedResource.value = null
+            } catch (e: NoSuchElementException) {
+                Log.e("RENAME", "COULD NOT RENAME")
+            }
+        }
+    }
+
+    fun copyResource(resource: Resource) {
+        _copiedResource.value = _state.value.currentDirectory.resolve(resource.name)
+    }
+
     fun download(
         resource: Resource,
         destinationFolder: DocumentFile
     ) {
         transfersManager.download(
-            connection!!,
+            connection,
             _state.value.currentDirectory.resolve(resource.name),
             destinationFolder
         )
@@ -122,8 +147,25 @@ class FileSystemViewModel @Inject constructor(
     fun upload(
         documents: List<DocumentFile>
     ) {
-        transfersManager.upload(documents, connection!!, _state.value.currentDirectory)
+        transfersManager.upload(documents, connection, _state.value.currentDirectory)
     }
+
+    @AssistedFactory
+    interface Factory {
+        fun create(connection: Connection): FileSystemViewModel
+    }
+
+    companion object {
+        fun provideFactory(
+            factory: Factory,
+            connection: Connection
+        ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return factory.create(connection) as T
+            }
+        }
+    }
+
 
 }
 

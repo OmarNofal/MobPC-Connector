@@ -8,7 +8,6 @@ import javax.inject.Inject
 
 @HiltViewModel
 class TransferViewModel @Inject constructor(
-    //@ApplicationContext private val appContext: Context,
     private val transfersManager: TransfersManager
 ): ViewModel() {
 
@@ -17,4 +16,6 @@ class TransferViewModel @Inject constructor(
     fun cancelTransfer(id: String) = transfersManager.cancelWorker(id)
 
     fun deleteTransfer(id: String) = transfersManager.deleteWorker(id)
+
+
 }

@@ -40,6 +40,13 @@ interface FileSystemOperations {
         @Field("name") directoryName: String
     ): Call<GeneralResponse<Unit>>
 
+    @FormUrlEncoded
+    @POST("/copyResources")
+    fun copyResources(
+        @Field("src") src: String,
+        @Field("dest") dest: String,
+        @Field("overwrite") overwrite: Int = 0
+    ): Call<GeneralResponse<Unit>>
 
     @Streaming
     @GET("/downloadFiles")

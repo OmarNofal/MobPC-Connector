@@ -17,13 +17,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.omar.pcconnector.network.connection.Connection
 import com.omar.pcconnector.network.detection.DetectedHost
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetectionScreen(
-    onSwitchScreen: () -> Unit,
+    onConnectionSelected: (Connection) -> Unit,
     viewModel: DetectionViewModel = hiltViewModel()
 ) {
 
@@ -44,8 +45,7 @@ fun DetectionScreen(
         }
     ) { contentPadding ->
         Log.i("STATE TYPE", state.toString())
-        MainContent(Modifier.padding(contentPadding), state) { viewModel.connectToServer(it); onSwitchScreen() }
-
+        MainContent(Modifier.padding(contentPadding), state) { viewModel.connectToServer(it); onConnectionSelected(it.toConnection()) }
     }
 }
 

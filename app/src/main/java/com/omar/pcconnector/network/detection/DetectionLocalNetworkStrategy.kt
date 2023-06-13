@@ -1,14 +1,18 @@
 package com.omar.pcconnector.network.detection
 
-import android.content.Context
 import android.util.Log
-import com.google.gson.Gson
-import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import kotlinx.coroutines.*
-import java.net.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.joinAll
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import java.net.DatagramPacket
+import java.net.DatagramSocket
+import java.net.InetAddress
+import java.net.NetworkInterface
+import java.net.SocketTimeoutException
 import java.nio.charset.Charset
-import kotlin.math.pow
 
 
 private const val PORT = 4285
@@ -118,7 +122,7 @@ class DetectionLocalNetworkStrategy() : DetectionStrategy {
             val n = networkInterfaces.nextElement()
             for (j in n.interfaceAddresses) {
                 if (j.address.isSiteLocalAddress && j.broadcast != null) {
-                    result.add(j.broadcast.hostAddress)
+                    j.broadcast.hostAddress?.let { result.add(it) } ?: continue
                     Log.i("NET", "Found ${j.broadcast.hostAddress} && ${j.address.isSiteLocalAddress}")
                 }
             }

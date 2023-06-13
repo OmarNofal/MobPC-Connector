@@ -20,21 +20,19 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.documentfile.provider.DocumentFile
-import androidx.hilt.navigation.compose.hiltViewModel
 import com.omar.pcconnector.bytesToSizeString
 import com.omar.pcconnector.model.DirectoryResource
 import com.omar.pcconnector.model.Resource
-import com.omar.pcconnector.ui.fab.FabItem
-import com.omar.pcconnector.ui.fab.MultiItemFab
+import com.omar.pcconnector.ui.DeleteDialog
+import com.omar.pcconnector.ui.RenameDialog
+import com.omar.pcconnector.ui.action.Actions
+import com.omar.pcconnector.ui.action.ActionsDropdownMenu
 import com.omar.pcconnector.ui.main.FileSystemState
 import com.omar.pcconnector.ui.main.FileSystemViewModel
 import kotlin.io.path.absolutePathString
@@ -47,7 +45,7 @@ import kotlin.io.path.absolutePathString
 @Composable
 fun FileSystemUI(
     modifier: Modifier,
-    viewModel: FileSystemViewModel = hiltViewModel()
+    viewModel: FileSystemViewModel
 ) {
 
     BackHandler(true) {
@@ -66,9 +64,8 @@ fun FileSystemUI(
             viewModel::onResourceClicked,
             viewModel::renameResource,
             viewModel::deleteResource,
-            viewModel::mkdirs,
             viewModel::download,
-            viewModel::upload
+            viewModel::copyResource
         )
     }
 
@@ -95,144 +92,51 @@ fun FileSystemTree(
     onResourceClicked: (Resource) -> Unit,
     onRename: (Resource, String, Boolean) -> Unit,
     onDelete: (Resource) -> Unit,
-    onMakeDir: (String) -> Unit,
     onResourceDownload: (Resource, DocumentFile) -> Unit,
-    onUpload: (List<DocumentFile>) -> Unit
+    onResourceCopied: (Resource) -> Unit
 ) {
-    val context = LocalContext.current
-    var showMkdirDialog by remember {
-        mutableStateOf(false)
-    }
 
-    val uploadFolderIntent = rememberLauncherForActivityResult(contract = ActivityResultContracts.OpenDocumentTree(), onResult = {
-        if (it == null) return@rememberLauncherForActivityResult
-        else onUpload(listOf(DocumentFile.fromTreeUri(context, it)!!))
-    })
-
-    val uploadFileIntent = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenMultipleDocuments(),
-        onResult = { it ->
-            if (it.isEmpty()) return@rememberLauncherForActivityResult
-            onUpload( it.map { DocumentFile.fromSingleUri(context, it)!! })
-        }
-    )
-
-    Scaffold(
-        modifier = modifier,
-        floatingActionButton = {
-            var isShown by remember { mutableStateOf(false) }
-            MultiItemFab(
-                icon = Icons.Rounded.Add,
-                onClicked = { isShown = !isShown },
-                expanded = isShown,
-                items = listOf(
-                    FabItem("Create a Folder", Icons.Rounded.CreateNewFolder) {
-                        isShown = false
-                        showMkdirDialog = true },
-                    FabItem("Upload a Folder", Icons.Rounded.DriveFolderUpload) {
-                        isShown = false
-                        uploadFolderIntent.launch(
-                        null
-                    ) },
-                    FabItem("Upload a File", Icons.Rounded.UploadFile) {
-                        isShown = false
-                        uploadFileIntent.launch(arrayOf("*/*")) },
-                )
-            ) {
-                isShown = false
-            }
-        }
-    ) { _ ->
-
-        LazyColumn {
-            if (isLoading) {
-                item {
-                    LinearProgressIndicator(Modifier.fillMaxWidth())
-                }
-            }
-
+    LazyColumn(modifier) {
+        if (isLoading) {
             item {
-                Text(
-                    text = "You are in $currentDirectory",
-                    modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp)
-                )
+                LinearProgressIndicator(Modifier.fillMaxWidth())
             }
-
-            items(directoryStructure, key = { it.name + it.creationDateMs }) {
-                ResourceRow(
-                    modifier = Modifier.fillMaxWidth(),
-                    resource = it,
-                    onClick = { onResourceClicked(it) },
-                    onRename = { newName, overwrite -> onRename(it, newName, overwrite) },
-                    onDelete = { onDelete(it) },
-                    onDownload = { file -> onResourceDownload(it, file) }
-                )
-
-                if (it != directoryStructure.last()) {
-                    Divider(
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(start = 8.dp)
-                    )
-                }
-            }
-
-
         }
+
+        item {
+            Text(
+                text = "You are in $currentDirectory",
+                modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp)
+            )
+        }
+
+        items(directoryStructure, key = { it.name + it.creationDateMs }) {
+            ResourceRow(
+                modifier = Modifier.fillMaxWidth(),
+                resource = it,
+                onClick = { onResourceClicked(it) },
+                onRename = { newName, overwrite -> onRename(it, newName, overwrite) },
+                onDelete = { onDelete(it) },
+                onDownload = { file -> onResourceDownload(it, file) },
+                onCopied = { onResourceCopied(it) }
+            )
+
+            if (it != directoryStructure.last()) {
+                Divider(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(start = 8.dp)
+                )
+            }
+        }
+
+
     }
-
-
-    if (showMkdirDialog) {
-        MakeDirDialog(
-            onConfirm = onMakeDir,
-            onCancel = { showMkdirDialog = false }
-        )
-    }
-
 
 }
 
-@Composable
-fun MakeDirDialog(
-    onConfirm: (String) -> Unit,
-    onCancel: () -> Unit
-) {
-    val focusRequester = remember {
-        FocusRequester()
-    }
-    var dirName by remember {
-        mutableStateOf("")
-    }
-    AlertDialog(
-        onDismissRequest = onCancel,
-        title = { Text(text = "Create a Folder") },
-        text = {
 
-            Column {
-                TextField(
-                    modifier = Modifier.focusRequester(focusRequester),
-                    value = dirName,
-                    onValueChange = { dirName = it })
-                Spacer(Modifier.height(4.dp))
-                Text(text = "Tip: Use / to create nested directories")
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = { onConfirm(dirName); onCancel() }) {
-                Text(text = "Create")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onCancel) {
-                Text(text = "Cancel")
-            }
-        }
-    )
 
-    LaunchedEffect(key1 = Unit) {
-        focusRequester.requestFocus()
-    }
-}
 
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -244,7 +148,8 @@ fun ResourceRow(
     onLongPress: () -> Unit = {},
     onRename: (String, Boolean) -> Unit = { _, _ -> },
     onDelete: () -> Unit = {},
-    onDownload: (DocumentFile) -> Unit
+    onDownload: (DocumentFile) -> Unit,
+    onCopied: () -> Unit
 ) {
 
     val context = LocalContext.current
@@ -304,13 +209,16 @@ fun ResourceRow(
         Column {
 
             var isMenuOpen by remember { mutableStateOf(false) }
-            IconButton(onClick = { isMenuOpen = !isMenuOpen }) {
+            IconButton(
+                onClick = { isMenuOpen = !isMenuOpen },
+                modifier = Modifier.fillMaxHeight()
+            ) {
                 Icon(imageVector = Icons.Rounded.MoreVert, contentDescription = "More Options")
             }
-            ResourceActionMenu(
+            ActionsDropdownMenu(
                 actions = listOf(
                     Actions.downloadAction { downloadDirPickerContract.launch(null) },
-                    Actions.copyAction(onClick),
+                    Actions.copyAction(onCopied),
                     Actions.renameAction { showRenameDialog = true },
                     Actions.deleteAction { showDeleteDialog = true },
                 ),
@@ -333,114 +241,6 @@ fun ResourceRow(
             onCancel = { showDeleteDialog = false }
         )
 
-}
-
-@Composable
-fun DeleteDialog(
-    fileName: String,
-    onConfirm: () -> Unit,
-    onCancel: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onCancel,
-        confirmButton = {
-            TextButton(onClick = onConfirm) {
-                Text(text = "Delete")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onCancel) {
-                Text(text = "Cancel")
-            }
-        },
-        text = { Text(text = "Delete $fileName?") }
-    )
-}
-
-
-data class ResourceAction(
-    val actionName: String,
-    val actionIcon: ImageVector?,
-    val onClick: () -> Unit
-)
-
-object Actions {
-    fun deleteAction(onClick: () -> Unit) = ResourceAction("Delete", Icons.Rounded.Delete, onClick)
-    fun renameAction(onClick: () -> Unit) = ResourceAction("Rename", Icons.Rounded.Edit, onClick)
-    fun copyAction(onClick: () -> Unit) = ResourceAction("Copy", Icons.Rounded.ContentCopy, onClick)
-    fun downloadAction(onClick: () -> Unit) =
-        ResourceAction("Download", Icons.Rounded.Download, onClick)
-}
-
-
-@Composable
-fun ResourceActionMenu(
-    modifier: Modifier = Modifier,
-    actions: List<ResourceAction>,
-    show: Boolean,
-    onDismissRequest: () -> Unit
-) {
-    DropdownMenu(modifier = modifier, expanded = show, onDismissRequest = onDismissRequest) {
-        actions.forEach {
-
-            DropdownMenuItem(
-                text = {
-                    Row(
-                        Modifier.padding(top = 4.dp, bottom = 4.dp, end = 32.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        it.actionIcon?.let { icon ->
-                            Icon(imageVector = icon, contentDescription = "")
-                            Spacer(modifier = Modifier.width(8.dp))
-                        }
-                        Text(text = it.actionName)
-                    }
-
-                }, onClick = it.onClick
-            )
-
-        }
-    }
-}
-
-
-@Composable
-fun RenameDialog(
-    oldName: String,
-    onConfirm: (String, Boolean) -> Unit,
-    onCancel: () -> Unit
-) {
-    var newName by remember {
-        mutableStateOf(oldName)
-    }
-    var overwrite by remember {
-        mutableStateOf(false)
-    }
-    AlertDialog(
-        onDismissRequest = onCancel,
-        title = { Text(text = "Enter New Name") },
-        text = {
-
-            Column {
-                TextField(value = newName, onValueChange = { newName = it })
-                Spacer(Modifier.height(4.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(text = "Overwrite?")
-                    Checkbox(checked = overwrite, onCheckedChange = { overwrite = it })
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = { onConfirm(newName, overwrite); onCancel() }) {
-                Text(text = "Rename")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onCancel) {
-                Text(text = "Cancel")
-            }
-        }
-    )
 }
 
 

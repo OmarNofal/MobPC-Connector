@@ -2,18 +2,23 @@ package com.omar.pcconnector.network.connection
 
 import android.content.SharedPreferences
 import android.util.Log
-import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.omar.pcconnector.network.api.StatusAPI
 import com.omar.pcconnector.network.detection.DetectedHost
 import com.omar.pcconnector.network.detection.DetectionLocalNetworkStrategy
 import com.omar.pcconnector.network.detection.DetectionStrategy
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.create
@@ -34,7 +39,7 @@ class AppConnectivity(
 
 
     // TODO switch detected servers to single source of truth
-    val detectedServers: Flow<List<DetectedHost>> get() = availableServers
+    //val detectedServers: Flow<List<DetectedHost>> get() = availableServers
     private val availableServers = MutableStateFlow<List<DetectedHost>>(listOf())
 
 
@@ -61,9 +66,6 @@ class AppConnectivity(
 
     /**
      * Connects to a particular server as chosen by the user
-     *
-     * @param ip The IP address of the server
-     * @param port The port of the application on the server
      */
     fun connectToServer(detectedHost: DetectedHost) {
         connectToServerImpl(detectedHost)
@@ -73,10 +75,10 @@ class AppConnectivity(
     /**
      * Disconnects from currently connected server due to user action
      */
-    fun disconnect() {
-        removeLastConnectedFromSettings()
-        disconnectionImpl()
-    }
+//    fun disconnect() {
+//        removeLastConnectedFromSettings()
+//        disconnectionImpl()
+//    }
 
 
     /**
@@ -98,7 +100,7 @@ class AppConnectivity(
     /**
      * Called by the app when a disconnection has been detected
      */
-    fun onDisconnectionDetected() {
+    private fun onDisconnectionDetected() {
         disconnectionImpl()
     }
 
@@ -139,13 +141,13 @@ class AppConnectivity(
      * This happens when the user disconnects from the server by himself, which means
      * he does not want the app to automatically connect to that server again
      */
-    private fun removeLastConnectedFromSettings() {
-        prefs.edit().apply {
-            remove("CONN_IP")
-            remove("CONN_PORT")
-            apply()
-        }
-    }
+//    private fun removeLastConnectedFromSettings() {
+//        prefs.edit().apply {
+//            remove("CONN_IP")
+//            remove("CONN_PORT")
+//            apply()
+//        }
+//    }
 
 
 

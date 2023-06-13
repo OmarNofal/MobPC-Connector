@@ -93,6 +93,24 @@ class MakeDirectoriesOperation(
         api.makeDirs(path.absolutePath, directoryName).execute()
             .body().getDataOrThrow()
     }
+}
 
 
+class CopyResourcesOperation(
+    private val api: FileSystemOperations,
+    private val src: Path,
+    private val dest: Path,
+    private val overwrite: Boolean = false
+): Operation<Unit>() {
+
+    override val name: String
+        get() = "Copying Resources"
+    override val operationDescription: String
+        get() = "Copying ${src.absolutePath} to ${dest.absolutePath}"
+
+    override suspend fun start() = withContext(Dispatchers.IO){
+        api.copyResources(src.absolutePath, dest.absolutePath, if (overwrite) 1 else 0).execute()
+            .body().getDataOrThrow()
+        Unit
+    }
 }

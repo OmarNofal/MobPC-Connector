@@ -27,13 +27,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.omar.pcconnector.drawAnimatedBorder
 
 
-data class FabItem(
+data class FabAction(
     val label: String,
     val icon: ImageVector,
     val onClick: () -> Unit
@@ -44,25 +46,36 @@ fun MultiItemFab(
     icon: ImageVector,
     expanded: Boolean = false,
     onClicked: () -> Unit,
-    items: List<FabItem>,
-    onDismissRequest: () -> Unit,
+    items: List<FabAction>,
+    showRainbowBorder: Boolean = false,
+    onDismissRequest: () -> Unit
 ) {
 
     BackHandler(expanded, onDismissRequest)
 
     val iconRotation: Float by animateFloatAsState(targetValue = if (expanded) 45.0f else 0.0f)
 
+    val modifier = if (showRainbowBorder) Modifier.drawAnimatedBorder(
+        1.dp,
+        RoundedCornerShape(16.dp),
+        listOf(Color(0xFFFF0000), Color(0xFFFF5100), Color(0xFFFF8C00)),
+        durationMillis = 250
+        )
+    else Modifier
+
     Column(horizontalAlignment = Alignment.End) {
-        items.forEach {
-            FabItem(modifier = Modifier, it.label, it.icon, it.onClick, expanded)
-        }
+        if (expanded)
+            items.forEach {
+                FabItem(modifier = Modifier, it.label, it.icon, it.onClick, true)
+            }
+
         Spacer(Modifier.height(8.dp))
-        FloatingActionButton(onClick = onClicked) {
-            val modifier = if (icon in arrayOf(Icons.Rounded.Add, Icons.Filled.Add, Icons.Outlined.Add))
+        FloatingActionButton(modifier = modifier, onClick = onClicked) {
+            val iconModifier = if (icon in arrayOf(Icons.Rounded.Add, Icons.Filled.Add, Icons.Outlined.Add))
                 Modifier.rotate(iconRotation)
             else
                 Modifier
-            Icon(modifier = modifier, imageVector = icon, contentDescription = "FAB")
+            Icon(modifier = iconModifier, imageVector = icon, contentDescription = "FAB")
         }
     }
 
