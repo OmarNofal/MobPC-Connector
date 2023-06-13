@@ -16,4 +16,5 @@ class TransferViewModel @Inject constructor(
 
     fun cancelTransfer(id: String) = transfersManager.cancelWorker(id)
 
+    fun deleteTransfer(id: String) = transfersManager.deleteWorker(id)
 }

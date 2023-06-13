@@ -17,7 +17,6 @@ import javax.inject.Inject
 @HiltViewModel
 class ToolbarViewModel @Inject constructor(
     retrofit: Retrofit?,
-    //val serverName: String = "Omar's Server", //TODO
 ): ViewModel() {
 
     private val api = retrofit?.create(PCOperations::class.java)
@@ -52,12 +51,3 @@ class ToolbarViewModel @Inject constructor(
 
 
 }
-
-//sealed class PCOperationsState {
-//
-//    object Nothing: PCOperationsState()
-//    object LockingPC: PCOperationsState()
-//    object ShuttingDownPC: PCOperationsState()
-//    object CopyingToClipboard: PCOperationsState()
-//    object OpeningLinkInPC: PCOperationsState()
-//}

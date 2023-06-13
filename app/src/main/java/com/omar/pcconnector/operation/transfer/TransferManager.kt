@@ -90,7 +90,6 @@ class TransfersManager @Inject constructor(
 
         val workerId = UUID.randomUUID()
 
-
         val downloadWorkerRequest =
             OneTimeWorkRequestBuilder<DownloadWorker>()
                 .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
@@ -189,6 +188,12 @@ class TransfersManager @Inject constructor(
     fun cancelWorker(id: String) {
         Log.i("MANAGER", "Cancelling worker $id")
         workManager.cancelWorkById(UUID.fromString(id))
+    }
+
+    fun deleteWorker(id: String) {
+        scope.launch {
+            workerDao.deleteWork(id)
+        }
     }
 
     private fun List<DocumentFile>.toDirectoryFlags(): List<Boolean> = map { it.isDirectory }

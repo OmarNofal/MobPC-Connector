@@ -127,9 +127,11 @@ class UploadWorker @AssistedInject constructor(
             }
         }
         catch (e: IOException) {
+            Log.e(TAG, "Upload failed ${e.message}")
             return setToFailureAndReturn(WorkerException.IO_EXCEPTION)
         }
         catch (e: FileNotFoundException) {
+            Log.e(TAG, "Upload failed ${e.message}")
             return setToFailureAndReturn(WorkerException.CREATE_FILE_EXCEPTION)
         }
         catch (e: Exception) {

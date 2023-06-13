@@ -144,7 +144,7 @@ fun FileSystemTree(
         }
     ) { _ ->
 
-        LazyColumn() {
+        LazyColumn {
             if (isLoading) {
                 item {
                     LinearProgressIndicator(Modifier.fillMaxWidth())

@@ -32,7 +32,13 @@ sealed class TransferState {
 }
 
 enum class TransferError {
-    NETWORK_ERROR, FILE_SYSTEM_ERROR, UNKNOWN_ERROR
+    NETWORK_ERROR, FILE_SYSTEM_ERROR, UNKNOWN_ERROR;
+    fun toErrorString() =
+        when  (this) {
+            UNKNOWN_ERROR -> "Unknown error"
+            FILE_SYSTEM_ERROR -> "File system error"
+            NETWORK_ERROR -> "Network error"
+        }
 }
 
 data class TransferProgress(val currentTransferredFile: String?, val totalBytes: Long, val transferredBytes: Long) {
