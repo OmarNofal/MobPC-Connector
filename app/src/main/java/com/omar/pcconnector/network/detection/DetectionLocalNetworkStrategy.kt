@@ -93,7 +93,8 @@ class DetectionLocalNetworkStrategy() : DetectionStrategy {
                 try {
                     val responseJson = JsonParser.parseString(responseString).asJsonObject
                     val name = responseJson.get("name").asString
-                    val ip = responseJson.get("ip").asString
+                    val ip =
+                        receivedPacket.address.hostAddress?.toString() ?: throw IllegalStateException("Invalid IP address from server")
                     val port = responseJson.get("port").asInt
                     detectedHosts.add(DetectedHost(name, ip, port))
                 } catch (e: Exception) {

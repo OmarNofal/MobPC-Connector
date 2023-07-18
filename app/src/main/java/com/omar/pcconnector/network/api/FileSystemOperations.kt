@@ -18,6 +18,9 @@ interface FileSystemOperations {
     @GET("/listDirectory")
     fun getDirectoryStructure(@Query("path") path: String): Call<GeneralResponse<List<NetworkResource>>>
 
+    @GET("/drives")
+    suspend fun getDrives(): GeneralResponse<List<String>>
+
     @FormUrlEncoded
     @POST("/renameResource")
     fun renameResource(

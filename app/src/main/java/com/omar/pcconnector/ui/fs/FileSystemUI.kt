@@ -20,12 +20,15 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.documentfile.provider.DocumentFile
+import com.omar.pcconnector.absolutePath
 import com.omar.pcconnector.bytesToSizeString
 import com.omar.pcconnector.model.DirectoryResource
 import com.omar.pcconnector.model.Resource
@@ -35,7 +38,6 @@ import com.omar.pcconnector.ui.action.Actions
 import com.omar.pcconnector.ui.action.ActionsDropdownMenu
 import com.omar.pcconnector.ui.main.FileSystemState
 import com.omar.pcconnector.ui.main.FileSystemViewModel
-import kotlin.io.path.absolutePathString
 
 
 /**
@@ -45,22 +47,36 @@ import kotlin.io.path.absolutePathString
 @Composable
 fun FileSystemUI(
     modifier: Modifier,
-    viewModel: FileSystemViewModel
+    viewModel: FileSystemViewModel,
+    nestedScroll: NestedScrollConnection
 ) {
 
     BackHandler(true) {
         viewModel.onNavigateBack()
     }
 
-    val state by viewModel.state.collectAsState(FileSystemState.Loading())
+    val state by viewModel.state.collectAsState(FileSystemState.Loading)
 
     when (state) {
         is FileSystemState.Loading -> LoadingScreen(modifier)
-        else -> FileSystemTree(
+        is FileSystemState.Initialized.Loading -> FileSystemTree(
             modifier = modifier,
-            state.currentDirectory.absolutePathString(),
-            state.directoryStructure,
-            state.isLoading,
+            nestedScroll,
+            (state as FileSystemState.Initialized.Loading).currentDirectory.absolutePath,
+            listOf(),
+            true,
+            viewModel::onResourceClicked,
+            viewModel::renameResource,
+            viewModel::deleteResource,
+            viewModel::download,
+            viewModel::copyResource
+        )
+        is FileSystemState.Initialized.Loaded -> FileSystemTree(
+            modifier = modifier,
+            nestedScroll,
+            (state as FileSystemState.Initialized.Loaded).currentDirectory.absolutePath,
+            (state as FileSystemState.Initialized.Loaded).directoryStructure,
+            false,
             viewModel::onResourceClicked,
             viewModel::renameResource,
             viewModel::deleteResource,
@@ -82,10 +98,12 @@ fun LoadingScreen(
 }
 
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 fun FileSystemTree(
     modifier: Modifier,
+    nestedScroll: NestedScrollConnection,
     currentDirectory: String = "~",
     directoryStructure: List<Resource> = listOf(),
     isLoading: Boolean = false,
@@ -96,40 +114,41 @@ fun FileSystemTree(
     onResourceCopied: (Resource) -> Unit
 ) {
 
-    LazyColumn(modifier) {
+    Box(modifier = modifier) {
         if (isLoading) {
+            LinearProgressIndicator(Modifier.fillMaxWidth().align(Alignment.TopCenter))
+        }
+        LazyColumn(Modifier.nestedScroll(nestedScroll)) {
+
             item {
-                LinearProgressIndicator(Modifier.fillMaxWidth())
-            }
-        }
-
-        item {
-            Text(
-                text = "You are in $currentDirectory",
-                modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp)
-            )
-        }
-
-        items(directoryStructure, key = { it.name + it.creationDateMs }) {
-            ResourceRow(
-                modifier = Modifier.fillMaxWidth(),
-                resource = it,
-                onClick = { onResourceClicked(it) },
-                onRename = { newName, overwrite -> onRename(it, newName, overwrite) },
-                onDelete = { onDelete(it) },
-                onDownload = { file -> onResourceDownload(it, file) },
-                onCopied = { onResourceCopied(it) }
-            )
-
-            if (it != directoryStructure.last()) {
-                Divider(
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(start = 8.dp)
+                Text(
+                    text = "You are in $currentDirectory",
+                    modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp)
                 )
             }
-        }
 
+            items(directoryStructure, key = { it.name + it.creationDateMs }) {
+                ResourceRow(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .animateItemPlacement(),
+                    resource = it,
+                    onClick = { onResourceClicked(it) },
+                    onRename = { newName, overwrite -> onRename(it, newName, overwrite) },
+                    onDelete = { onDelete(it) },
+                    onDownload = { file -> onResourceDownload(it, file) },
+                    onCopied = { onResourceCopied(it) }
+                )
+
+                if (it != directoryStructure.last()) {
+                    Divider(
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(start = 8.dp)
+                    )
+                }
+            }
+        }
 
     }
 
@@ -223,7 +242,8 @@ fun ResourceRow(
                     Actions.deleteAction { showDeleteDialog = true },
                 ),
                 show = isMenuOpen,
-                onDismissRequest = { isMenuOpen = false })
+                onDismissRequest = { isMenuOpen = false }
+            )
         }
     }
 

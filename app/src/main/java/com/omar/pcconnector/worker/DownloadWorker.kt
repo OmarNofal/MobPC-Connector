@@ -61,14 +61,14 @@ class DownloadWorker @AssistedInject constructor(
 
     override fun totalSize(): Long {
         return when (state) {
-            is DownloadOperationState.Initializing -> 0L
+            is DownloadOperationState.Initializing -> 1L
             is DownloadOperationState.Downloading -> (state as? DownloadOperationState.Downloading)?.totalBytes ?: 0
         }
     }
 
     override fun transferredSize(): Long {
         return when (state) {
-            is DownloadOperationState.Initializing -> 0L
+            is DownloadOperationState.Initializing -> 1L
             is DownloadOperationState.Downloading -> (state as? DownloadOperationState.Downloading)?.downloadedBytes ?: 0
         }
     }

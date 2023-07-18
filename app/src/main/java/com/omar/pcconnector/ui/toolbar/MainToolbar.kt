@@ -56,7 +56,7 @@ fun MainToolbar(
             MainToolbarOverflow(
                 onOpenBrowser = viewModel::openLinkInBrowser,
                 onCopyClipboard = viewModel::copyToPCClipboard,
-                onLockPC = viewModel::lockPC,
+                onLockPC = { viewModel.lockPC(); onMenuDismiss() },
                 onShutdownPC = { viewModel.shutdownPC(); onMenuDismiss()},
                 showMenu = menuShown,
                 onMenuDismiss = onMenuDismiss ,
@@ -88,7 +88,7 @@ fun MainToolbarOverflow(
         ActionsDropdownMenu(
             actions = listOf(
                 Actions.openLinkAction { showURLDialog = true },
-                Actions.copyToClipboardAction() { showClipboardDialog = true },
+                Actions.copyToClipboardAction { showClipboardDialog = true },
                 Actions.lockPCAction(onLockPC),
                 Actions.shutdownPCAction(onShutdownPC)
             ),
@@ -96,62 +96,6 @@ fun MainToolbarOverflow(
             onDismissRequest = onMenuDismiss
         )
 
-//    DropdownMenu(expanded = showMenu, onDismissRequest = onMenuDismiss) {
-//
-//
-//        DropdownMenuItem(
-//            text = {
-//                Row(verticalAlignment = Alignment.CenterVertically) {
-//                    Icon(
-//                        imageVector = Icons.Rounded.Public,
-//                        contentDescription = "Open URL in Browser"
-//                    )
-//                    Spacer(modifier = Modifier.width(8.dp))
-//                    Text("Open URL in Browser")
-//                }
-//            },
-//            onClick = { showURLDialog = true }
-//        )
-//
-//        DropdownMenuItem(
-//            text = {
-//                Row(verticalAlignment = Alignment.CenterVertically) {
-//                    Icon(
-//                        imageVector = Icons.Rounded.ContentPaste,
-//                        contentDescription = "Copy to PC Clipboard"
-//                    )
-//                    Spacer(modifier = Modifier.width(8.dp))
-//                    Text("Copy to PC Clipboard")
-//                }
-//            },
-//            onClick = { showClipboardDialog = true }
-//        )
-//
-//        DropdownMenuItem(
-//            text = {
-//                Row(verticalAlignment = Alignment.CenterVertically) {
-//                    Icon(imageVector = Icons.Rounded.Lock, contentDescription = "Lock PC")
-//                    Spacer(modifier = Modifier.width(8.dp))
-//                    Text(text = "Lock PC")
-//                }
-//            },
-//            onClick = { onLockPC(); onMenuDismiss(); }
-//        )
-//
-//        DropdownMenuItem(
-//            text = {
-//                Row(verticalAlignment = Alignment.CenterVertically) {
-//                    Icon(
-//                        imageVector = Icons.Rounded.PowerSettingsNew,
-//                        contentDescription = "Shutdown PC"
-//                    )
-//                    Spacer(modifier = Modifier.width(8.dp))
-//                    Text("Shutdown PC")
-//                }
-//            },
-//            onClick = { onShutdownPC(); onMenuDismiss(); }
-//        )
-//    }
         if (showURLDialog) {
             URLDialog(
                 onDismiss = { showURLDialog = false },

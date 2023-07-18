@@ -2,14 +2,32 @@ package com.omar.pcconnector.ui.session
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Cloud
+import androidx.compose.material.icons.rounded.ContentCopy
+import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.Power
+import androidx.compose.material.icons.rounded.Public
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarVisuals
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -17,14 +35,23 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.documentfile.provider.DocumentFile
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.omar.pcconnector.model.TransferState
 import com.omar.pcconnector.network.connection.Connection
 import com.omar.pcconnector.ui.MakeDirDialog
 import com.omar.pcconnector.ui.event.ApplicationEvent
+import com.omar.pcconnector.ui.event.ApplicationOperation
 import com.omar.pcconnector.ui.fab.FileSystemFAB
 import com.omar.pcconnector.ui.fileSystemViewModel
 import com.omar.pcconnector.ui.fs.FileSystemUI
@@ -40,6 +67,7 @@ import kotlinx.coroutines.flow.collectLatest
  * Corresponds to the whole UI which encompasses all states and actions
  * of a particular server
  */
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun ServerSession(
     modifier: Modifier,
@@ -51,8 +79,6 @@ fun ServerSession(
     val fileSystemViewModel = fileSystemViewModel(connection = connection)
     val transfersViewModel = hiltViewModel<TransferViewModel>()
 
-
-    val copiedFile by fileSystemViewModel.copiedResource.collectAsState(initial = null)
 
     var transfersShown by remember {
         mutableStateOf(false)
@@ -80,32 +106,42 @@ fun ServerSession(
 
 
 
-    LaunchedEffect(Unit) {
-        eventsFlow.collectLatest {
-            snackBarHostState.showSnackbar(
-                it.toMessage(),
-                withDismissAction = true,
-                duration = SnackbarDuration.Short
-            )
-        }
-    }
+    SnackBarEventNotifier(eventsFlow = eventsFlow, snackBarHostState = snackBarHostState)
 
     var showMakeDirDialog by remember { mutableStateOf(false) }
 
     if (showMakeDirDialog)
         MakeDirDialog(onConfirm = fileSystemViewModel::mkdirs) { showMakeDirDialog = false }
 
+    var isFabVisible by remember { mutableStateOf(true) }
     Scaffold(
         modifier = modifier,
-        snackbarHost = { SnackbarHost(hostState = snackBarHostState) },
+        snackbarHost = {
+            SnackbarHost(hostState = snackBarHostState) {
+                val visuals = it.visuals as ApplicationSnackBarVisuals
+                Snackbar(containerColor = visuals.backgroundColor, modifier = Modifier.padding(12.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(imageVector = visuals.icon, contentDescription = null)
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(text = visuals.message, fontWeight = FontWeight.Medium)
+                    }
+                }
+            } },
         floatingActionButton = {
+            val copiedFile by fileSystemViewModel.copiedResource.collectAsState(initial = null)
             val pasteCallback = if (copiedFile == null) null else fileSystemViewModel::pasteResource
-            FileSystemFAB(
-                onMakeDir = { showMakeDirDialog = true },
-                onUploadFolder = { uploadFolderIntent.launch(null) },
-                onUploadFile = { uploadFileIntent.launch(arrayOf("*/*")) },
-                onPaste = pasteCallback
-            )
+            AnimatedVisibility(
+                visible = isFabVisible,
+                enter = scaleIn(tween(250)),
+                exit = scaleOut(tween(250))
+            ) {
+                FileSystemFAB(
+                    onMakeDir = { showMakeDirDialog = true },
+                    onUploadFolder = { uploadFolderIntent.launch(null) },
+                    onUploadFile = { uploadFileIntent.launch(arrayOf("*/*")) },
+                    onPaste = pasteCallback
+                )
+            }
         },
         topBar = {
             MainToolbar(
@@ -118,18 +154,39 @@ fun ServerSession(
         }
     ) { innerPadding ->
 
+
+        val nestedScrollConnection = remember {
+            object : NestedScrollConnection {
+                override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                    // Hide FAB
+                    if (available.y < -1) {
+                        isFabVisible = false
+                    }
+
+                    // Show FAB
+                    if (available.y > 1) {
+                        isFabVisible = true
+                    }
+
+                    return Offset.Zero
+                }
+            }
+        }
+
         Box(modifier = Modifier.fillMaxSize()) {
             FileSystemUI(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding),
-                viewModel = fileSystemViewModel
+                viewModel = fileSystemViewModel,
+                nestedScroll = nestedScrollConnection
             )
 
             TransferPopup(
                 modifier =
                 Modifier
-                    .fillMaxWidth(0.9f),
+                    .fillMaxWidth(0.95f)
+                    .padding(innerPadding),
                 visible = transfersShown, { transfersShown = false },
                 onCancel = transfersViewModel::cancelTransfer,
                 onDelete = transfersViewModel::deleteTransfer,
@@ -140,4 +197,63 @@ fun ServerSession(
     }
 
 
+}
+
+@Composable
+fun SnackBarEventNotifier(
+    eventsFlow: SharedFlow<ApplicationEvent>,
+    snackBarHostState: SnackbarHostState
+) {
+    LaunchedEffect(Unit) {
+        eventsFlow.collectLatest {
+            val snackBarColor = if (it.isSuccess) Color(0xFF42945D) else Color(0xFFE91E63)
+            snackBarHostState.showSnackbar(
+                ApplicationSnackBarVisuals(
+                    message = it.toMessage(),
+                    duration = SnackbarDuration.Short,
+                    withDismissAction = true,
+                    icon = it.operation.getIcon(),
+                    backgroundColor = snackBarColor
+                )
+            )
+        }
+    }
+}
+
+
+data class ApplicationSnackBarVisuals(
+    override val actionLabel: String? = null,
+    override val duration: SnackbarDuration,
+    override val message: String,
+    override val withDismissAction: Boolean,
+    val icon: ImageVector,
+    val backgroundColor: Color
+): SnackbarVisuals
+
+
+private fun ApplicationOperation.getIcon(): ImageVector {
+    return when (this) {
+        ApplicationOperation.SHUTDOWN_PC -> Icons.Rounded.Power
+        ApplicationOperation.OPEN_URL -> Icons.Rounded.Public
+        ApplicationOperation.COPY_TO_CLIPBOARD -> Icons.Rounded.ContentCopy
+        ApplicationOperation.LOCK_PC -> Icons.Rounded.Lock
+        ApplicationOperation.PING_SERVER -> Icons.Rounded.Cloud
+    }
+}
+fun ApplicationEvent.toMessage(): String {
+    val failMessage = "Failed to "
+    val successMessage = " successfully"
+    return when(this.operation to this.isSuccess) {
+        ApplicationOperation.LOCK_PC to true -> "PC Locked$successMessage"
+        ApplicationOperation.LOCK_PC to false -> failMessage + "lock PC"
+        ApplicationOperation.COPY_TO_CLIPBOARD to true -> "Copied to clipboard$successMessage"
+        ApplicationOperation.COPY_TO_CLIPBOARD to false -> failMessage + "copy to clipboard"
+        ApplicationOperation.OPEN_URL to true -> "URL opened$successMessage"
+        ApplicationOperation.OPEN_URL to false -> failMessage + "open URL"
+        ApplicationOperation.SHUTDOWN_PC to true -> "PC Shutdown $successMessage"
+        ApplicationOperation.SHUTDOWN_PC to false -> failMessage + "shutdown PC"
+        ApplicationOperation.PING_SERVER to true -> "Connection established"
+        ApplicationOperation.PING_SERVER to false -> "Connection to the server lost"
+        else -> "Unknown error"
+    }
 }

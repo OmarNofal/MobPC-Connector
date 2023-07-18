@@ -7,6 +7,7 @@ import com.omar.pcconnector.model.FileResource
 import com.omar.pcconnector.model.Resource
 import com.omar.pcconnector.network.exceptions.ErrorCodes
 import com.omar.pcconnector.network.exceptions.throwException
+import java.nio.file.Path
 
 
 @Keep
@@ -63,17 +64,22 @@ data class NetworkResource(
     val resources: List<NetworkResource>?
 )
 
-fun NetworkResource.toDomainResource(): Resource {
+
+fun NetworkResource.toDomainResource(path: Path): Resource {
 
     val resource: Resource = if (type.lowercase() == "file") {
-        FileResource(name, size, creationTimeMs, modificationTimeMs)
+        FileResource(name, size, creationTimeMs, modificationTimeMs, path.resolve(name))
     } else if (type.lowercase() == "directory") {
+        val directoryPath = path.resolve(name)
         DirectoryResource(
             name,
             size,
             creationTimeMs,
             modificationTimeMs,
-            resources?.map { it.toDomainResource() } ?: listOf(), numberOfResources ?: -1)
+            directoryPath,
+            resources?.map { it.toDomainResource(directoryPath) } ?: listOf(),
+            numberOfResources ?: -1
+        )
     } else
         throwException(ErrorCodes.INVALID_RESPONSE, "The network resource $this contains invalid data")
 

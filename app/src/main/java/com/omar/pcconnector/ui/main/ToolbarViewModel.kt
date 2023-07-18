@@ -7,6 +7,7 @@ import com.omar.pcconnector.network.api.PCOperations
 import com.omar.pcconnector.network.connection.Connection
 import com.omar.pcconnector.operation.SimpleOperationManager
 import com.omar.pcconnector.ui.event.ApplicationEvent
+import com.omar.pcconnector.ui.event.ApplicationOperation
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
@@ -29,30 +30,54 @@ class ToolbarViewModel @AssistedInject constructor(
 
     fun lockPC() {
         viewModelScope.launch(Dispatchers.IO) {
-            operationManager.lockPC()
-            appEventsFlow.emit(ApplicationEvent.PC_LOCKED)
+            var success = true
+            try {
+                operationManager.lockPC()
+            } catch (e: Throwable) {
+                success = false
+            } finally {
+                appEventsFlow.emit(ApplicationEvent(ApplicationOperation.LOCK_PC, success))
+            }
         }
     }
 
 
     fun shutdownPC() {
         viewModelScope.launch(Dispatchers.IO) {
-            operationManager.shutdownPC()
-            appEventsFlow.emit(ApplicationEvent.PC_SHUT_DOWN)
+            var success = true
+            try {
+                operationManager.shutdownPC()
+            } catch (e: Throwable) {
+                success = false
+            } finally {
+                appEventsFlow.emit(ApplicationEvent(ApplicationOperation.SHUTDOWN_PC, success))
+            }
         }
     }
 
     fun openLinkInBrowser(link: String, incognito: Boolean) {
         viewModelScope.launch(Dispatchers.IO) {
-            operationManager.openInBrowser(link, incognito)
-            appEventsFlow.emit(ApplicationEvent.URL_OPENED)
+            var success = true
+            try {
+                operationManager.openInBrowser(link, incognito)
+            } catch (e: Throwable) {
+                success = false
+            } finally {
+                appEventsFlow.emit(ApplicationEvent(ApplicationOperation.OPEN_URL, success))
+            }
         }
     }
 
     fun copyToPCClipboard(data: String) {
         viewModelScope.launch(Dispatchers.IO) {
-            operationManager.copyToPCClipboard(data)
-            appEventsFlow.emit(ApplicationEvent.COPIED_TO_CLIPBOARD)
+            var success = true
+            try {
+                operationManager.copyToPCClipboard(data)
+            } catch (e: Throwable) {
+                success = false
+            } finally {
+                appEventsFlow.emit(ApplicationEvent(ApplicationOperation.COPY_TO_CLIPBOARD, success))
+            }
         }
     }
 

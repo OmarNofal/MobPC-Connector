@@ -6,7 +6,6 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.omar.pcconnector.network.connection.Connection
@@ -28,10 +27,11 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        var currentConnection by  mutableStateOf<Connection?>(null)
 
         setContent {
+
             AppTheme {
-                var currentConnection by rememberSaveable { mutableStateOf<Connection?>(null) }
                 if (currentConnection == null)
                     DetectionScreen(onConnectionSelected = { currentConnection = it })
                 else

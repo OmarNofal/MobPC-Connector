@@ -191,20 +191,6 @@ fun TransferRow(
             else -> operation.resourceName
         }
 
-//            is TransferState.Finished -> {
-//                "Finished ${transferName.lowercase()} ${operation.resourceName}"
-//            }
-//
-//            is TransferState.Failed -> {
-//                state.error.toString()//$transferName ${operation.resourceName} failed"
-//            }
-//
-//            is TransferState.Initializing -> {
-//                "Setting up ${transferName.lowercase()}"
-//            }
-//
-//            else -> "$transferName ${operation.resourceName} cancelled"
-
         val iconColor =
             when (icon) {
                 Icons.Filled.CheckCircle -> Color(0xFF408140)
@@ -276,10 +262,8 @@ fun TransferProgressBar(
     state: StateFlow<TransferProgress>
 ) {
     val progress by state.collectAsState()
-    val percentage = when (val p = (progress.transferredBytes / progress.totalBytes.toFloat())) {
-        Float.NaN -> 0.0f
-        else -> p
-    }
+    val p = (progress.transferredBytes / progress.totalBytes.toFloat())
+    val percentage = if (p.isFinite()) p else 0.0f
 
     LinearProgressIndicator(
         percentage,

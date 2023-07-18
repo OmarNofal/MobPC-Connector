@@ -65,7 +65,7 @@ class UploadWorker @AssistedInject constructor(
 
     override fun totalSize(): Long {
         return when (state) {
-            is UploadOperationState.Initializing -> 0
+            is UploadOperationState.Initializing -> 1
             is UploadOperationState.Uploading -> {
                 (state as? UploadOperationState.Uploading)?.totalSize ?: 0
             }
@@ -74,7 +74,7 @@ class UploadWorker @AssistedInject constructor(
 
     override fun transferredSize(): Long {
         return when (state) {
-            is UploadOperationState.Initializing -> 0
+            is UploadOperationState.Initializing -> 1
             is UploadOperationState.Uploading -> {
                 (state as? UploadOperationState.Uploading)?.uploadedSize ?: 0
             }

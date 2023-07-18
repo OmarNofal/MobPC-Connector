@@ -24,7 +24,7 @@ class ListDirectoryOperation(
     override suspend fun start(): List<Resource> {
         var result = listOf<Resource>()
         withContext(Dispatchers.IO) {
-            result = api.getDirectoryStructure(path.absolutePath).execute().body().getDataOrThrow()!!.map { it.toDomainResource() }
+            result = api.getDirectoryStructure(path.absolutePath).execute().body().getDataOrThrow()!!.map { it.toDomainResource(path) }
         }
         return result
     }
@@ -32,7 +32,26 @@ class ListDirectoryOperation(
 
 }
 
+class GetDrivesOperation(
+    private val api: FileSystemOperations
+): Operation<List<String>>() {
 
+    override val name: String
+        get() = "List Drives"
+
+    override val operationDescription: String
+        get() = "Listing Drives"
+
+    override suspend fun start(): List<String> {
+        var result: List<String>
+        withContext(Dispatchers.IO) {
+            result = api.getDrives().getDataOrThrow() ?: listOf()
+        }
+        return result
+    }
+
+
+}
 
 
 class RenameOperation(

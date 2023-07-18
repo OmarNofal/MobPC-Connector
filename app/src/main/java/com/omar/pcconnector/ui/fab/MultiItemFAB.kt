@@ -56,10 +56,10 @@ fun MultiItemFab(
     val iconRotation: Float by animateFloatAsState(targetValue = if (expanded) 45.0f else 0.0f)
 
     val modifier = if (showRainbowBorder) Modifier.drawAnimatedBorder(
-        1.dp,
+        3.dp,
         RoundedCornerShape(16.dp),
-        listOf(Color(0xFFFF0000), Color(0xFFFF5100), Color(0xFFFF8C00)),
-        durationMillis = 250
+        listOf(Color(0xffc31432), Color(0xFF240b36)),
+        durationMillis = 500
         )
     else Modifier
 

@@ -3,7 +3,9 @@ package com.omar.pcconnector.operation
 import com.omar.pcconnector.network.api.PCOperations
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 
 class SimpleOperationManager(
@@ -24,10 +26,12 @@ class SimpleOperationManager(
         }.join()
     }
 
+
     suspend fun copyToPCClipboard(data: String) {
-        scope.launch {
+        withContext(scope.coroutineContext) {
+            delay(1000)
             CopyToClipboardOperation(pcOperationsAPI, data).start()
-        }.join()
+        }
     }
 
     suspend fun openInBrowser(url: String, incognito: Boolean) {
