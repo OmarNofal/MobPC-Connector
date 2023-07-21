@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Cloud
 import androidx.compose.material.icons.rounded.ContentCopy
@@ -31,17 +33,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -113,7 +113,8 @@ fun ServerSession(
     if (showMakeDirDialog)
         MakeDirDialog(onConfirm = fileSystemViewModel::mkdirs) { showMakeDirDialog = false }
 
-    var isFabVisible by remember { mutableStateOf(true) }
+
+    val fileUiListState = rememberLazyListState()
     Scaffold(
         modifier = modifier,
         snackbarHost = {
@@ -131,9 +132,9 @@ fun ServerSession(
             val copiedFile by fileSystemViewModel.copiedResource.collectAsState(initial = null)
             val pasteCallback = if (copiedFile == null) null else fileSystemViewModel::pasteResource
             AnimatedVisibility(
-                visible = isFabVisible,
-                enter = scaleIn(tween(250)),
-                exit = scaleOut(tween(250))
+                visible = !transfersShown and fileUiListState.isScrollingUp(),
+                enter = scaleIn(tween(100)),
+                exit = scaleOut(tween(100))
             ) {
                 FileSystemFAB(
                     onMakeDir = { showMakeDirDialog = true },
@@ -155,31 +156,13 @@ fun ServerSession(
     ) { innerPadding ->
 
 
-        val nestedScrollConnection = remember {
-            object : NestedScrollConnection {
-                override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                    // Hide FAB
-                    if (available.y < -1) {
-                        isFabVisible = false
-                    }
-
-                    // Show FAB
-                    if (available.y > 1) {
-                        isFabVisible = true
-                    }
-
-                    return Offset.Zero
-                }
-            }
-        }
-
         Box(modifier = Modifier.fillMaxSize()) {
             FileSystemUI(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding),
                 viewModel = fileSystemViewModel,
-                nestedScroll = nestedScrollConnection
+                listState = fileUiListState
             )
 
             TransferPopup(
@@ -256,4 +239,23 @@ fun ApplicationEvent.toMessage(): String {
         ApplicationOperation.PING_SERVER to false -> "Connection to the server lost"
         else -> "Unknown error"
     }
+}
+
+
+@Composable
+private fun LazyListState.isScrollingUp(): Boolean {
+    var previousIndex by remember(this) { mutableStateOf(firstVisibleItemIndex) }
+    var previousScrollOffset by remember(this) { mutableStateOf(firstVisibleItemScrollOffset) }
+    return remember(this) {
+        derivedStateOf {
+            if (previousIndex != firstVisibleItemIndex) {
+                previousIndex > firstVisibleItemIndex
+            } else {
+                previousScrollOffset >= firstVisibleItemScrollOffset
+            }.also {
+                previousIndex = firstVisibleItemIndex
+                previousScrollOffset = firstVisibleItemScrollOffset
+            }
+        }
+    }.value
 }

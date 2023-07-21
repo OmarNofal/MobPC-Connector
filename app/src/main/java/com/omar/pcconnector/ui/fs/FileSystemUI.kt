@@ -9,10 +9,13 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
@@ -20,8 +23,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -38,6 +39,9 @@ import com.omar.pcconnector.ui.action.Actions
 import com.omar.pcconnector.ui.action.ActionsDropdownMenu
 import com.omar.pcconnector.ui.main.FileSystemState
 import com.omar.pcconnector.ui.main.FileSystemViewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import java.nio.file.Path
 
 
 /**
@@ -48,7 +52,7 @@ import com.omar.pcconnector.ui.main.FileSystemViewModel
 fun FileSystemUI(
     modifier: Modifier,
     viewModel: FileSystemViewModel,
-    nestedScroll: NestedScrollConnection
+    listState: LazyListState
 ) {
 
     BackHandler(true) {
@@ -57,33 +61,32 @@ fun FileSystemUI(
 
     val state by viewModel.state.collectAsState(FileSystemState.Loading)
 
-    when (state) {
-        is FileSystemState.Loading -> LoadingScreen(modifier)
-        is FileSystemState.Initialized.Loading -> FileSystemTree(
-            modifier = modifier,
-            nestedScroll,
-            (state as FileSystemState.Initialized.Loading).currentDirectory.absolutePath,
-            listOf(),
-            true,
-            viewModel::onResourceClicked,
-            viewModel::renameResource,
-            viewModel::deleteResource,
-            viewModel::download,
-            viewModel::copyResource
-        )
-        is FileSystemState.Initialized.Loaded -> FileSystemTree(
-            modifier = modifier,
-            nestedScroll,
-            (state as FileSystemState.Initialized.Loaded).currentDirectory.absolutePath,
-            (state as FileSystemState.Initialized.Loaded).directoryStructure,
-            false,
-            viewModel::onResourceClicked,
-            viewModel::renameResource,
-            viewModel::deleteResource,
-            viewModel::download,
-            viewModel::copyResource
-        )
+
+
+
+    if (state is FileSystemState.Loading) {
+        LoadingScreen(modifier)
+        return
     }
+
+    val isLoading = state is FileSystemState.Initialized.Loading
+    val directoryStructure = if (state is FileSystemState.Initialized) (state as FileSystemState.Initialized).directoryStructure
+        else emptyList()
+
+    FileSystemTree(
+        modifier = modifier,
+        listState,
+        (state as FileSystemState.Initialized).currentDirectory.absolutePath,
+        directoryStructure,
+        (state as FileSystemState.Initialized).drives,
+        isLoading,
+        viewModel::onResourceClicked,
+        viewModel::onPathChanged,
+        viewModel::renameResource,
+        viewModel::deleteResource,
+        viewModel::download,
+        viewModel::copyResource
+    )
 
 }
 
@@ -98,16 +101,18 @@ fun LoadingScreen(
 }
 
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalAnimationApi::class)
 @Composable
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 fun FileSystemTree(
     modifier: Modifier,
-    nestedScroll: NestedScrollConnection,
+    listState: LazyListState,
     currentDirectory: String = "~",
     directoryStructure: List<Resource> = listOf(),
+    drives: List<String>,
     isLoading: Boolean = false,
     onResourceClicked: (Resource) -> Unit,
+    onPathChanged: (Path) -> Unit,
     onRename: (Resource, String, Boolean) -> Unit,
     onDelete: (Resource) -> Unit,
     onResourceDownload: (Resource, DocumentFile) -> Unit,
@@ -115,39 +120,92 @@ fun FileSystemTree(
 ) {
 
     Box(modifier = modifier) {
-        if (isLoading) {
-            LinearProgressIndicator(Modifier.fillMaxWidth().align(Alignment.TopCenter))
-        }
-        LazyColumn(Modifier.nestedScroll(nestedScroll)) {
 
-            item {
-                Text(
-                    text = "You are in $currentDirectory",
-                    modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp)
-                )
-            }
+        
+        Column {
 
-            items(directoryStructure, key = { it.name + it.creationDateMs }) {
-                ResourceRow(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .animateItemPlacement(),
-                    resource = it,
-                    onClick = { onResourceClicked(it) },
-                    onRename = { newName, overwrite -> onRename(it, newName, overwrite) },
-                    onDelete = { onDelete(it) },
-                    onDownload = { file -> onResourceDownload(it, file) },
-                    onCopied = { onResourceCopied(it) }
-                )
 
-                if (it != directoryStructure.last()) {
-                    Divider(
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(start = 8.dp)
-                    )
+            var isSearchFilterEnabled by remember(currentDirectory) { mutableStateOf(false) }
+            var searchFilter by remember(currentDirectory) { mutableStateOf("") }
+
+            LocationBar(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                path = currentDirectory,
+                drives = drives,
+                onPathSelected = onPathChanged,
+                toggleSearchFilter = { isSearchFilterEnabled = !isSearchFilterEnabled },
+                isSearchFilterEnabled,
+                searchFilter,
+                { searchFilter = it }
+            )
+            Divider(Modifier.fillMaxWidth())
+
+            AnimatedContent(
+                targetState = directoryStructure
+            ) { directory ->
+
+
+                val directoryItems = remember(key1 = searchFilter, key2 = isSearchFilterEnabled) {
+                    if (isSearchFilterEnabled) directory.filter { it.name.contains(searchFilter, true) }
+                    else directory
                 }
+
+                if (directoryItems.isEmpty())
+                    EmptyDirectoryMessage(modifier = Modifier.fillMaxSize())
+                else
+                    LazyColumn(Modifier.fillMaxSize(), state = listState) {
+
+                        items(directoryItems, key = { it.name + it.creationDateMs }) {
+                            ResourceRow(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .animateItemPlacement(),
+                                resource = it,
+                                onClick = { onResourceClicked(it) },
+                                onRename = { newName, overwrite -> onRename(it, newName, overwrite) },
+                                onDelete = { onDelete(it) },
+                                onDownload = { file -> onResourceDownload(it, file) },
+                                onCopied = { onResourceCopied(it) }
+                            )
+
+                            if (it != directory.last()) {
+                                Divider(
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .padding(start = 8.dp)
+                                )
+                            }
+                        }
+                    }
+
+
             }
+        }
+
+
+
+        var showLoadingBar by remember {
+            mutableStateOf(false)
+        }
+
+        if (showLoadingBar) {
+            LinearProgressIndicator(
+                Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.TopCenter))
+        }
+
+        // Only show loading bar after 1 second of waiting
+        LaunchedEffect(key1 = isLoading) {
+            if (!isLoading) {
+                showLoadingBar = false
+                return@LaunchedEffect
+            }
+            delay(400L)
+            if (isActive)
+                showLoadingBar = true
         }
 
     }
@@ -261,6 +319,15 @@ fun ResourceRow(
             onCancel = { showDeleteDialog = false }
         )
 
+}
+
+@Composable
+fun EmptyDirectoryMessage(modifier: Modifier) {
+    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+        Text(text = "¯\\_(ツ)_/¯", fontSize = 36.sp)
+        Spacer(Modifier.height(8.dp))
+        Text(text = "Nothing here!")
+    }
 }
 
 

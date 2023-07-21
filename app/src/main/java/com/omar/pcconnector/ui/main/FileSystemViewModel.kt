@@ -103,7 +103,7 @@ class FileSystemViewModel @AssistedInject constructor(
         viewModelScope.launch {
             val drives = GetDrivesOperation(api).start()
             val directoryToLoad = Paths.get(drives.first(), "/")
-            _state.value = FileSystemState.Initialized.Loading(directoryToLoad, drives)
+            _state.value = FileSystemState.Initialized.Loading(directoryToLoad, drives, emptyList())
             loadDirectory(directoryToLoad)
         }
     }
@@ -112,7 +112,7 @@ class FileSystemViewModel @AssistedInject constructor(
         assert(_state.value !is FileSystemState.Loading)
         viewModelScope.launch {
             val state = _state.value as FileSystemState.Initialized
-            _state.value = FileSystemState.Initialized.Loading(path, state.drives)
+            _state.value = FileSystemState.Initialized.Loading(path, state.drives, state.directoryStructure)
             refresh()
             watchCurrentDirectory()
         }
@@ -138,6 +138,10 @@ class FileSystemViewModel @AssistedInject constructor(
         if (resource is DirectoryResource) {
             loadDirectory(resource.path)
         }
+    }
+
+    fun onPathChanged(path: Path) {
+        loadDirectory(path)
     }
 
     fun onNavigateBack() {
@@ -265,19 +269,21 @@ sealed class FileSystemState {
 
     sealed class Initialized(
         val currentDirectory: Path,
-        val drives: List<String>
+        val drives: List<String>,
+        val directoryStructure: List<Resource>
     ) : FileSystemState() {
 
         class Loading(
             currentDirectory: Path,
-            drives: List<String>
-        ) : Initialized(currentDirectory, drives)
+            drives: List<String>,
+           directoryStructure: List<Resource>
+        ) : Initialized(currentDirectory, drives, directoryStructure)
 
         class Loaded(
             currentDirectory: Path,
             drives: List<String>,
-            val directoryStructure: List<Resource>
-        ) : Initialized(currentDirectory, drives)
+            directoryStructure: List<Resource>
+        ) : Initialized(currentDirectory, drives, directoryStructure)
 
 
     }
