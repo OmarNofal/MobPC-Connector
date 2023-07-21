@@ -4,6 +4,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Text
@@ -20,7 +22,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 
 
 @Composable
@@ -43,7 +47,14 @@ fun MakeDirDialog(
                 TextField(
                     modifier = Modifier.focusRequester(focusRequester),
                     value = dirName,
-                    onValueChange = { dirName = it })
+                    onValueChange = { dirName = it },
+                    singleLine = true,
+                    maxLines = 1,
+                    keyboardActions = KeyboardActions(
+                        onDone = { onConfirm(dirName); onCancel() }
+                    ),
+                    keyboardOptions = KeyboardOptions(autoCorrect = false, imeAction = ImeAction.Done)
+                )
                 Spacer(Modifier.height(4.dp))
                 Text(text = "Tip: Use / to create nested directories")
             }
@@ -106,9 +117,15 @@ fun RenameDialog(
         onDismissRequest = onCancel,
         title = { Text(text = "Enter New Name") },
         text = {
-
             Column {
-                TextField(value = newName, onValueChange = { newName = it })
+                TextField(
+                    value = newName,
+                    onValueChange = { newName = it },
+                    keyboardActions = KeyboardActions(
+                        onDone = { onConfirm(newName, overwrite); onCancel() }
+                    ),
+                    keyboardOptions = KeyboardOptions(autoCorrect = false, imeAction = ImeAction.Done)
+                )
                 Spacer(Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(text = "Overwrite?")
@@ -134,12 +151,17 @@ fun RenameDialog(
 fun URLDialog(
     onDismiss: () -> Unit,
     onConfirm: (String, Boolean) -> Unit,
-
     ) {
     val clipboardManager = LocalClipboardManager.current
-    var inputText by remember { mutableStateOf(clipboardManager.getText()?.text ?: "http://") }
-    var isIncognito by remember { mutableStateOf(false) }
 
+    // check first if the clipboard content is a url and then paste if so
+    val initialText = remember {
+        val clipboardText = clipboardManager.getText()?.text
+        val textUriScheme = clipboardText?.toUri()?.scheme ?: return@remember "https://"
+        return@remember if (textUriScheme in listOf("http", "https"))  clipboardText else "https://"
+    }
+    var inputText by remember { mutableStateOf(initialText) }
+    var isIncognito by remember { mutableStateOf(false) }
 
 
     AlertDialog(
@@ -147,7 +169,15 @@ fun URLDialog(
         title = { Text(text = "Enter URL") },
         text = {
             Column {
-                TextField(value = inputText, onValueChange = {inputText = it} )
+                TextField(
+                    value = inputText, onValueChange = {inputText = it}
+                    ,
+                    keyboardActions = KeyboardActions(
+                        onDone = { onConfirm(inputText, isIncognito); onDismiss() }
+                    ),
+                    keyboardOptions = KeyboardOptions(autoCorrect = false, imeAction = ImeAction.Done)
+                )
+
                 Spacer(Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(text = "Incognito?")

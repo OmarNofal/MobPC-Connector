@@ -90,10 +90,7 @@ fun LocationBar(
             verticalAlignment = Alignment.CenterVertically
         ) {
 
-
             var isPathEditable by rememberSaveable { mutableStateOf(false) }
-
-
 
             if (isSearchFilterEnabled) {
                 BackHandler(true) {
