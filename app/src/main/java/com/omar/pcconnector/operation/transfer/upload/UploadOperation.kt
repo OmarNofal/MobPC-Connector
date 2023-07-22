@@ -14,9 +14,9 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
-import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import java.nio.file.Path
 
 
@@ -55,7 +55,7 @@ class UploadOperation(
     private suspend fun upload() = withContext(Dispatchers.IO) {
 
         val fileRequests = documents.flatMap { if (it.isFile) listOf(getFileRequestBody(it, listOf("."))) else getDirectoryRequestBodies(it) }
-        val totalSize = fileRequests.sumOf { it.first.body().contentLength() }
+        val totalSize = fileRequests.sumOf { it.first.body.contentLength() }
 
         val parts = fileRequests.map { it.first }
         val progresses = fileRequests.map { it.second }
@@ -85,7 +85,7 @@ class UploadOperation(
 
         val destinationPart = MultipartBody.Part.createFormData(
             "dest", null,
-            RequestBody.create(MediaType.get("text/plain"), uploadPath.absolutePath)
+            uploadPath.absolutePath.toRequestBody("text/plain".toMediaType())
         )
 
         uploadApi.upload(

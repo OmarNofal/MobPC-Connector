@@ -8,6 +8,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.omar.pcconnector.network.connection.Connection
 import com.omar.pcconnector.ui.detection.DetectionScreen
 import com.omar.pcconnector.ui.event.ApplicationEvent
@@ -31,7 +34,16 @@ class MainActivity : ComponentActivity() {
 
         setContent {
 
+            val navController = rememberNavController()
+
             AppTheme {
+
+                NavHost(navController = navController, startDestination = "detection") {
+                    composable("detection") {}
+                    composable("session") {}
+                    composable("image") {}
+                }
+
                 if (currentConnection == null)
                     DetectionScreen(onConnectionSelected = { currentConnection = it })
                 else

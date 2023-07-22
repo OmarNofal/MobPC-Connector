@@ -68,6 +68,15 @@ dependencies {
     implementation 'androidx.compose.material3:material3:1.1.0-beta01'
     implementation 'androidx.compose.material:material-icons-extended'
     implementation "androidx.documentfile:documentfile:1.0.1"
+
+    // Coil Compose
+    implementation("io.coil-kt:coil-compose:2.4.0")
+    implementation("io.coil-kt:coil-video:2.4.0")
+
+    // Compose Navigation
+    def nav_version = "2.6.0"
+    implementation "androidx.navigation:navigation-compose:$nav_version"
+
     // Retrofit and Gson
     implementation 'com.squareup.retrofit2:retrofit:2.9.0'
     implementation 'com.google.code.gson:gson:2.10'

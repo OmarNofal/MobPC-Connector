@@ -95,7 +95,7 @@ class FileSystemWatcher(
      */
     fun close() {
         socket?.cancel()
-        okHttpClient.dispatcher().executorService().shutdown()
+        okHttpClient.dispatcher.executorService.shutdown()
         isSocketClosed = true
     }
 

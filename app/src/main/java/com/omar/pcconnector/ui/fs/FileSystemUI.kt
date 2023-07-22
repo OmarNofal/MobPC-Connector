@@ -17,18 +17,27 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.documentfile.provider.DocumentFile
+import coil.compose.AsyncImage
+import coil.decode.VideoFrameDecoder
+import coil.request.ImageRequest
+import com.omar.pcconnector.R
 import com.omar.pcconnector.absolutePath
 import com.omar.pcconnector.bytesToSizeString
 import com.omar.pcconnector.model.DirectoryResource
@@ -39,9 +48,11 @@ import com.omar.pcconnector.ui.action.Actions
 import com.omar.pcconnector.ui.action.ActionsDropdownMenu
 import com.omar.pcconnector.ui.main.FileSystemState
 import com.omar.pcconnector.ui.main.FileSystemViewModel
+import com.omar.pcconnector.ui.session.LocalConnectionProvider
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import java.nio.file.Path
+import kotlin.io.path.extension
 
 
 /**
@@ -70,7 +81,8 @@ fun FileSystemUI(
     }
 
     val isLoading = state is FileSystemState.Initialized.Loading
-    val directoryStructure = if (state is FileSystemState.Initialized) (state as FileSystemState.Initialized).directoryStructure
+    val directoryStructure =
+        if (state is FileSystemState.Initialized) (state as FileSystemState.Initialized).directoryStructure
         else emptyList()
 
     FileSystemTree(
@@ -121,7 +133,7 @@ fun FileSystemTree(
 
     Box(modifier = modifier) {
 
-        
+
         Column {
 
 
@@ -148,7 +160,12 @@ fun FileSystemTree(
 
 
                 val directoryItems = remember(key1 = searchFilter, key2 = isSearchFilterEnabled) {
-                    if (isSearchFilterEnabled) directory.filter { it.name.contains(searchFilter, true) }
+                    if (isSearchFilterEnabled) directory.filter {
+                        it.name.contains(
+                            searchFilter,
+                            true
+                        )
+                    }
                     else directory
                 }
 
@@ -164,7 +181,13 @@ fun FileSystemTree(
                                     .animateItemPlacement(),
                                 resource = it,
                                 onClick = { onResourceClicked(it) },
-                                onRename = { newName, overwrite -> onRename(it, newName, overwrite) },
+                                onRename = { newName, overwrite ->
+                                    onRename(
+                                        it,
+                                        newName,
+                                        overwrite
+                                    )
+                                },
                                 onDelete = { onDelete(it) },
                                 onDownload = { file -> onResourceDownload(it, file) },
                                 onCopied = { onResourceCopied(it) }
@@ -185,7 +208,6 @@ fun FileSystemTree(
         }
 
 
-
         var showLoadingBar by remember {
             mutableStateOf(false)
         }
@@ -194,7 +216,8 @@ fun FileSystemTree(
             LinearProgressIndicator(
                 Modifier
                     .fillMaxWidth()
-                    .align(Alignment.TopCenter))
+                    .align(Alignment.TopCenter)
+            )
         }
 
         // Only show loading bar after 1 second of waiting
@@ -211,9 +234,6 @@ fun FileSystemTree(
     }
 
 }
-
-
-
 
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -260,12 +280,10 @@ fun ResourceRow(
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        val icon =
-            if (resource is DirectoryResource) Icons.Rounded.Folder else Icons.Rounded.Description
-        Icon(
-            imageVector = icon,
-            contentDescription = "Directory icon",
-            modifier = Modifier.size(34.dp)
+
+        ResourceIcon(
+            Modifier.size(34.dp),
+            resource
         )
 
         Spacer(modifier = Modifier.width(16.dp))
@@ -322,8 +340,89 @@ fun ResourceRow(
 }
 
 @Composable
+fun ResourceIcon(
+    modifier: Modifier,
+    resource: Resource
+) {
+
+    if (resource is DirectoryResource) {
+        Icon(
+            imageVector = Icons.Outlined.Folder,
+            contentDescription = "Directory icon",
+            modifier = modifier
+        )
+    } else if (resource.path.extension.lowercase() == "pdf") {
+        Icon(
+            painter = painterResource(R.drawable.pdf),
+            modifier = modifier,
+            contentDescription = null
+        )
+    } else if (resource.path.extension.endsWith("jpg", true)) {
+        ImagePreviewIcon(modifier = modifier.clip(RoundedCornerShape(4.dp)), resource = resource)
+    } else if (resource.path.extension.endsWith("mp4", true)) {
+        VideoPreviewIcon(modifier = modifier.clip(RoundedCornerShape(4.dp)), resource = resource)
+    }
+
+
+}
+
+@Composable
+fun ImagePreviewIcon(
+    modifier: Modifier,
+    resource: Resource
+) {
+    val connection = LocalConnectionProvider.current
+    val resourceURL = "http://${connection.ip}:${connection.port}/downloadFiles?src=${resource.path}"
+    Log.i("RESOURCE URL IMAGE", resourceURL)
+    AsyncImage(
+        model = ImageRequest.Builder(LocalContext.current)
+            .data(resourceURL)
+            .crossfade(true)
+            .build(),
+        placeholder = painterResource(R.drawable.pdf),
+        error = painterResource(R.drawable.pdf),
+        fallback = painterResource(R.drawable.pdf),
+        contentDescription = null,
+        contentScale = ContentScale.Crop,
+        modifier = modifier,
+
+    )
+}
+
+
+@Composable
+fun VideoPreviewIcon(
+    modifier: Modifier,
+    resource: Resource
+) {
+    val connection = LocalConnectionProvider.current
+    val resourceURL = "http://${connection.ip}:${connection.port}/downloadFiles?src=${resource.path}"
+    Log.i("URL", resourceURL)
+    AsyncImage(
+        model = ImageRequest.Builder(LocalContext.current)
+            .data(resourceURL)
+            .decoderFactory(VideoFrameDecoder.Factory())
+            .crossfade(true)
+            .build(),
+        placeholder = painterResource(R.drawable.pdf),
+        error = painterResource(R.drawable.pdf),
+        fallback = painterResource(R.drawable.pdf),
+        contentDescription = null,
+        contentScale = ContentScale.Crop,
+        modifier = modifier,
+        onError = { it.result.throwable.toString().also { Log.e("ERR VIDEO", it) }},
+        onLoading = { Log.i("VIDEO", it.toString())},
+        onSuccess = {Log.i("VIDEO SUCCESS", it.toString())}
+        )
+}
+
+@Composable
 fun EmptyDirectoryMessage(modifier: Modifier) {
-    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+    Column(
+        modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
         Text(text = "¯\\_(ツ)_/¯", fontSize = 36.sp)
         Spacer(Modifier.height(8.dp))
         Text(text = "Nothing here!")

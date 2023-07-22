@@ -31,8 +31,10 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarVisuals
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -61,7 +63,10 @@ import com.omar.pcconnector.ui.transfer.TransferPopup
 import com.omar.pcconnector.ui.transfer.TransferViewModel
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.collectLatest
+import java.lang.IllegalArgumentException
 
+
+val LocalConnectionProvider = compositionLocalOf<Connection>(defaultFactory = { throw IllegalArgumentException() })
 
 /**
  * Corresponds to the whole UI which encompasses all states and actions
@@ -120,14 +125,18 @@ fun ServerSession(
         snackbarHost = {
             SnackbarHost(hostState = snackBarHostState) {
                 val visuals = it.visuals as ApplicationSnackBarVisuals
-                Snackbar(containerColor = visuals.backgroundColor, modifier = Modifier.padding(12.dp)) {
+                Snackbar(
+                    containerColor = visuals.backgroundColor,
+                    modifier = Modifier.padding(12.dp)
+                ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(imageVector = visuals.icon, contentDescription = null)
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(text = visuals.message, fontWeight = FontWeight.Medium)
                     }
                 }
-            } },
+            }
+        },
         floatingActionButton = {
             val copiedFile by fileSystemViewModel.copiedResource.collectAsState(initial = null)
             val pasteCallback = if (copiedFile == null) null else fileSystemViewModel::pasteResource
@@ -156,27 +165,31 @@ fun ServerSession(
     ) { innerPadding ->
 
 
-        Box(modifier = Modifier.fillMaxSize()) {
-            FileSystemUI(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-                viewModel = fileSystemViewModel,
-                listState = fileUiListState
-            )
+        CompositionLocalProvider(
+            LocalConnectionProvider provides connection
+        ) {
 
-            TransferPopup(
-                modifier =
-                Modifier
-                    .fillMaxWidth(0.95f)
-                    .padding(innerPadding),
-                visible = transfersShown, { transfersShown = false },
-                onCancel = transfersViewModel::cancelTransfer,
-                onDelete = transfersViewModel::deleteTransfer,
-                transferViewModel = transfersViewModel
-            )
+            Box(modifier = Modifier.fillMaxSize()) {
+                FileSystemUI(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding),
+                    viewModel = fileSystemViewModel,
+                    listState = fileUiListState
+                )
+
+                TransferPopup(
+                    modifier =
+                    Modifier
+                        .fillMaxWidth(0.95f)
+                        .padding(innerPadding),
+                    visible = transfersShown, { transfersShown = false },
+                    onCancel = transfersViewModel::cancelTransfer,
+                    onDelete = transfersViewModel::deleteTransfer,
+                    transferViewModel = transfersViewModel
+                )
+            }
         }
-
     }
 
 
@@ -211,7 +224,7 @@ data class ApplicationSnackBarVisuals(
     override val withDismissAction: Boolean,
     val icon: ImageVector,
     val backgroundColor: Color
-): SnackbarVisuals
+) : SnackbarVisuals
 
 
 private fun ApplicationOperation.getIcon(): ImageVector {
@@ -223,10 +236,11 @@ private fun ApplicationOperation.getIcon(): ImageVector {
         ApplicationOperation.PING_SERVER -> Icons.Rounded.Cloud
     }
 }
+
 fun ApplicationEvent.toMessage(): String {
     val failMessage = "Failed to "
     val successMessage = " successfully"
-    return when(this.operation to this.isSuccess) {
+    return when (this.operation to this.isSuccess) {
         ApplicationOperation.LOCK_PC to true -> "PC Locked$successMessage"
         ApplicationOperation.LOCK_PC to false -> failMessage + "lock PC"
         ApplicationOperation.COPY_TO_CLIPBOARD to true -> "Copied to clipboard$successMessage"
