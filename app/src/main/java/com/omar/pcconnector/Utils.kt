@@ -35,7 +35,6 @@ val Path.absolutePath: String
     get() = absolutePathString().removePrefix("/")
 
 
-
 val sizeRanges = arrayOf(
     2.0.pow(10.0).toLong() until 2.0.pow(20.0).toLong() to "KB",
     2.0.pow(20.0).toLong() until 2.0.pow(30.0).toLong() to "MB",

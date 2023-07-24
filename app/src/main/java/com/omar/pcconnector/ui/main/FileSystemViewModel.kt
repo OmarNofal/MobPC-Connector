@@ -20,6 +20,8 @@ import com.omar.pcconnector.operation.RenameOperation
 import com.omar.pcconnector.operation.transfer.TransfersManager
 import com.omar.pcconnector.ui.event.ApplicationEvent
 import com.omar.pcconnector.ui.event.ApplicationOperation
+import com.omar.pcconnector.ui.nav.ImageScreen
+import com.omar.pcconnector.ui.nav.Navigator
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
@@ -31,12 +33,14 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.nio.file.Path
 import java.nio.file.Paths
+import kotlin.io.path.extension
 
 
 @Suppress("UNCHECKED_CAST")
 class FileSystemViewModel @AssistedInject constructor(
     private val transfersManager: TransfersManager,
     private val eventsFlow: MutableSharedFlow<ApplicationEvent>,
+    private val navigator: Navigator,
     @Assisted private val connection: Connection
 ) : ViewModel() {
 
@@ -137,6 +141,8 @@ class FileSystemViewModel @AssistedInject constructor(
     fun onResourceClicked(resource: Resource) {
         if (resource is DirectoryResource) {
             loadDirectory(resource.path)
+        } else if (resource.path.extension == "jpg") {
+            navigator.navigate(ImageScreen.navigationCommand(resource))
         }
     }
 

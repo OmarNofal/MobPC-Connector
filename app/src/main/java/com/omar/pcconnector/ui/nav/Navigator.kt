@@ -1,16 +1,17 @@
 package com.omar.pcconnector.ui.nav
 
+import android.net.Uri
 import androidx.navigation.NavOptions
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import androidx.navigation.navOptions
-import com.google.gson.Gson
 import com.omar.pcconnector.model.Resource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
+import kotlin.io.path.pathString
 
 
 interface NavigationCommand {
@@ -22,9 +23,9 @@ interface NavigationCommand {
 
 
 const val BACK_COMMAND = "back"
-val BackCommand = object: NavigationCommand {
+val BackCommand = object : NavigationCommand {
     override val options: NavOptions
-        get() = navOptions {  }
+        get() = navOptions { }
     override val screen: Screen
         get() = throw IllegalStateException("No Screen for back command")
     override val destination: String
@@ -33,8 +34,8 @@ val BackCommand = object: NavigationCommand {
 
 object ImageScreen {
 
-    private const val RESOURCE_ARG = "resource"
-    val arguments = listOf(navArgument(RESOURCE_ARG) { type = NavType.StringType })
+    const val PATH_ARG = "path"
+    val arguments = listOf(navArgument(PATH_ARG) { type = NavType.StringType })
 
     fun navigationCommand(resource: Resource) = object : NavigationCommand {
         override val options: NavOptions
@@ -42,7 +43,8 @@ object ImageScreen {
         override val screen: Screen
             get() = Screen.ImageScreen
         override val destination: String
-            get() = "image/${Gson().toJson(resource)}"
+            get() =
+                "image/${Uri.encode(resource.path.pathString)}"
     }
 
 }
