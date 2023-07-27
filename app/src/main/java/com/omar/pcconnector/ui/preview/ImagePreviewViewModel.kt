@@ -1,6 +1,9 @@
 package com.omar.pcconnector.ui.preview
 
 import android.net.Uri
+import android.util.Log
+import androidx.core.net.toFile
+import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -34,7 +37,10 @@ class ImagePreviewViewModel @AssistedInject constructor(
     val events: SharedFlow<ImagePreviewEvents>
         get() = _events
 
+    val imageName = imagePath.fileName.toString()
+
     private var shareFlag = false // whether the user intends to share
+    private var downloadDirectory: DocumentFile? = null
 
     init {
         downloadImageTempFile()
@@ -67,6 +73,11 @@ class ImagePreviewViewModel @AssistedInject constructor(
         }
     }
 
+    fun onDownloadFile(directory: DocumentFile) {
+        downloadDirectory = directory
+        tryDownloading()
+    }
+
     fun onRetry() {
         downloadImageTempFile()
     }
@@ -82,6 +93,18 @@ class ImagePreviewViewModel @AssistedInject constructor(
         viewModelScope.launch {
             _events.emit(ImagePreviewEvents.ShareEvent(state.uri))
             shareFlag = false
+        }
+    }
+
+    private fun tryDownloading() {
+        val directory = downloadDirectory ?: return
+        val state = (_state.value as? ImagePreviewState.Downloaded) ?: return
+        viewModelScope.launch {
+            _events.emit(ImagePreviewEvents.DownloadingEvent)
+            downloadDirectory = null
+            val file = directory.createFile("no_mime_type", imageName) ?: return@launch
+            transfersManager.copyFile(state.uri, file)
+            _events.emit(ImagePreviewEvents.DownloadedEvent)
         }
     }
 
@@ -111,6 +134,15 @@ class ImagePreviewViewModel @AssistedInject constructor(
         }
     }
 
+    override fun onCleared() {
+        super.onCleared()
+        val state = (_state.value as? ImagePreviewState.Downloaded) ?: return
+        try {
+            state.uri.toFile().delete()
+        } catch (e: IOException) {
+            Log.e("FILE_DELETE", "Failed to delete temp file")
+        }
+    }
 
 }
 

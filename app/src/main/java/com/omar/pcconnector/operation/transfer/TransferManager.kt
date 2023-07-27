@@ -224,5 +224,15 @@ class TransfersManager @Inject constructor(
         return downloadOperation.start().firstOrNull() ?: throw FileNotFoundException()
     }
 
+    fun copyFile(source: Uri, destination: DocumentFile) {
+        context.contentResolver.openInputStream(source)
+            .use { inStream ->
+                context.contentResolver.openOutputStream(destination.uri)
+                    .use { outStream ->
+                        inStream?.copyTo(outStream!!) ?: return
+                    }
+            }
+    }
+
     private fun List<DocumentFile>.toDirectoryFlags(): List<Boolean> = map { it.isDirectory }
 }

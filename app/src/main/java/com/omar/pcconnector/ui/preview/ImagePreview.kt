@@ -3,6 +3,10 @@ package com.omar.pcconnector.ui.preview
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,8 +14,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.ErrorOutline
+import androidx.compose.material.icons.rounded.Save
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -25,16 +29,25 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntSize
 import androidx.core.content.FileProvider
 import androidx.core.net.toFile
+import androidx.documentfile.provider.DocumentFile
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.omar.pcconnector.network.connection.Connection
 import com.omar.pcconnector.ui.imagePreviewViewModel
-import java.io.File
 import java.nio.file.Path
 
 
@@ -62,15 +75,22 @@ fun ImagePreviewViewModel(
                     is ImagePreviewEvents.ShareEvent -> {
                         shareImage(it.uri, context)
                     }
-                    else -> {}
+                    is ImagePreviewEvents.DownloadingEvent -> {
+                        Toast.makeText(context, "Saving...", Toast.LENGTH_SHORT).show()
+                    }
+                    is ImagePreviewEvents.DownloadedEvent -> {
+                        Toast.makeText(context, "Saved", Toast.LENGTH_SHORT).show()
+                    }
                 }
             }
     }
 
     ImagePreview(
+        imageName = viewModel.imageName,
         state = state,
         onShare = viewModel::onShare,
         onRetry = viewModel::onRetry,
+        onDownload = viewModel::onDownloadFile,
         onCloseScreen = viewModel::closeScreen,
         onRenderError = viewModel::onRenderError
     )
@@ -79,18 +99,32 @@ fun ImagePreviewViewModel(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ImagePreview(
+    imageName: String,
     state: ImagePreviewState,
     onShare: () -> Unit,
     onRetry: () -> Unit,
+    onDownload: (DocumentFile) -> Unit,
     onCloseScreen: () -> Unit,
     onRenderError: () -> Unit
 ) {
+
+    val context = LocalContext.current
+    val downloadContract = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocumentTree(),
+        onResult = {
+            if (it != null) onDownload(DocumentFile.fromTreeUri(context, it)!!)
+        }
+    )
     Scaffold(
         topBar = {
             TopAppBar(
                 modifier = Modifier,
                 title = {
-                    Text(text = "Image Preview")
+                    Text(
+                        text = imageName,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 },
                 navigationIcon = {
                     IconButton(onClick = onCloseScreen) {
@@ -104,10 +138,12 @@ private fun ImagePreview(
                             contentDescription = "Share Image URL"
                         )
                     }
-                    Icon(
-                        imageVector = Icons.Rounded.Download,
-                        contentDescription = "Download Image"
-                    )
+                    IconButton(onClick = { downloadContract.launch(null) }) {
+                        Icon(
+                            imageVector = Icons.Rounded.Save,
+                            contentDescription = "Share Image URL"
+                        )
+                    }
                 }
             )
         }
@@ -163,9 +199,38 @@ private fun ImageView(
     imageUri: Uri,
     onError: () -> Unit,
 ) {
+
+    val minScale = 1.0f
+    val maxScale = 3.0f
+
+    var scale by remember { mutableStateOf(1f) }
+    var offsetX by remember { mutableStateOf(0f) }
+    var offsetY by remember { mutableStateOf(0f) }
+    var size by remember { mutableStateOf(IntSize.Zero) }
+
+    val context = LocalContext.current
     AsyncImage(
-        modifier = modifier,
-        model = imageUri,
+        modifier = modifier
+            .onSizeChanged { size = it }
+            .pointerInput(Unit) {
+                detectTransformGestures { _, pan, zoom, _ ->
+                    scale = maxOf(minScale, minOf(scale * zoom, maxScale))
+                    val maxX = (size.width * (scale - 1)) / 2
+                    val minX = -maxX
+                    offsetX = maxOf(minX, minOf(maxX, offsetX + pan.x))
+                    val maxY = (size.height * (scale - 1)) / 2
+                    val minY = -maxY
+                    offsetY = maxOf(minY, minOf(maxY, offsetY + pan.y))
+                }
+            }.graphicsLayer(
+                scaleX = scale,
+                scaleY = scale,
+                translationX = offsetX,
+                translationY = offsetY
+            ),
+        model = ImageRequest.Builder(context)
+            .crossfade(true)
+            .data(imageUri).build(),
         contentDescription = "Preview",
         onError = { onError() },
         contentScale = ContentScale.Fit,
