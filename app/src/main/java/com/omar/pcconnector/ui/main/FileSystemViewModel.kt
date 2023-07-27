@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.omar.pcconnector.model.DirectoryResource
 import com.omar.pcconnector.model.Resource
 import com.omar.pcconnector.network.api.FileSystemOperations
+import com.omar.pcconnector.network.api.getDownloadURL
 import com.omar.pcconnector.network.connection.Connection
 import com.omar.pcconnector.network.connection.ConnectionHeartbeat
 import com.omar.pcconnector.network.ws.FileSystemWatcher
@@ -33,7 +34,9 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.nio.file.Path
 import java.nio.file.Paths
+import kotlin.io.path.absolutePathString
 import kotlin.io.path.extension
+import kotlin.io.path.pathString
 
 
 @Suppress("UNCHECKED_CAST")
@@ -142,7 +145,7 @@ class FileSystemViewModel @AssistedInject constructor(
         if (resource is DirectoryResource) {
             loadDirectory(resource.path)
         } else if (resource.path.extension == "jpg") {
-            navigator.navigate(ImageScreen.navigationCommand(resource))
+            navigator.navigate(ImageScreen.navigationCommand(resource.path.absolutePathString()))
         }
     }
 

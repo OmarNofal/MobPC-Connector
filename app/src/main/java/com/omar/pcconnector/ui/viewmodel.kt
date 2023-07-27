@@ -8,7 +8,9 @@ import com.omar.pcconnector.di.ViewModelFactoryProvider
 import com.omar.pcconnector.network.connection.Connection
 import com.omar.pcconnector.ui.main.FileSystemViewModel
 import com.omar.pcconnector.ui.main.ToolbarViewModel
+import com.omar.pcconnector.ui.preview.ImagePreviewViewModel
 import dagger.hilt.android.EntryPointAccessors
+import java.nio.file.Path
 
 
 @Composable
@@ -30,4 +32,15 @@ fun fileSystemViewModel(connection: Connection): FileSystemViewModel {
     ).fileSystemViewModelFactory()
 
     return viewModel(factory = FileSystemViewModel.provideFactory(factory, connection))
+}
+
+
+@Composable
+fun imagePreviewViewModel(connection: Connection, imagePath: Path): ImagePreviewViewModel {
+    val factory = EntryPointAccessors.fromActivity(
+        LocalContext.current as Activity,
+        ViewModelFactoryProvider::class.java
+    ).imagePreviewViewModelFactory()
+
+    return viewModel(factory = ImagePreviewViewModel.provideFactory(factory, connection, imagePath))
 }

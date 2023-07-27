@@ -5,13 +5,11 @@ import androidx.navigation.NavOptions
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import androidx.navigation.navOptions
-import com.omar.pcconnector.model.Resource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
-import kotlin.io.path.pathString
 
 
 interface NavigationCommand {
@@ -37,14 +35,14 @@ object ImageScreen {
     const val PATH_ARG = "path"
     val arguments = listOf(navArgument(PATH_ARG) { type = NavType.StringType })
 
-    fun navigationCommand(resource: Resource) = object : NavigationCommand {
+    fun navigationCommand(imageUrl: String) = object : NavigationCommand {
         override val options: NavOptions
             get() = navOptions { }
         override val screen: Screen
             get() = Screen.ImageScreen
         override val destination: String
             get() =
-                "image/${Uri.encode(resource.path.pathString)}"
+                "image/${Uri.encode(imageUrl)}"
     }
 
 }

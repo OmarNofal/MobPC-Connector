@@ -2,6 +2,7 @@ package com.omar.pcconnector.operation.transfer
 
 
 import android.content.Context
+import android.net.Uri
 import android.util.Log
 import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.Observer
@@ -19,7 +20,9 @@ import com.omar.pcconnector.model.TransferOperation
 import com.omar.pcconnector.model.TransferProgress
 import com.omar.pcconnector.model.TransferState
 import com.omar.pcconnector.model.TransferType
+import com.omar.pcconnector.network.api.FileSystemOperations
 import com.omar.pcconnector.network.connection.Connection
+import com.omar.pcconnector.operation.transfer.download.DownloadOperation
 import com.omar.pcconnector.worker.DownloadWorker
 import com.omar.pcconnector.worker.UploadWorker
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -30,6 +33,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.FileNotFoundException
 import java.nio.file.Path
 import java.util.UUID
 import javax.inject.Inject
@@ -194,6 +198,30 @@ class TransfersManager @Inject constructor(
         scope.launch {
             workerDao.deleteWork(id)
         }
+    }
+
+    /**
+     * Download temporary file suitable for downloading a file
+     * quickly for sharing. This is a blocking call and will
+     * return the download file handle when finished or throw an
+     * exception
+     *
+     * @return A uri of the downloaded file
+     * @throws FileNotFoundException if the file could not be downloaded
+     */
+    suspend fun downloadTemporaryFile(
+        connection: Connection,
+        pathOnServer: Path
+    ): Uri {
+        val api = connection.retrofit
+        val tempFolder = context.externalCacheDir!!
+        val downloadOperation = DownloadOperation(
+            api.create(FileSystemOperations::class.java),
+            pathOnServer,
+            DocumentFile.fromFile(tempFolder),
+            context.contentResolver
+        )
+        return downloadOperation.start().firstOrNull() ?: throw FileNotFoundException()
     }
 
     private fun List<DocumentFile>.toDirectoryFlags(): List<Boolean> = map { it.isDirectory }

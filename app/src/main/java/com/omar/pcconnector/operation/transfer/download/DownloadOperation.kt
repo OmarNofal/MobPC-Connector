@@ -1,6 +1,7 @@
 package com.omar.pcconnector.operation.transfer.download
 
 import android.content.ContentResolver
+import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
 import com.google.gson.JsonParser
 import com.omar.pcconnector.absolutePath
@@ -47,7 +48,7 @@ class DownloadOperation(
     private val pathOnServer: Path,
     private val downloadPath: DocumentFile,
     private val contentResolver: ContentResolver
-) : MonitoredOperation<DownloadOperationState, Unit>() {
+) : MonitoredOperation<DownloadOperationState, List<Uri>>() {
 
 
     override val name: String
@@ -58,7 +59,7 @@ class DownloadOperation(
 
     private lateinit var response: Response<ResponseBody>
 
-    override suspend fun start() {
+    override suspend fun start(): List<Uri> {
 
         if (!downloadPath.isDirectory) {
             throw IllegalArgumentException("Destination Path is not a directory")
@@ -124,6 +125,7 @@ class DownloadOperation(
                     throw e
                 }
             }
+        return@withContext listOf(deviceFile.uri)
     }
 
 
@@ -197,6 +199,7 @@ class DownloadOperation(
                         ensureActive()
                     }
             }
+            return@withContext savedFiles.map { it.uri }
         } catch (n: NullPointerException) {
             throw InvalidResponseException("Invalid message from the server")
         } catch (e: Exception) {

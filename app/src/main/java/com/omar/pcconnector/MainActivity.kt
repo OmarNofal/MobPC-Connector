@@ -4,15 +4,12 @@ import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -24,10 +21,12 @@ import com.omar.pcconnector.ui.nav.ImageScreen
 import com.omar.pcconnector.ui.nav.Navigator
 import com.omar.pcconnector.ui.nav.Screen
 import com.omar.pcconnector.ui.nav.ServerScreen
+import com.omar.pcconnector.ui.preview.ImagePreview
 import com.omar.pcconnector.ui.session.ServerSession
 import com.omar.pcconnector.ui.theme.AppTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.MutableSharedFlow
+import java.nio.file.Paths
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -74,11 +73,10 @@ class MainActivity : ComponentActivity() {
                     composable(
                         Screen.IMAGE_SCREEN,
                         arguments = ImageScreen.arguments,
-
                     ) {
                         val resourcePath = it.arguments?.getString(ImageScreen.PATH_ARG)
                         Log.i("Resource", resourcePath.toString())
-                        Box(modifier = Modifier.fillMaxSize().background(Color.Magenta))
+                        ImagePreview(currentConnection!!, Paths.get(resourcePath))
                     }
                 }
 
