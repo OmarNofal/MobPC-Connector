@@ -49,6 +49,7 @@ import com.omar.pcconnector.ui.action.ActionsDropdownMenu
 import com.omar.pcconnector.ui.main.FileSystemState
 import com.omar.pcconnector.ui.main.FileSystemViewModel
 import com.omar.pcconnector.ui.session.LocalConnectionProvider
+import com.omar.pcconnector.ui.theme.iconForExtension
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import java.nio.file.Path
@@ -155,7 +156,7 @@ fun FileSystemTree(
             Divider(Modifier.fillMaxWidth())
 
             AnimatedContent(
-                targetState = directoryStructure
+                targetState = directoryStructure, label = ""
             ) { directory ->
 
 
@@ -197,7 +198,7 @@ fun FileSystemTree(
                                 Divider(
                                     Modifier
                                         .fillMaxWidth()
-                                        .padding(start = 8.dp)
+                                        .padding(start = 72.dp)
                                 )
                             }
                         }
@@ -286,7 +287,7 @@ fun ResourceRow(
             resource
         )
 
-        Spacer(modifier = Modifier.width(16.dp))
+        Spacer(modifier = Modifier.width(24.dp))
         Column(Modifier.weight(1f)) {
             Text(
                 text = resource.name,
@@ -344,26 +345,23 @@ fun ResourceIcon(
     modifier: Modifier,
     resource: Resource
 ) {
-
     if (resource is DirectoryResource) {
         Icon(
             imageVector = Icons.Outlined.Folder,
             contentDescription = "Directory icon",
-            modifier = modifier
-        )
-    } else if (resource.path.extension.lowercase() == "pdf") {
-        Icon(
-            painter = painterResource(R.drawable.pdf),
             modifier = modifier,
-            contentDescription = null
+            tint = MaterialTheme.colorScheme.onSurface
         )
-    } else if (resource.path.extension.endsWith("jpg", true)) {
+    } else if (resource.path.extension.lowercase() in listOf("jpg", "png", "jpeg", "bmp", "webp")) {
         ImagePreviewIcon(modifier = modifier.clip(RoundedCornerShape(4.dp)), resource = resource)
-    } else if (resource.path.extension.endsWith("mp4", true)) {
-        VideoPreviewIcon(modifier = modifier.clip(RoundedCornerShape(4.dp)), resource = resource)
+    } else {
+        Icon(
+            painter = painterResource(id = iconForExtension(resource.path.extension)),
+            contentDescription = "Directory icon",
+            modifier = modifier,
+            tint = MaterialTheme.colorScheme.onSurface
+        )
     }
-
-
 }
 
 @Composable
@@ -379,9 +377,9 @@ fun ImagePreviewIcon(
             .data(resourceURL)
             .crossfade(true)
             .build(),
-        placeholder = painterResource(R.drawable.pdf),
-        error = painterResource(R.drawable.pdf),
-        fallback = painterResource(R.drawable.pdf),
+        placeholder = painterResource(R.drawable.image),
+        error = painterResource(R.drawable.image),
+        fallback = painterResource(R.drawable.image),
         contentDescription = null,
         contentScale = ContentScale.Crop,
         modifier = modifier,
@@ -390,31 +388,31 @@ fun ImagePreviewIcon(
 }
 
 
-@Composable
-fun VideoPreviewIcon(
-    modifier: Modifier,
-    resource: Resource
-) {
-    val connection = LocalConnectionProvider.current
-    val resourceURL = "http://${connection.ip}:${connection.port}/downloadFiles?src=${resource.path}"
-    Log.i("URL", resourceURL)
-    AsyncImage(
-        model = ImageRequest.Builder(LocalContext.current)
-            .data(resourceURL)
-            .decoderFactory(VideoFrameDecoder.Factory())
-            .crossfade(true)
-            .build(),
-        placeholder = painterResource(R.drawable.pdf),
-        error = painterResource(R.drawable.pdf),
-        fallback = painterResource(R.drawable.pdf),
-        contentDescription = null,
-        contentScale = ContentScale.Crop,
-        modifier = modifier,
-        onError = { it.result.throwable.toString().also { Log.e("ERR VIDEO", it) }},
-        onLoading = { Log.i("VIDEO", it.toString())},
-        onSuccess = {Log.i("VIDEO SUCCESS", it.toString())}
-        )
-}
+//@Composable
+//fun VideoPreviewIcon(
+//    modifier: Modifier,
+//    resource: Resource
+//) {
+//    val connection = LocalConnectionProvider.current
+//    val resourceURL = "http://${connection.ip}:${connection.port}/downloadFiles?src=${resource.path}"
+//    Log.i("URL", resourceURL)
+//    AsyncImage(
+//        model = ImageRequest.Builder(LocalContext.current)
+//            .data(resourceURL)
+//            .decoderFactory(VideoFrameDecoder.Factory())
+//            .crossfade(true)
+//            .build(),
+//        placeholder = painterResource(R.drawable.pdf),
+//        error = painterResource(R.drawable.pdf),
+//        fallback = painterResource(R.drawable.pdf),
+//        contentDescription = null,
+//        contentScale = ContentScale.Crop,
+//        modifier = modifier,
+//        onError = { it.result.throwable.toString().also { Log.e("ERR VIDEO", it) }},
+//        onLoading = { Log.i("VIDEO", it.toString())},
+//        onSuccess = {Log.i("VIDEO SUCCESS", it.toString())}
+//        )
+//}
 
 @Composable
 fun EmptyDirectoryMessage(modifier: Modifier) {
