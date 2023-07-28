@@ -1,18 +1,22 @@
 const {getDirectoryStructure} = require('../fs/directories');
 const { ResourceAlreadyExists } = require('../fs/exceptions');
-const { copyResources, renameResource, moveResources, deleteResources } = require('../fs/operations');
+const { copyResources, renameResource, moveResources, deleteResources, parsePath } = require('../fs/operations');
 const router = require('express').Router();
 const { SuccessResponse, ErrorResponse } = require('../model/response');
 const path = require('path');
+const getDrives = require('../fs/drives');
 
 
 
 router.post('/copyResources', (req, res) => {
 
+
     const body = req.body
 
-    const resourcesPath = body.src;
-    const pasteDestination = body.dest;
+    console.log(body);
+
+    const resourcesPath = parsePath(body.src);
+    const pasteDestination = parsePath(body.dest);
     const overwrite = body.overwrite ?? false;
 
     if (!resourcesPath || !pasteDestination) {
@@ -20,6 +24,7 @@ router.post('/copyResources', (req, res) => {
         return;
     }
 
+    
     try {
         copyResources(
             resourcesPath,
@@ -32,19 +37,21 @@ router.post('/copyResources', (req, res) => {
                     totalSize: overrallsize.totalSize,
                     totalBytesCopied: overrallsize.totalBytesCopied
                 }
-                res.write(JSON.stringify(progress) + "\n");
+                //res.write(JSON.stringify(progress) + "\n");
             },
             (theFileData, overrallsize, theFiles) => {
-                res.write(JSON.stringify( new SuccessResponse() ));
-                res.end();
+                //res.write(JSON.stringify( new SuccessResponse() ));
+                //res.end();
             },
             (theFileData, overallSize, theFiles) => {
                 console.log(theFileData.err);
-                res.json(new ErrorResponse(1, theFileData.err))
+                //res.json(new ErrorResponse(1, theFileData.err))
             },
             overwrite
         )
+        res.json(new SuccessResponse());
     } catch (err) {
+        console.log(err);
         if (err instanceof ResourceAlreadyExists) {
             return res.json(new ErrorResponse(10, "A resource already exists. Please enable the overwrite flag"))
         }
@@ -101,18 +108,22 @@ router.post('/moveResources', (req, res) => {
 
 
 router.post('/deleteResources', (req, res) => {
+
     const body = req.body;
 
-    const src = body.src;
-    const permanentlyDelete = body.permanentlyDelete ?? false;
+    
+    var src = body.src;
+    var permanentlyDelete = ((body.permanentlyDelete ?? 0) == 1) ? true : false;
+
+
+    src = parsePath(src);
     
     deleteResources(src, permanentlyDelete,
         (progress) => {
-            res.write(JSON.stringify(progress) + "\n");
+            //res.write(JSON.stringify(progress) + "\n");
         },
         () => {
-            res.write(new SuccessResponse());
-            res.end();
+            res.json(new SuccessResponse());
         }
     )
 
@@ -122,9 +133,13 @@ router.post('/renameResource', (req, res) => {
 
     const body = req.body;
 
-    const src = body.src;
+    var src = body.src;
     const newName = body.newName;
     const overwrite = body.overwrite ?? false;
+
+    src = parsePath(src);
+
+    console.log("Renaming " + src + " to " + newName);
 
     try {
         renameResource(src, newName, overwrite);
@@ -140,5 +155,17 @@ router.post('/renameResource', (req, res) => {
     res.json(new SuccessResponse());
 })
 
+
+router.get('/drives', function(req, res) {
+    getDrives(
+        (err => {
+            res.send(new ErrorResponse(1, "Failed to retrieve drives"))
+        })
+        , (drives => {
+        // return all drive paths
+        const names = drives.flatMap((d => d.mountpoints)).map((d => d.path))
+        res.send(new SuccessResponse(names));
+    }));
+})
 
 module.exports = router;

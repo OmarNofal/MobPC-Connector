@@ -9,7 +9,7 @@ statusRoutes.get('/status', (req, res) => {
     
 
     res.json({
-        name: "PC Connector",
+        name: package.serverName,
         version: package.version,
         port: req.socket.localPort,
         ip: req.socket.localAddress

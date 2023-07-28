@@ -16,11 +16,13 @@ function isValidURL(url) {
 
 router.post('/openLink', (req, res) => {
 
+    
     const url = req.body.url;
     const incognito = req.body.incognito;
 
+
     if (isValidURL(url)) {
-        if (incognito == true)
+        if (parseInt(incognito))
             open(url, {app: {name: 'msedge', arguments: ['-inPrivate']}});
         else
             open(url);

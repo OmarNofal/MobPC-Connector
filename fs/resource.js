@@ -11,8 +11,8 @@ class Resource {
     ) {
         this.name = name;
         this.size = size;
-        this.creationDate = creationDate;
-        this.lastModificationDate = lastModificationDate;
+        this.creationDate = Math.floor(creationDate);
+        this.lastModificationDate = Math.floor(lastModificationDate);
     }
 
 }

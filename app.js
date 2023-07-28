@@ -7,8 +7,12 @@ const osRoutes = require('./routes/osRoutes');
 const fileOperationsRoutes = require('./routes/fileOperationsRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
 const downloadRoutes = require('./routes/downloadRoutes');
+const wsServer = require('./routes/fsWatcher.js')
 
 const {ErrorResponse, SuccessResponse} = require('./model/response');
+
+const {runDetectionServer, closeDetectionServer} = require('./detectionserver')
+
 
 const PORT = 6543
 
@@ -28,6 +32,14 @@ app.use(fileOperationsRoutes);
 app.use(uploadRoutes);
 app.use(router);
 
-app.listen(PORT, () => {
+const httpServer = app.listen(PORT, () => {
     console.log("Server running")
 })
+runDetectionServer();
+
+
+httpServer.on('upgrade', (request, socket, head) => {
+  wsServer.handleUpgrade(request, socket, head, socket => {
+    wsServer.emit('connection', socket, request);
+  });
+});

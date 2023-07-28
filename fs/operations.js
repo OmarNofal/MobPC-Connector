@@ -4,7 +4,14 @@ const { ResourceAlreadyExists } = require('./exceptions');
 const copy = require('cpy');
 const { DaemonicProgress } = require('fsprogress')
 const trash  = require('trash')
+const os = require('os');
 
+
+function parsePath(src) {
+    if (typeof src == 'string') 
+        src = src.replace('~', os.homedir())
+    return src
+}
 
 // check to see if any file or dir exists
 function checkIfAnyExists(src) {
@@ -21,11 +28,11 @@ function checkIfAnyExists(src) {
 function copyResources(src, dest, onProgress, onFinish, onError ,overwrite = false) {
 
 
-
-    if (!overwrite) {
+    if (overwrite) {
         var pathsToCheck;
         if (typeof src == 'string' || src instanceof String) {
             pathsToCheck = path.join(dest, path.parse(src).base);
+            console.log(pathsToCheck)
         } else {
             pathsToCheck = src.map((value, index, _) => {
                 return path.join(dest, path.parse(value).base);
@@ -42,6 +49,11 @@ function copyResources(src, dest, onProgress, onFinish, onError ,overwrite = fal
         maxConcurrentOperation: 0
     };
       
+    src = path.normalize(src)
+    dest = path.normalize(dest)
+    
+    console.log(src);
+    console.log(dest);
 
     new DaemonicProgress(src, dest, callbackOptions)
         .on('progress', onProgress)
@@ -123,8 +135,8 @@ function renameResource(
         throw new ResourceAlreadyExists();
     }
 
-    fs.renameSync(src, path.join(srcDir, newName));
+    fs.renameSync(src, destPath);
 }
 
 
-module.exports = { copyResources, renameResource, moveResources, deleteResources };
+module.exports = { copyResources, renameResource, moveResources, deleteResources, parsePath };

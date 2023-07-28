@@ -5,19 +5,25 @@ const path = require('path');
 const multer = require('multer');
 const { DaemonicProgress } = require('fsprogress')
 var fs = require('fs')
+const { parsePath } = require('../fs/operations')
 
 const upload = multer({ dest: 'C:\\Users\\omarw\\OneDrive\\Documents\\Programming\\PC Connector\\Backend\\temp' });
 
 router.post('/uploadFiles', upload.any(), (req, res) => {
 
-    const body = req.body;
+    const body = req.body; 
 
-    const destination = body.dest;
+    const destination = parsePath(body.dest);
     
+    console.log(destination)
+    console.log(req.files)
+
     if (!destination || req.files.length == 0) {
         res.json(new ErrorResponse(10, "Missing files or destination path"));
+        return
     }
 
+    console.log(req.files.length)
     for (const file of req.files) {
         console.log(file);
 
@@ -31,19 +37,26 @@ router.post('/uploadFiles', upload.any(), (req, res) => {
             fileName = path.parse(fileName).name + '(1)' + path.parse(fileName).ext;
         }
 
-        fs.renameSync(
-            currentPath,
-            path.join(file.path, '../', fileName)
-        );
+        try {
+            const fileTempDirectory = path.join(file.path, '../', directory)
+            fs.mkdirSync(fileTempDirectory, {recursive: true})
+        
+            fs.renameSync(
+                currentPath,
+                path.join(fileTempDirectory, fileName)
+            );
+        
+            fs.mkdirSync(fileDestination, {recursive: true})
 
-        fs.mkdirSync(fileDestination, {recursive: true})
-
-        new DaemonicProgress(
-            path.join(file.path, '../', fileName), 
-            fileDestination,
-            {mode: "move"}
-        ).start()
-
+            new DaemonicProgress(
+                path.join(fileTempDirectory, fileName), 
+                fileDestination,
+                {mode: "move"}
+            ).start()
+        } catch(e) {
+            console.log(e)
+        }
+        
     }
 
     res.json(new SuccessResponse());

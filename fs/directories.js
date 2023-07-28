@@ -15,7 +15,13 @@ function getDirectoryStructure(dir) {
 
         const p = path.join(dir, files[i]);
 
-        const stats = fs.lstatSync(p);
+        var stats;
+        try {
+            // Usually some resources will be busy or deny permission, hence the try catch
+            stats = fs.lstatSync(p);
+        } catch(err) {
+            continue
+        }
         const isDir = stats.isDirectory();
 
         var resource;

@@ -4,9 +4,13 @@ const { SuccessResponse, ErrorResponse } = require('../model/response');
 const path = require('path');
 var fs = require('fs');
 const CombinedStream = require('combined-stream');
+const {parsePath} = require('../fs/operations');
+const mime = require('mime');
+
 
 
 function handleDownloadFile(path, res) {
+    console.log("Somebody downloads" + path);
     res.download(path);
 }
 
@@ -43,7 +47,8 @@ function handleDownloadFolder(src, res) {
                 responseHeader.files.push( { 
                     name: file.name,
                     size: fileStats.size,
-                    path: path.relative(src, currentDirectory)
+                    path: path.relative(src, currentDirectory),
+                    mimeType: mime.getType(file.name) 
                 })
 
                 responseStream.append(fs.createReadStream(filePath));
@@ -51,7 +56,7 @@ function handleDownloadFolder(src, res) {
         }
     }
     console.log(responseHeader);
-    res.setHeader('Content-Type', "binary");
+    res.setHeader('Content-Type', "folder");
 
     const headerSizeBuffer = Buffer.allocUnsafe(8);
     headerSizeBuffer.writeBigInt64BE(BigInt(JSON.stringify(responseHeader).length), 0);
@@ -67,10 +72,12 @@ router.get('/downloadFiles', (req, res) => {
     const body = req.body;
 
     var src = body.src ?? req.query.src;
+    src = parsePath(src);
 
     if (!src) {
         return res.json(new ErrorResponse(109, "Missing [src] field"))
     }
+    
 
     if (fs.existsSync(src)) {
         const srcStats = fs.statSync(src);
