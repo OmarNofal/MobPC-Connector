@@ -5,6 +5,8 @@ import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.omar.pcconnector.absolutePath
+import com.omar.pcconnector.isSupportedImageExtension
 import com.omar.pcconnector.model.DirectoryResource
 import com.omar.pcconnector.model.Resource
 import com.omar.pcconnector.network.api.FileSystemOperations
@@ -30,13 +32,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.nio.file.Path
 import java.nio.file.Paths
 import kotlin.io.path.absolutePathString
 import kotlin.io.path.extension
-import kotlin.io.path.pathString
 
 
 @Suppress("UNCHECKED_CAST")
@@ -141,11 +143,20 @@ class FileSystemViewModel @AssistedInject constructor(
         }
     }
 
+    private val _openFileEvents = MutableSharedFlow<Pair<String, String>>()
+    val openFileEvents: SharedFlow<Pair<String, String>>
+        get() = _openFileEvents
+
     fun onResourceClicked(resource: Resource) {
         if (resource is DirectoryResource) {
             loadDirectory(resource.path)
-        } else if (resource.path.extension == "jpg") {
+        } else if (resource.path.extension.isSupportedImageExtension()) {
             navigator.navigate(ImageScreen.navigationCommand(resource.path.absolutePathString()))
+        } else {
+            val fileDownloadURL = getDownloadURL(connection, resource.path.absolutePath)
+            viewModelScope.launch {
+                _openFileEvents.emit(fileDownloadURL to resource.name)
+            }
         }
     }
 

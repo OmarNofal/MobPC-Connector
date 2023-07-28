@@ -2,6 +2,8 @@ package com.omar.pcconnector.ui.fs
 
 
 import android.annotation.SuppressLint
+import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.util.Log
 import android.widget.Toast
@@ -35,13 +37,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.documentfile.provider.DocumentFile
 import coil.compose.AsyncImage
-import coil.decode.VideoFrameDecoder
 import coil.request.ImageRequest
 import com.omar.pcconnector.R
 import com.omar.pcconnector.absolutePath
 import com.omar.pcconnector.bytesToSizeString
 import com.omar.pcconnector.model.DirectoryResource
 import com.omar.pcconnector.model.Resource
+import com.omar.pcconnector.supportedImageExtension
 import com.omar.pcconnector.ui.DeleteDialog
 import com.omar.pcconnector.ui.RenameDialog
 import com.omar.pcconnector.ui.action.Actions
@@ -52,7 +54,9 @@ import com.omar.pcconnector.ui.session.LocalConnectionProvider
 import com.omar.pcconnector.ui.theme.iconForExtension
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.Paths
 import kotlin.io.path.extension
 
 
@@ -73,7 +77,12 @@ fun FileSystemUI(
 
     val state by viewModel.state.collectAsState(FileSystemState.Loading)
 
-
+    val context = LocalContext.current
+    LaunchedEffect(key1 = Unit) {
+        viewModel.openFileEvents.collect {
+            openFile(context, it.first, it.second)
+        }
+    }
 
 
     if (state is FileSystemState.Loading) {
@@ -352,7 +361,7 @@ fun ResourceIcon(
             modifier = modifier,
             tint = MaterialTheme.colorScheme.onSurface
         )
-    } else if (resource.path.extension.lowercase() in listOf("jpg", "png", "jpeg", "bmp", "webp")) {
+    } else if (resource.path.extension.lowercase() in supportedImageExtension) {
         ImagePreviewIcon(modifier = modifier.clip(RoundedCornerShape(4.dp)), resource = resource)
     } else {
         Icon(
@@ -370,7 +379,8 @@ fun ImagePreviewIcon(
     resource: Resource
 ) {
     val connection = LocalConnectionProvider.current
-    val resourceURL = "http://${connection.ip}:${connection.port}/downloadFiles?src=${resource.path}"
+    val resourceURL =
+        "http://${connection.ip}:${connection.port}/downloadFiles?src=${resource.path}"
     Log.i("RESOURCE URL IMAGE", resourceURL)
     AsyncImage(
         model = ImageRequest.Builder(LocalContext.current)
@@ -384,7 +394,7 @@ fun ImagePreviewIcon(
         contentScale = ContentScale.Crop,
         modifier = modifier,
 
-    )
+        )
 }
 
 
@@ -413,6 +423,15 @@ fun ImagePreviewIcon(
 //        onSuccess = {Log.i("VIDEO SUCCESS", it.toString())}
 //        )
 //}
+
+private fun openFile(context: Context, url: String, name: String) {
+    val mimeType = Files.probeContentType(Paths.get(name))
+    val intent = Intent(Intent.ACTION_VIEW).let {
+        it.setDataAndType(Uri.parse(url), mimeType)
+        Intent.createChooser(it, "View $name")
+    }
+    context.startActivity(intent)
+}
 
 @Composable
 fun EmptyDirectoryMessage(modifier: Modifier) {

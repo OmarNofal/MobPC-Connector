@@ -58,7 +58,9 @@ fun Long.bytesToSizeString(): String {
 }
 
 
-
+// The image formats coil-kt can view
+val supportedImageExtension = listOf("jpg", "jpeg", "png", "bmp", "webp")
+fun String.isSupportedImageExtension() = this in supportedImageExtension
 
 
 /**
