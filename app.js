@@ -7,7 +7,10 @@ const osRoutes = require('./routes/osRoutes');
 const fileOperationsRoutes = require('./routes/fileOperationsRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
 const downloadRoutes = require('./routes/downloadRoutes');
+const loginRouter = require('./routes/authRoutes.js')
 const wsServer = require('./routes/fsWatcher.js')
+const auth = require("./auth/auth.js");
+const authExceptions = require('./auth/exceptions.js');
 
 const {ErrorResponse, SuccessResponse} = require('./model/response');
 
@@ -30,7 +33,11 @@ app.use(statusRoutes);
 app.use(osRoutes);
 app.use(fileOperationsRoutes);
 app.use(uploadRoutes);
+app.use(loginRouter);
 app.use(router);
+
+
+
 
 const httpServer = app.listen(PORT, () => {
     console.log("Server running")

@@ -5,11 +5,12 @@ const path = require('path');
 const multer = require('multer');
 const { DaemonicProgress } = require('fsprogress')
 var fs = require('fs')
-const { parsePath } = require('../fs/operations')
+const { parsePath } = require('../fs/operations');
+const authMiddleware = require('./authMiddleware');
 
 const upload = multer({ dest: 'C:\\Users\\omarw\\OneDrive\\Documents\\Programming\\PC Connector\\Backend\\temp' });
 
-router.post('/uploadFiles', upload.any(), (req, res) => {
+router.post('/uploadFiles', authMiddleware, upload.any(), (req, res) => {
 
     const body = req.body; 
 

@@ -6,7 +6,7 @@ var fs = require('fs');
 const CombinedStream = require('combined-stream');
 const {parsePath} = require('../fs/operations');
 const mime = require('mime');
-
+const authMiddleware = require('./authMiddleware');
 
 
 function handleDownloadFile(path, res) {
@@ -67,7 +67,7 @@ function handleDownloadFolder(src, res) {
 }
 
 
-router.get('/downloadFiles', (req, res) => {
+router.get('/downloadFiles', authMiddleware, (req, res) => {
 
     const body = req.body;
 

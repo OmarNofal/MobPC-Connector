@@ -5,10 +5,11 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { parsePath } = require('../fs/operations');
+const authMiddleware = require('./authMiddleware');
 
 
 
-router.get('/listDirectory', (req, res) => {
+router.get('/listDirectory', authMiddleware, (req, res) => {
 
     
     let dir = req.query.path;
@@ -28,7 +29,7 @@ router.get('/listDirectory', (req, res) => {
 });
 
 
-router.post('/mkdirs', (req, res) => {
+router.post('/mkdirs', authMiddleware, (req, res) => {
 
     const body = req.body;
 

@@ -3,11 +3,12 @@ const clipboardy = require('clipboardy');
 const { notifyOfNewClipboardItem } = require('../utilities/notificationSystem')
 
 const { SuccessResponse, ErrorResponse } = require('../model/response');
+const authMiddleware = require('./authMiddleware');
 
 
 
 
-router.post('/copyToClipboard', (req, res) => {
+router.post('/copyToClipboard', authMiddleware, (req, res) => {
 
     const text = req.body.text;
 

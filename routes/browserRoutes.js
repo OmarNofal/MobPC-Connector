@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const open = require('open');
 const { SuccessResponse, ErrorResponse } = require('../model/response');
+const authMiddleware = require('./authMiddleware');
 
 
 
@@ -14,7 +15,7 @@ function isValidURL(url) {
 }
 
 
-router.post('/openLink', (req, res) => {
+router.post('/openLink', authMiddleware, (req, res) => {
 
     
     const url = req.body.url;

@@ -5,10 +5,11 @@ const router = require('express').Router();
 const { SuccessResponse, ErrorResponse } = require('../model/response');
 const path = require('path');
 const getDrives = require('../fs/drives');
+const authMiddleware = require('./authMiddleware');
 
 
 
-router.post('/copyResources', (req, res) => {
+router.post('/copyResources', authMiddleware, (req, res) => {
 
 
     const body = req.body
@@ -60,7 +61,7 @@ router.post('/copyResources', (req, res) => {
 })
 
 
-router.post('/moveResources', (req, res) => {
+router.post('/moveResources', authMiddleware, (req, res) => {
 
     const body = req.body
 
@@ -107,7 +108,7 @@ router.post('/moveResources', (req, res) => {
 
 
 
-router.post('/deleteResources', (req, res) => {
+router.post('/deleteResources', authMiddleware,(req, res) => {
 
     const body = req.body;
 
@@ -129,7 +130,7 @@ router.post('/deleteResources', (req, res) => {
 
 });
 
-router.post('/renameResource', (req, res) => {
+router.post('/renameResource', authMiddleware, (req, res) => {
 
     const body = req.body;
 
@@ -156,7 +157,7 @@ router.post('/renameResource', (req, res) => {
 })
 
 
-router.get('/drives', function(req, res) {
+router.get('/drives', authMiddleware, function(req, res) {
     getDrives(
         (err => {
             res.send(new ErrorResponse(1, "Failed to retrieve drives"))

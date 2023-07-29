@@ -2,10 +2,11 @@ const router = require('express').Router();
 const { SuccessResponse, ErrorResponse } = require('../model/response');
 const {lockPc, shutdownPc, sendNotification} = require('../pc/pcOperations');
 const {UnsupportedOperationException: UnsupportedOSException} = require('../pc/exceptions');
+const authMiddleware = require('./authMiddleware');
 
 
 
-router.get('/lockPc', (req, res) => {
+router.get('/lockPc', authMiddleware, (req, res) => {
 
     try {
         lockPc();
@@ -19,12 +20,12 @@ router.get('/lockPc', (req, res) => {
 });
 
 
-router.get('/shutdownPc', (req, res) => {
+router.get('/shutdownPc', authMiddleware, (req, res) => {
     res.json(new SuccessResponse());
     shutdownPc();
 });
 
-router.post('/sendNotification', (req, res) => {
+router.post('/sendNotification', authMiddleware, (req, res) => {
     const body = req.body;
 
     const title = body.title;
