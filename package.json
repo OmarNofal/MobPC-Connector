@@ -10,6 +10,7 @@
   "author": "Omar Walid",
   "license": "ISC",
   "dependencies": {
+    "axios": "^0.21.2",
     "bcrypt": "^5.1.0",
     "clipboardy": "^2.3.0",
     "combined-stream": "^1.0.8",
@@ -19,6 +20,7 @@
     "drivelist": "^5.0.1",
     "escape-filename": "^1.1.2",
     "express": "^4.18.2",
+    "firebase": "^10.1.0",
     "fsprogress": "^1.0.0",
     "jsonwebtoken": "^9.0.1",
     "lock-your-windows": "^0.0.1",
