@@ -11,6 +11,7 @@ const loginRouter = require('./routes/authRoutes.js')
 const wsServer = require('./routes/fsWatcher.js')
 const auth = require("./auth/auth.js");
 const authExceptions = require('./auth/exceptions.js');
+const startFirebaseService = require('./firebase/firebase.js')
 
 const {ErrorResponse, SuccessResponse} = require('./model/response');
 
@@ -44,6 +45,7 @@ const httpServer = app.listen(PORT, () => {
 })
 runDetectionServer();
 
+startFirebaseService();
 
 httpServer.on('upgrade', (request, socket, head) => {
   wsServer.handleUpgrade(request, socket, head, socket => {

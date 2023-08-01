@@ -23,19 +23,27 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
 
-setNewUUID();
-
-getIp(
+function firebaseRoutine() {
+    getIp(
     (ip) => {
         const uuid = getUUID();
         const locationRef = ref(db, uuid);
         set(locationRef, ip)
-        .then(() => {
-            deleteApp(app);
-        });
     },
     () => {
-
+        console.error("Failed to sync ip to firebase");
     }
 )
+}
 
+function startFirebaseService() {
+    const timer = setInterval(
+        () => {
+            firebaseRoutine();
+        },
+        5 * 60 * 1000
+    );
+    return timer;
+}
+
+module.exports = startFirebaseService;

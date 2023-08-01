@@ -1,6 +1,6 @@
 const dgram = require('node:dgram')
 const package = require('./package.json')
-
+const { getUUID } = require('./identification/appindentification')
 
 // This is a UDP socket server to help other devices discover the server
 // Typically, you would send a broadcast message to the whole local network
@@ -23,7 +23,8 @@ server.on('message', (msg, remoteInfo) => {
             name: package.serverName,
             version: package.version,
             port: 6543,
-            ip: server.address().address
+            ip: server.address().address,
+            id: getUUID()
         }
 
         server.send(JSON.stringify(data), remoteInfo.port, remoteInfo.address, (error, _) => {
