@@ -30,8 +30,11 @@ class DatabaseModule {
     @Provides
     fun provideWorkerDao(
         database: Database
-    ): WorkerDao {
-        return database.workerDao()
-    }
+    ) = database.workerDao()
 
+    @Singleton
+    @Provides
+    fun provideDeviceDao(
+        database: Database
+    ) = database.devicesDao()
 }

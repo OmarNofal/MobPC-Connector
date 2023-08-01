@@ -25,7 +25,7 @@ private const val PORT = 4285
  *      2- It sends an IP broadcast message to all devices in the network, stating that it is discovering servers
  *      3- If a server is present on a network, it will then respond with its status (name, ip, port)
  */
-class DetectionLocalNetworkStrategy() : DetectionStrategy {
+class DetectionLocalNetworkStrategy : DetectionStrategy {
 
     override fun getAvailableHosts(): List<DetectedHost> {
 
