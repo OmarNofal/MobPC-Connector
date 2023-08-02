@@ -1,7 +1,12 @@
 package com.omar.pcconnector.ui.detection
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -12,13 +17,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.omar.pcconnector.R
-import com.omar.pcconnector.network.detection.DetectedHost
+import com.omar.pcconnector.model.DeviceInfo
 
 
 @Composable
-fun DetectedServerRow(
+fun DeviceRow(
     modifier: Modifier,
-    detectedHost: DetectedHost,
+    deviceInfo: DeviceInfo,
     onClick: () -> Unit
 ) {
 
@@ -35,9 +40,9 @@ fun DetectedServerRow(
         Spacer(modifier = Modifier.width(12.dp))
         Column {
             Spacer(modifier = Modifier.height(4.dp))
-            Text(text = detectedHost.serverName)
+            Text(text = deviceInfo.name)
             Text(
-                text = "${detectedHost.ipAddress}:${detectedHost.port}",
+                text = deviceInfo.os,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Light
             )

@@ -6,7 +6,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetAddress
@@ -25,24 +25,38 @@ private const val PORT = 4285
  *      2- It sends an IP broadcast message to all devices in the network, stating that it is discovering servers
  *      3- If a server is present on a network, it will then respond with its status (name, ip, port)
  */
-class DetectionLocalNetworkStrategy : DetectionStrategy {
+object DetectionLocalNetworkStrategy : DetectionStrategy, DeviceFinder {
 
-    override fun getAvailableHosts(): List<DetectedHost> {
+    override suspend fun getAvailableHosts(): List<DetectedHost> = withContext(Dispatchers.IO) {
 
         val localNetworksIPs = getCurrentLocalNetworksBroadcast()
 
         val result = mutableListOf<DetectedHost>()
-        runBlocking {
-            val jobs = mutableListOf<Job>()
-            for (networkBroadcast in localNetworksIPs) {
-                val job = launch(Dispatchers.IO) {
-                    result.addAll(checkDevicesFromNetwork(networkBroadcast))
-                }
-                jobs.add(job)
+        val jobs = mutableListOf<Job>()
+        for (networkBroadcast in localNetworksIPs) {
+            val job = launch(Dispatchers.IO) {
+                result.addAll(checkDevicesFromNetwork(networkBroadcast))
             }
-            jobs.joinAll()
+            jobs.add(job)
         }
-        return result
+        jobs.joinAll()
+
+
+        result
+    }
+
+    override suspend fun findDevice(uuid: String): DetectedHost? = withContext(Dispatchers.IO) {
+        val localNetworksIPs = getCurrentLocalNetworksBroadcast()
+        val jobs = mutableListOf<Job>()
+        val hosts = mutableListOf<DetectedHost>()
+        for (networkBroadcast in localNetworksIPs) {
+            val job = launch(Dispatchers.IO) {
+                hosts.addAll(checkDevicesFromNetwork(networkBroadcast))
+            }
+            jobs.add(job)
+        }
+        jobs.joinAll()
+        hosts.find { it.uuid == uuid }
     }
 
     private fun getIPByteArray(ip: String): ByteArray {
@@ -86,17 +100,22 @@ class DetectionLocalNetworkStrategy : DetectionStrategy {
                 val receivedPacket = DatagramPacket(ByteArray(1000) { _ -> 0 }, 0, 1000)
                 socket.receive(receivedPacket)
 
-                val responseString = receivedPacket.data.takeWhile { b -> b != (0).toByte() }.toByteArray().toString(
-                    Charset.forName("UTF-8"))
+                val responseString =
+                    receivedPacket.data.takeWhile { b -> b != (0).toByte() }.toByteArray().toString(
+                        Charset.forName("UTF-8")
+                    )
                 Log.i("DETECTION", responseString)
 
                 try {
                     val responseJson = JsonParser.parseString(responseString).asJsonObject
                     val name = responseJson.get("name").asString
                     val ip =
-                        receivedPacket.address.hostAddress?.toString() ?: throw IllegalStateException("Invalid IP address from server")
+                        receivedPacket.address.hostAddress?.toString()
+                            ?: throw IllegalStateException("Invalid IP address from server")
                     val port = responseJson.get("port").asInt
-                    detectedHosts.add(DetectedHost(name, ip, port))
+                    val uuid = responseJson.get("id").asString
+                    val os = responseJson.get("os").asString.toOSString()
+                    detectedHosts.add(DetectedHost(uuid, name, os, ip, port))
                 } catch (e: Exception) {
                     // invalid response from the server
                     Log.e("DETECTION", e.message.toString())
@@ -124,12 +143,22 @@ class DetectionLocalNetworkStrategy : DetectionStrategy {
             for (j in n.interfaceAddresses) {
                 if (j.address.isSiteLocalAddress && j.broadcast != null) {
                     j.broadcast.hostAddress?.let { result.add(it) } ?: continue
-                    Log.i("NET", "Found ${j.broadcast.hostAddress} && ${j.address.isSiteLocalAddress}")
+                    Log.i(
+                        "NET",
+                        "Found ${j.broadcast.hostAddress} && ${j.address.isSiteLocalAddress}"
+                    )
                 }
             }
         }
 
         return result
+    }
+
+    private fun String.toOSString() = when(this.lowercase()) {
+        "win32" -> "Windows"
+        "darwin" -> "Mac OS"
+        "linux" -> "Linux"
+        else -> "Unknown OS"
     }
 
 }
