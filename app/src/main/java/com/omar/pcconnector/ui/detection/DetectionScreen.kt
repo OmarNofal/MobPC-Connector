@@ -21,14 +21,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.omar.pcconnector.model.DetectedDevice
 import com.omar.pcconnector.model.DeviceInfo
+import com.omar.pcconnector.model.PairedDevice
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -38,8 +41,6 @@ fun DetectionScreen(
 ) {
 
     val state by viewModel.state.collectAsState()
-    val verifiedDeviceState by viewModel.verifiedState.collectAsState()
-
 
     Scaffold(
         topBar = { TopAppBar(title = {
@@ -59,11 +60,13 @@ fun DetectionScreen(
                 .fillMaxSize()
                 .padding(contentPadding),
             state,
-            currentlyVerifiedDevice = verifiedDeviceState,
             onPasswordSubmit = viewModel::onPasswordSubmit,
             onVerificationCancel = viewModel::onCancelVerification,
             onConnectToServer = {
                 viewModel.connectToNewDevice(it) //onConnectionSelected(it.toConnection())
+            },
+            onConnectToPairedDevice = {
+                viewModel.connectToPairedDevice(it)
             }
         )
     }
@@ -73,16 +76,16 @@ fun DetectionScreen(
 fun MainContent(
     modifier: Modifier,
     state: DetectionScreenState,
-    currentlyVerifiedDevice: DetectedDevice?,
     onPasswordSubmit: (String) -> Unit,
     onVerificationCancel: () -> Unit,
-    onConnectToServer: (DetectedDevice) -> Unit
+    onConnectToServer: (DetectedDevice) -> Unit,
+    onConnectToPairedDevice: (PairedDevice) -> Unit
 ) {
     val detectedDevices = state.detectedDevices
     val pairedDevices = state.pairedDevices
 
     VerificationDialog(
-        currentlyVerifiedDevice?.deviceInfo,
+        state.currentlyVerifying?.deviceInfo,
         onVerificationCancel,
         onPasswordSubmit
     )
@@ -95,9 +98,19 @@ fun MainContent(
                 Header(Modifier.padding(start = 16.dp), "Paired Devices")
             }
 
-            items(pairedDevices) {
-                DeviceRow(modifier = Modifier.fillMaxWidth(), deviceInfo = it.deviceInfo) {
-
+            if (pairedDevices.isEmpty()) {
+                item {
+                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        Text(text = "Your paired devices will appear here")
+                    }
+                }
+            }
+            else {
+                items(pairedDevices) {
+                    DeviceRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        deviceInfo = it.deviceInfo
+                    ) { onConnectToPairedDevice(it) }
                 }
             }
 
@@ -105,9 +118,23 @@ fun MainContent(
                 Header(Modifier.padding(start = 16.dp), "Detected Devices")
             }
 
-            items(detectedDevices) {
-                DeviceRow(modifier = Modifier.fillMaxWidth(), deviceInfo = it.deviceInfo) {
-                    onConnectToServer(it)
+            if (detectedDevices.isEmpty()) {
+                item {
+                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        Text(
+                            text = "No devices were found. Make sure you are on the same local network",
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 16.dp, bottom = 16.dp),
+                            fontSize = 12.sp
+                        )
+                    }
+                }
+            } else {
+                items(detectedDevices) {
+                    DeviceRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        deviceInfo = it.deviceInfo
+                    ) { onConnectToServer(it) }
                 }
             }
 

@@ -31,13 +31,22 @@ class DetectionViewModel @Inject constructor(
     val state: StateFlow<DetectionScreenState>
         get() = _state
     private val _state: MutableStateFlow<DetectionScreenState> =
-        MutableStateFlow(DetectionScreenState.Searching(listOf(), listOf()))
+        MutableStateFlow(DetectionScreenState())
 
-    // Whether we are currently asking the user for a password or not
-    private val _verifiedState = MutableStateFlow<DetectedDevice?>(null)
-    val verifiedState: StateFlow<DetectedDevice?>
-        get() = _verifiedState
 
+
+    init {
+        viewModelScope.launch {
+            val pairedDevices = devicesRepository.getAllPairedDevices()
+            val detectedHosts = _state.value.detectedDevices
+            _state.value =
+                _state.value.copy(
+                    detectedDevices = detectedHosts
+                        .filter { detectedDevice -> detectedDevice.deviceInfo.id !in pairedDevices.map { it.deviceInfo.id } },
+                    pairedDevices = pairedDevices,
+                    isSearching = false)
+        }
+    }
 
 
     init {
@@ -50,16 +59,18 @@ class DetectionViewModel @Inject constructor(
     }
 
     fun connectToNewDevice(detectedDevice: DetectedDevice) {
-        _verifiedState.value = detectedDevice
+        _state.value = _state.value.copy(currentlyVerifying = detectedDevice)
     }
 
+
     fun onCancelVerification() {
-        _verifiedState.value = null
+        _state.value = _state.value.copy(currentlyVerifying = null)
     }
 
     fun onPasswordSubmit(password: String) {
-        val detectedDevice = _verifiedState.value ?: return
-        _verifiedState.value = null
+        val detectedDevice = _state.value.currentlyVerifying ?: return
+
+        _state.value = _state.value.copy(currentlyVerifying = null)
         stateToConnecting(detectedDevice)
 
         viewModelScope.launch {
@@ -88,15 +99,11 @@ class DetectionViewModel @Inject constructor(
     }
 
     private fun stateToSearching() {
-        val detectedHosts = _state.value.detectedDevices
-        val pairedDevices = _state.value.pairedDevices
-        _state.value = DetectionScreenState.Searching(detectedHosts, pairedDevices)
+        _state.value = _state.value.copy(isSearching = true)
     }
 
     private fun stateToConnecting(detectedDevice: DetectedDevice) {
-        val detectedDevices = _state.value.detectedDevices
-        val pairedDevices = _state.value.pairedDevices
-        _state.value = DetectionScreenState.Connecting(detectedDevices, pairedDevices, detectedDevice.deviceInfo.id)
+        _state.value = _state.value.copy(connectingToDeviceId = detectedDevice.deviceInfo.id)
     }
 
     private fun refreshAvailableServers() {
@@ -105,11 +112,13 @@ class DetectionViewModel @Inject constructor(
             stateToSearching()
             val detectedHosts =
                 connectivity.getDetectedServersOnLocalNetwork()
-
+            val pairedDevices = _state.value.pairedDevices
             _state.value =
-                DetectionScreenState.Idle(
-                    detectedHosts, listOf()
-                )
+                _state.value.copy(
+                    detectedDevices = detectedHosts
+                        .filter { detectedDevice -> detectedDevice.deviceInfo.id !in pairedDevices.map { it.deviceInfo.id } },
+                    pairedDevices = pairedDevices,
+                    isSearching = false)
         }
 
     }
@@ -117,25 +126,10 @@ class DetectionViewModel @Inject constructor(
 }
 
 
-sealed class DetectionScreenState(
-    val detectedDevices: List<DetectedDevice>,
-    val pairedDevices: List<PairedDevice>
-) {
-
-    class Searching(
-        detectedDevices: List<DetectedDevice>,
-        pairedDevices: List<PairedDevice>
-    ) : DetectionScreenState(detectedDevices, pairedDevices)
-
-    class Idle(
-        detectedDevices: List<DetectedDevice>,
-        pairedDevices: List<PairedDevice>
-    ) : DetectionScreenState(detectedDevices, pairedDevices)
-
-    class Connecting(
-        detectedDevices: List<DetectedDevice>,
-        pairedDevices: List<PairedDevice>,
-        val deviceId: String
-    ): DetectionScreenState(detectedDevices, pairedDevices)
-
-}
+data class DetectionScreenState(
+    val detectedDevices: List<DetectedDevice> = listOf(),
+    val pairedDevices: List<PairedDevice> = listOf(),
+    val isSearching: Boolean = false,
+    val connectingToDeviceId: String? = null,
+    val currentlyVerifying: DetectedDevice? = null
+)
