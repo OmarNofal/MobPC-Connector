@@ -29,4 +29,7 @@ interface DeviceDao {
     @Query("SELECT * FROM DeviceEntity WHERE id = :id")
     fun getDeviceFlow(id: String): Flow<DeviceEntity>
 
+    @Query("SELECT * FROM DeviceEntity WHERE id = :id")
+    suspend fun getDevice(id: String): DeviceEntity
+
 }

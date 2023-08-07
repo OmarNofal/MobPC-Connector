@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.rounded.*
@@ -27,7 +26,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -362,7 +360,7 @@ fun ResourceIcon(
             tint = MaterialTheme.colorScheme.onSurface
         )
     } else if (resource.path.extension.lowercase() in supportedImageExtension) {
-        ImagePreviewIcon(modifier = modifier.clip(RoundedCornerShape(4.dp)), resource = resource)
+        // ImagePreviewIcon(modifier = modifier.clip(RoundedCornerShape(4.dp)), resource = resource)
     } else {
         Icon(
             painter = painterResource(id = iconForExtension(resource.path.extension)),

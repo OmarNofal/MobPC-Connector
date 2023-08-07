@@ -73,7 +73,11 @@ class TransfersManager @Inject constructor(
 
                             val state: TransferState = when (workerEntity.workerStatus) {
                                 WorkerStatus.FINISHED -> TransferState.Finished
-                                WorkerStatus.FAILED -> TransferState.Failed(workerEntity.exception?.toDomainTransferError() ?: TransferError.UNKNOWN_ERROR)
+                                WorkerStatus.FAILED -> TransferState.Failed(
+                                    workerEntity.exception?.toDomainTransferError()
+                                        ?: TransferError.UNKNOWN_ERROR
+                                )
+
                                 WorkerStatus.STARTING -> TransferState.Initializing
                                 WorkerStatus.ENQUEUED -> TransferState.Initializing
                                 WorkerStatus.RUNNING -> getTransferProgressFromWorker(id)
@@ -87,7 +91,7 @@ class TransfersManager @Inject constructor(
 
 
     fun download(
-        connection: Connection,
+        deviceId: String,
         pathOnServer: Path,
         downloadPath: DocumentFile
     ) {
@@ -101,15 +105,21 @@ class TransfersManager @Inject constructor(
                 .setInputData(
                     workDataOf(
                         "pathOnServer" to pathOnServer.absolutePathString(),
-                        "api_endpoint" to connection.retrofit.baseUrl().toString(),
                         "downloadUri" to downloadPath.uri.toString(),
+                        "device_id" to deviceId
                     )
                 ).build()
 
         workManager.enqueue(downloadWorkerRequest)
         scope.launch {
             workerDao.insertWorker(
-                WorkerEntity(workerId.toString(), WorkerType.DOWNLOAD, WorkerStatus.ENQUEUED, pathOnServer.name)
+                WorkerEntity(
+                    workerId.toString(),
+                    deviceId,
+                    WorkerType.DOWNLOAD,
+                    WorkerStatus.ENQUEUED,
+                    pathOnServer.name
+                )
             )
         }
     }
@@ -117,7 +127,7 @@ class TransfersManager @Inject constructor(
 
     fun upload(
         files: List<DocumentFile>,
-        connection: Connection,
+        deviceId: String,
         path: Path
     ) {
         if (files.isEmpty()) return
@@ -131,19 +141,25 @@ class TransfersManager @Inject constructor(
                 .setInputData(
                     workDataOf(
                         "uris" to files.map { it.uri.toString() }.toTypedArray(),
-                        "api_endpoint" to connection.retrofit.baseUrl().toString(),
                         "path" to path.absolutePathString(),
-                        "directory_flags" to files.toDirectoryFlags().toTypedArray()
+                        "directory_flags" to files.toDirectoryFlags().toTypedArray(),
+                        "device_id" to deviceId
                     )
                 ).build()
 
         workManager.enqueue(uploadWorkerRequest)
 
         val resourceName = if (files.size == 1) files[0].name ?: "Unknown"
-            else "${files[0]} and ${files.size - 1} others"
+        else "${files[0]} and ${files.size - 1} others"
         scope.launch {
             workerDao.insertWorker(
-                WorkerEntity(workerId.toString(), WorkerType.UPLOAD, WorkerStatus.ENQUEUED, resourceName)
+                WorkerEntity(
+                    workerId.toString(),
+                    deviceId,
+                    WorkerType.UPLOAD,
+                    WorkerStatus.ENQUEUED,
+                    resourceName
+                )
             )
         }
     }

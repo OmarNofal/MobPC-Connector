@@ -36,6 +36,9 @@ abstract class TransferWorker(
             workerDao.getById(this@TransferWorker.id.toString()).resourceName
         }
 
+    private val deviceId =
+        inputData.getString("device_id") ?: ""
+
     abstract val workerType: WorkerType
 
     abstract val notificationChannelName: String
@@ -52,17 +55,7 @@ abstract class TransferWorker(
     init {
         createNotificationChannel()
     }
-
-    inline fun <reified T> getApi(): T? {
-        val apiEndpoint = inputData.getString("api_endpoint") ?: return null
-
-        return Retrofit.Builder()
-            .baseUrl(apiEndpoint)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(T::class.java)
-    }
-
+    
     override suspend fun getForegroundInfo(): ForegroundInfo {
         val cancelAction = Notification.Action.Builder(null, "Cancel", WorkManager.getInstance(applicationContext).createCancelPendingIntent(id))
             .build()
@@ -82,13 +75,13 @@ abstract class TransferWorker(
     private var isSetToRunningInDatabase = false
     fun setToRunningInDatabase() {
         if (!isSetToRunningInDatabase) {
-            databaseScope.launch { workerDao.updateWorker(WorkerEntity(id.toString(), workerType, WorkerStatus.RUNNING, resourceName)) }
+            databaseScope.launch { workerDao.updateWorker(WorkerEntity(id.toString(), deviceId, workerType, WorkerStatus.RUNNING, resourceName)) }
             isSetToRunningInDatabase = true
         }
     }
 
     suspend fun setToLoading() {
-        databaseScope.launch { workerDao.updateWorker(WorkerEntity(id.toString(), workerType, WorkerStatus.STARTING, resourceName)) }
+        databaseScope.launch { workerDao.updateWorker(WorkerEntity(id.toString(), deviceId, workerType, WorkerStatus.STARTING, resourceName)) }
         setProgress(
             workDataOf(
                 "state" to "loading"
@@ -97,12 +90,12 @@ abstract class TransferWorker(
     }
 
     suspend fun setToFailureAndReturn(cause: WorkerException): Result {
-        workerDao.updateWorker(WorkerEntity(id.toString(), workerType, WorkerStatus.FAILED, resourceName, cause))
+        workerDao.updateWorker(WorkerEntity(id.toString(), deviceId, workerType, WorkerStatus.FAILED, resourceName, cause))
         return Result.failure()
     }
 
     suspend fun setToFinished() {
-        workerDao.updateWorker(WorkerEntity(id.toString(), workerType, WorkerStatus.FINISHED, resourceName))
+        workerDao.updateWorker(WorkerEntity(id.toString(), deviceId, workerType, WorkerStatus.FINISHED, resourceName))
         setProgress(
             workDataOf(
                 "state" to "finished"
@@ -112,7 +105,7 @@ abstract class TransferWorker(
 
 
     suspend fun setToCancelled() {
-        workerDao.updateWorker(WorkerEntity(id.toString(), workerType, WorkerStatus.CANCELLED, resourceName))
+        workerDao.updateWorker(WorkerEntity(id.toString(), deviceId, workerType, WorkerStatus.CANCELLED, resourceName))
         setProgressAsync(
             workDataOf(
                 "state" to "cancelled"

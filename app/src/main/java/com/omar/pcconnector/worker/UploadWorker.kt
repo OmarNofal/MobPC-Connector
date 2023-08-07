@@ -8,10 +8,12 @@ import androidx.hilt.work.HiltWorker
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.omar.pcconnector.R
+import com.omar.pcconnector.data.DevicesRepository
 import com.omar.pcconnector.db.WorkerDao
 import com.omar.pcconnector.db.WorkerException
 import com.omar.pcconnector.db.WorkerType
-import com.omar.pcconnector.network.api.FileSystemOperations
+import com.omar.pcconnector.fileSystemApi
+import com.omar.pcconnector.network.connection.Connectivity
 import com.omar.pcconnector.operation.transfer.upload.UploadOperation
 import com.omar.pcconnector.operation.transfer.upload.UploadOperationState
 import dagger.assisted.Assisted
@@ -35,7 +37,8 @@ import kotlin.random.Random
 class UploadWorker @AssistedInject constructor(
     @Assisted appContext: Context,
     @Assisted params: WorkerParameters,
-    workerDao: WorkerDao
+    workerDao: WorkerDao,
+    private val devicesRepository: DevicesRepository
 ): TransferWorker(appContext, params, workerDao) {
 
 
@@ -94,7 +97,15 @@ class UploadWorker @AssistedInject constructor(
         val uploadPath = inputData.getString("path") ?:
             return setToFailureAndReturn(WorkerException.UNKNOWN_EXCEPTION)
 
-        val api = getApi<FileSystemOperations>() ?: return setToFailureAndReturn(WorkerException.UNKNOWN_EXCEPTION)
+        val deviceId = inputData.getString("device_id") ?: return Result.failure()
+
+
+        val deviceEntity = devicesRepository.getPairedDevice(deviceId)
+        val device = Connectivity.findDevice(deviceId) ?: return Result.retry()
+
+        val connection = device.toConnection(deviceEntity.token)
+
+        val api = connection.retrofit.fileSystemApi()
 
         val operation = UploadOperation(
             api,
@@ -127,6 +138,7 @@ class UploadWorker @AssistedInject constructor(
             }
         }
         catch (e: IOException) {
+            Log.e(TAG, e.stackTraceToString())
             Log.e(TAG, "Upload failed ${e.message}")
             return setToFailureAndReturn(WorkerException.IO_EXCEPTION)
         }

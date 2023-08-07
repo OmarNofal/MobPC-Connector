@@ -8,6 +8,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -24,6 +25,10 @@ class DevicesRepository @Inject constructor(
 
     fun getPairedDeviceFlow(id: String) =
         deviceDao.getDeviceFlow(id).map { it.toPairedDevice() }
+
+    suspend fun getPairedDevice(id: String) = withContext(Dispatchers.IO) {
+        deviceDao.getDevice(id).toPairedDevice()
+    }
 
     suspend fun storeDevice(
         pairedDevice: PairedDevice

@@ -80,20 +80,20 @@ class FileSystemViewModel @AssistedInject constructor(
         // 2) when drives are loaded, get the home directory and load the path
         // Note we need to handle errors
         viewModelScope.launch {
-            serverConnection.connectionStatus.
-                transformWhile {
-                    if (it is ConnectionStatus.Connected) {
-                        emit(it)
-                        false
-                    } else {
-                        true
-                    }
-                }.collect {
-                    val api = it.connection.retrofit.fileSystemApi()
-                    val drives = GetDrivesOperation(api).start()
-                    val directoryToLoad = Paths.get(drives.first(), "/")
-                    _state.value = FileSystemState.Initialized.Loading(directoryToLoad, drives, emptyList())
-                    loadDirectory(directoryToLoad)
+            serverConnection.connectionStatus.transformWhile {
+                if (it is ConnectionStatus.Connected) {
+                    emit(it)
+                    false
+                } else {
+                    true
+                }
+            }.collect {
+                val api = it.connection.retrofit.fileSystemApi()
+                val drives = GetDrivesOperation(api).start()
+                val directoryToLoad = Paths.get(drives.first(), "/")
+                _state.value =
+                    FileSystemState.Initialized.Loading(directoryToLoad, drives, emptyList())
+                loadDirectory(directoryToLoad)
             }
         }
 
@@ -102,7 +102,7 @@ class FileSystemViewModel @AssistedInject constructor(
             serverConnection.connectionStatus.collect {
                 if (it is ConnectionStatus.Connected) {
                     eventsFlow.emit(ApplicationEvent(ApplicationOperation.PING_SERVER, true))
-                } else if ((it is ConnectionStatus.NotFound) && (previousState is ConnectionStatus.Connected)){
+                } else if ((it is ConnectionStatus.NotFound) && (previousState is ConnectionStatus.Connected)) {
                     eventsFlow.emit(ApplicationEvent(ApplicationOperation.PING_SERVER, false))
                 }
                 previousState = it
@@ -116,7 +116,8 @@ class FileSystemViewModel @AssistedInject constructor(
         viewModelScope.launch {
             getConnectionOrShowError()?.retrofit?.fileSystemApi() ?: return@launch
             val state = _state.value as FileSystemState.Initialized
-            _state.value = FileSystemState.Initialized.Loading(path, state.drives, state.directoryStructure)
+            _state.value =
+                FileSystemState.Initialized.Loading(path, state.drives, state.directoryStructure)
             refresh()
             watchCurrentDirectory()
         }
@@ -243,9 +244,8 @@ class FileSystemViewModel @AssistedInject constructor(
         resource: Resource,
         destinationFolder: DocumentFile
     ) {
-        val connection = getConnectionOrShowError() ?: return
         transfersManager.download(
-            connection,
+            serverConnection.id,
             resource.path,
             destinationFolder
         )
@@ -255,16 +255,15 @@ class FileSystemViewModel @AssistedInject constructor(
         documents: List<DocumentFile>
     ) {
         assert(_state.value !is FileSystemState.Loading)
-        val connection = getConnectionOrShowError() ?: return
         val state = _state.value as FileSystemState.Initialized
-        transfersManager.upload(documents, connection, state.currentDirectory)
+        transfersManager.upload(documents, serverConnection.id, state.currentDirectory)
     }
 
     /**
      * Get the connection if we are currently connected or return null and log error
      */
     private fun getConnectionOrShowError(): Connection? {
-        return when(val s = serverConnection.connectionStatus.value) {
+        return when (val s = serverConnection.connectionStatus.value) {
             is ConnectionStatus.Connected -> s.connection
             else -> {
                 Log.e("VM", "No Connection currently")
@@ -310,7 +309,7 @@ sealed class FileSystemState {
         class Loading(
             currentDirectory: Path,
             drives: List<String>,
-           directoryStructure: List<Resource>
+            directoryStructure: List<Resource>
         ) : Initialized(currentDirectory, drives, directoryStructure)
 
         class Loaded(

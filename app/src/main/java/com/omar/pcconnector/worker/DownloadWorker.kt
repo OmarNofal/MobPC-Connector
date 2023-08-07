@@ -8,10 +8,12 @@ import androidx.hilt.work.HiltWorker
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.omar.pcconnector.R
+import com.omar.pcconnector.data.DevicesRepository
 import com.omar.pcconnector.db.WorkerDao
 import com.omar.pcconnector.db.WorkerException
 import com.omar.pcconnector.db.WorkerType
-import com.omar.pcconnector.network.api.FileSystemOperations
+import com.omar.pcconnector.fileSystemApi
+import com.omar.pcconnector.network.connection.Connectivity
 import com.omar.pcconnector.operation.transfer.download.DownloadOperation
 import com.omar.pcconnector.operation.transfer.download.DownloadOperationState
 import dagger.assisted.Assisted
@@ -22,8 +24,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
 import java.io.FileNotFoundException
 import java.io.IOException
 import java.nio.file.Paths
@@ -33,7 +33,8 @@ import kotlin.random.Random
 @HiltWorker
 class DownloadWorker @AssistedInject constructor(
     @Assisted appContext: Context, @Assisted params: WorkerParameters,
-    workerDao: WorkerDao
+    workerDao: WorkerDao,
+    private val devicesRepository: DevicesRepository,
 ): TransferWorker(appContext, params, workerDao) {
 
     private var state: DownloadOperationState = DownloadOperationState.Initializing
@@ -78,15 +79,18 @@ class DownloadWorker @AssistedInject constructor(
 
         val pathOnServer = inputData.getString("pathOnServer") ?: return Result.failure()
         val downloadPathUri = inputData.getString("downloadUri")?.toUri() ?: return Result.failure()
-        val apiEndpoint = inputData.getString("api_endpoint") ?: return Result.failure()
+        val deviceId = inputData.getString("device_id") ?: return Result.failure()
 
-        val api = Retrofit.Builder()
-            .baseUrl(apiEndpoint)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
+
+        val deviceEntity = devicesRepository.getPairedDevice(deviceId)
+        val device = Connectivity.findDevice(deviceId) ?: return Result.retry()
+
+        val connection = device.toConnection(deviceEntity.token)
+
+        val api = connection.retrofit.fileSystemApi()
 
         val downloadOperation = DownloadOperation(
-            api.create(FileSystemOperations::class.java),
+            api,
             Paths.get(pathOnServer),
             DocumentFile.fromTreeUri(applicationContext, downloadPathUri)!!,
             applicationContext.contentResolver

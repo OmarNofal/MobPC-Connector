@@ -22,7 +22,7 @@ import kotlinx.coroutines.withTimeout
  * flows to monitor in real time.
  */
 class ServerConnection(
-    private val id: String,
+    val id: String,
     private val token: String,
     private val scope: CoroutineScope
 ) {

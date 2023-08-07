@@ -8,6 +8,7 @@ import com.omar.pcconnector.model.TransferError
 @Entity
 data class WorkerEntity(
     @PrimaryKey val workerId: String,
+    val serverId: String,
     val workerType: WorkerType,
     val workerStatus: WorkerStatus,
     val resourceName: String,
