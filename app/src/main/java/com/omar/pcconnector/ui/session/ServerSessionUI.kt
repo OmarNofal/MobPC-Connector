@@ -49,6 +49,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.documentfile.provider.DocumentFile
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.omar.pcconnector.model.PairedDevice
 import com.omar.pcconnector.model.TransferState
 import com.omar.pcconnector.network.connection.Connection
 import com.omar.pcconnector.ui.MakeDirDialog
@@ -57,16 +58,17 @@ import com.omar.pcconnector.ui.event.ApplicationOperation
 import com.omar.pcconnector.ui.fab.FileSystemFAB
 import com.omar.pcconnector.ui.fileSystemViewModel
 import com.omar.pcconnector.ui.fs.FileSystemUI
+import com.omar.pcconnector.ui.serverConnectionViewModel
 import com.omar.pcconnector.ui.toolbar.MainToolbar
 import com.omar.pcconnector.ui.toolbarViewModel
 import com.omar.pcconnector.ui.transfer.TransferPopup
 import com.omar.pcconnector.ui.transfer.TransferViewModel
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.collectLatest
-import java.lang.IllegalArgumentException
 
 
-val LocalConnectionProvider = compositionLocalOf<Connection>(defaultFactory = { throw IllegalArgumentException() })
+val LocalConnectionProvider =
+    compositionLocalOf<Connection>(defaultFactory = { throw IllegalArgumentException() })
 
 /**
  * Corresponds to the whole UI which encompasses all states and actions
@@ -76,12 +78,15 @@ val LocalConnectionProvider = compositionLocalOf<Connection>(defaultFactory = { 
 @Composable
 fun ServerSession(
     modifier: Modifier,
-    connection: Connection,
+    pairedDevice: PairedDevice,
     eventsFlow: SharedFlow<ApplicationEvent>
 ) {
 
-    val toolbarViewModel = toolbarViewModel(connection = connection)
-    val fileSystemViewModel = fileSystemViewModel(connection = connection)
+    val serverConnectionViewModel = serverConnectionViewModel(pairedDevice = pairedDevice)
+
+    val toolbarViewModel =
+        toolbarViewModel(serverConnectionViewModel.serverConnection, pairedDevice.deviceInfo.name)
+    val fileSystemViewModel = fileSystemViewModel(serverConnectionViewModel.serverConnection)
     val transfersViewModel = hiltViewModel<TransferViewModel>()
 
 
@@ -166,7 +171,7 @@ fun ServerSession(
 
 
         CompositionLocalProvider(
-            LocalConnectionProvider provides connection
+            //LocalConnectionProvider provides connection
         ) {
 
             Box(modifier = Modifier.fillMaxSize()) {

@@ -18,7 +18,7 @@ object Connectivity {
      * Find a device with the given id on local networks on global network using Firebase
      */
     suspend fun findDevice(uuid: String, preference: ConnectionPreference = ConnectionPreference.LOCAL_NETWORK) =
-        DetectionLocalNetworkStrategy.findDevice(uuid)
+        DetectionLocalNetworkStrategy.findDevice(uuid)?.toDetectedDevice()
 
 
     private fun DetectedHost.toDetectedDevice() =

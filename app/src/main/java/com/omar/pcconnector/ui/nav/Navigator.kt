@@ -49,13 +49,17 @@ object ImageScreen {
 
 object ServerScreen {
 
-    fun navigationCommand() = object : NavigationCommand {
+
+    const val ID_ARG = "id"
+    val arguments = listOf(navArgument(ID_ARG) { type = NavType.StringType })
+
+    fun navigationCommand(id: String) = object : NavigationCommand {
         override val options: NavOptions
             get() = navOptions { }
         override val screen: Screen
             get() = Screen.ServerScreen
         override val destination: String
-            get() = Screen.SERVER_SCREEN
+            get() = "server/$id"
     }
 
 }

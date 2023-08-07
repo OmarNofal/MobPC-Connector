@@ -29,13 +29,11 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.omar.pcconnector.model.DetectedDevice
 import com.omar.pcconnector.model.DeviceInfo
-import com.omar.pcconnector.network.connection.Connection
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetectionScreen(
-    onConnectionSelected: (Connection) -> Unit,
     viewModel: DetectionViewModel = hiltViewModel()
 ) {
 
@@ -65,7 +63,7 @@ fun DetectionScreen(
             onPasswordSubmit = viewModel::onPasswordSubmit,
             onVerificationCancel = viewModel::onCancelVerification,
             onConnectToServer = {
-                viewModel.connectToNewDevice(it); //onConnectionSelected(it.toConnection())
+                viewModel.connectToNewDevice(it) //onConnectionSelected(it.toConnection())
             }
         )
     }
@@ -75,7 +73,7 @@ fun DetectionScreen(
 fun MainContent(
     modifier: Modifier,
     state: DetectionScreenState,
-    currentlyVerifiedDevice: DeviceInfo?,
+    currentlyVerifiedDevice: DetectedDevice?,
     onPasswordSubmit: (String) -> Unit,
     onVerificationCancel: () -> Unit,
     onConnectToServer: (DetectedDevice) -> Unit
@@ -84,7 +82,7 @@ fun MainContent(
     val pairedDevices = state.pairedDevices
 
     VerificationDialog(
-        currentlyVerifiedDevice,
+        currentlyVerifiedDevice?.deviceInfo,
         onVerificationCancel,
         onPasswordSubmit
     )

@@ -6,6 +6,7 @@ import com.omar.pcconnector.model.DeviceInfo
 import com.omar.pcconnector.model.PairedDevice
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -21,12 +22,15 @@ class DevicesRepository @Inject constructor(
     suspend fun getAllPairedDevices() =
         deviceDao.getAllDevices().map { it.toPairedDevice() }
 
-    fun storeDevice(
+    fun getPairedDeviceFlow(id: String) =
+        deviceDao.getDeviceFlow(id).map { it.toPairedDevice() }
+
+    suspend fun storeDevice(
         pairedDevice: PairedDevice
     ) {
         scope.launch {
             deviceDao.insert(pairedDevice.toDeviceEntity())
-        }
+        }.join()
     }
 
     private fun PairedDevice.toDeviceEntity() =

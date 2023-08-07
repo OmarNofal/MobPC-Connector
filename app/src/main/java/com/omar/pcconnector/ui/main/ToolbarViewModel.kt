@@ -1,11 +1,13 @@
 package com.omar.pcconnector.ui.main
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.omar.pcconnector.network.api.PCOperations
-import com.omar.pcconnector.network.connection.Connection
+import com.omar.pcconnector.network.connection.ConnectionStatus
+import com.omar.pcconnector.network.connection.ServerConnection
 import com.omar.pcconnector.operation.SimpleOperationManager
+import com.omar.pcconnector.pcApi
 import com.omar.pcconnector.ui.event.ApplicationEvent
 import com.omar.pcconnector.ui.event.ApplicationOperation
 import dagger.assisted.Assisted
@@ -17,26 +19,37 @@ import kotlinx.coroutines.launch
 
 
 class ToolbarViewModel @AssistedInject constructor(
-    @Assisted val connection: Connection,
+    @Assisted val serverConnection: ServerConnection,
+    @Assisted val serverName: String,
     private val appEventsFlow: MutableSharedFlow<ApplicationEvent>
-): ViewModel() {
+) : ViewModel() {
 
-    val serverName: String = connection.serverName
 
-    private val operationManager: SimpleOperationManager
-        = SimpleOperationManager(
-        connection.retrofit.create(PCOperations::class.java)
-        )
+    init {
+
+        viewModelScope.launch {
+            serverConnection.connectionStatus.collect {
+                operationManager = if (it is ConnectionStatus.Connected) {
+                    SimpleOperationManager(it.connection.retrofit.pcApi())
+                } else {
+                    null
+                }
+            }
+        }
+
+    }
+
+
+    private var operationManager: SimpleOperationManager? = null
 
     fun lockPC() {
         viewModelScope.launch(Dispatchers.IO) {
-            var success = true
             try {
+                val operationManager = getOperationManagerOrShowError() ?: return@launch
                 operationManager.lockPC()
+                appEventsFlow.emit(ApplicationEvent(ApplicationOperation.LOCK_PC, true))
             } catch (e: Throwable) {
-                success = false
-            } finally {
-                appEventsFlow.emit(ApplicationEvent(ApplicationOperation.LOCK_PC, success))
+                appEventsFlow.emit(ApplicationEvent(ApplicationOperation.LOCK_PC, false))
             }
         }
     }
@@ -44,39 +57,57 @@ class ToolbarViewModel @AssistedInject constructor(
 
     fun shutdownPC() {
         viewModelScope.launch(Dispatchers.IO) {
-            var success = true
             try {
+                val operationManager = getOperationManagerOrShowError() ?: return@launch
                 operationManager.shutdownPC()
+                appEventsFlow.emit(ApplicationEvent(ApplicationOperation.SHUTDOWN_PC, true))
             } catch (e: Throwable) {
-                success = false
-            } finally {
-                appEventsFlow.emit(ApplicationEvent(ApplicationOperation.SHUTDOWN_PC, success))
+                appEventsFlow.emit(ApplicationEvent(ApplicationOperation.SHUTDOWN_PC, false))
             }
         }
     }
 
     fun openLinkInBrowser(link: String, incognito: Boolean) {
         viewModelScope.launch(Dispatchers.IO) {
-            var success = true
             try {
+                val operationManager = getOperationManagerOrShowError() ?: return@launch
                 operationManager.openInBrowser(link, incognito)
+                appEventsFlow.emit(ApplicationEvent(ApplicationOperation.OPEN_URL, true))
             } catch (e: Throwable) {
-                success = false
-            } finally {
-                appEventsFlow.emit(ApplicationEvent(ApplicationOperation.OPEN_URL, success))
+                appEventsFlow.emit(ApplicationEvent(ApplicationOperation.OPEN_URL, false))
             }
+        }
+    }
+
+    private fun getOperationManagerOrShowError(): SimpleOperationManager? {
+        return when (val op = operationManager) {
+            null -> {
+                Log.e("VM", "No Connection currently")
+                null
+            }
+
+            else -> op
         }
     }
 
     fun copyToPCClipboard(data: String) {
         viewModelScope.launch(Dispatchers.IO) {
-            var success = true
             try {
+                val operationManager = getOperationManagerOrShowError() ?: return@launch
                 operationManager.copyToPCClipboard(data)
+                appEventsFlow.emit(
+                    ApplicationEvent(
+                        ApplicationOperation.COPY_TO_CLIPBOARD,
+                        true
+                    )
+                )
             } catch (e: Throwable) {
-                success = false
-            } finally {
-                appEventsFlow.emit(ApplicationEvent(ApplicationOperation.COPY_TO_CLIPBOARD, success))
+                appEventsFlow.emit(
+                    ApplicationEvent(
+                        ApplicationOperation.COPY_TO_CLIPBOARD,
+                        false
+                    )
+                )
             }
         }
     }
@@ -84,17 +115,18 @@ class ToolbarViewModel @AssistedInject constructor(
 
     @AssistedFactory
     interface Factory {
-        fun create(connection: Connection): ToolbarViewModel
+        fun create(serverConnection: ServerConnection, serverName: String): ToolbarViewModel
     }
 
     companion object {
         @Suppress("UNCHECKED_CAST")
         fun provideFactory(
             assistedFactory: Factory,
-            connection: Connection
+            serverConnection: ServerConnection,
+            serverName: String
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return assistedFactory.create(connection) as T
+                return assistedFactory.create(serverConnection, serverName) as T
             }
         }
     }

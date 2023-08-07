@@ -3,6 +3,7 @@ package com.omar.pcconnector.operation
 import com.omar.pcconnector.network.api.PCOperations
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -15,29 +16,28 @@ class SimpleOperationManager(
     private val scope = CoroutineScope(Dispatchers.IO)
 
     suspend fun lockPC() {
-        scope.launch {
+        scope.async {
             LockPCOperation(pcOperationsAPI).start()
-        }.join()
+        }.await()
     }
 
     suspend fun shutdownPC() {
-        scope.launch {
+        scope.async {
             ShutdownPCOperation(pcOperationsAPI).start()
-        }.join()
+        }.await()
     }
 
 
     suspend fun copyToPCClipboard(data: String) {
-        withContext(scope.coroutineContext) {
-            delay(1000)
+        scope.async {
             CopyToClipboardOperation(pcOperationsAPI, data).start()
-        }
+        }.await()
     }
 
     suspend fun openInBrowser(url: String, incognito: Boolean) {
-        scope.launch {
+        scope.async {
             OpenLinkOperation(pcOperationsAPI, url, incognito).start()
-        }.join()
+        }.await()
     }
 
 

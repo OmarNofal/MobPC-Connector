@@ -19,7 +19,7 @@ sealed class Screen {
 
     companion object {
         const val DETECTION_SCREEN = "detection"
-        const val SERVER_SCREEN = "server"
+        const val SERVER_SCREEN = "server/{id}"
         const val IMAGE_SCREEN = "image/{path}"
     }
 

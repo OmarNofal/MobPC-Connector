@@ -22,9 +22,12 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.unit.Dp
+import com.omar.pcconnector.network.api.secureClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okio.BufferedSource
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
 import java.nio.ByteBuffer
 import java.nio.file.Path
 import kotlin.io.path.absolutePathString
@@ -62,6 +65,14 @@ fun Long.bytesToSizeString(): String {
 val supportedImageExtension = listOf("jpg", "jpeg", "png", "bmp", "webp")
 fun String.isSupportedImageExtension() = this in supportedImageExtension
 
+
+fun getRetrofit(ip: String, port: Int): Retrofit {
+    return Retrofit.Builder()
+        .baseUrl("https://$ip:$port")
+        .client(secureClient.build())
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
+}
 
 /**
  * Suspends coroutine until the buffer is filled

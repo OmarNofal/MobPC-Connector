@@ -64,6 +64,17 @@ data class NetworkResource(
     val resources: List<NetworkResource>?
 )
 
+@Keep
+data class VerifyTokenResponse(
+    @SerializedName("valid")
+    val isVerified: Boolean
+)
+
+@Keep
+data class LoginResponse(
+    @SerializedName("token")
+    val token: Token
+)
 
 fun NetworkResource.toDomainResource(path: Path): Resource {
 

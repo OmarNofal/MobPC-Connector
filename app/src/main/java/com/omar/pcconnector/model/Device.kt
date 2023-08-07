@@ -2,8 +2,7 @@ package com.omar.pcconnector.model
 
 import com.omar.pcconnector.network.api.secureClient
 import com.omar.pcconnector.network.connection.Connection
-import okhttp3.ConnectionSpec
-import okhttp3.OkHttpClient
+import com.omar.pcconnector.network.connection.TokenInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
@@ -35,11 +34,11 @@ data class DetectedDevice(
     val port: Int
 ) {
 
-    fun toConnection(): Connection = Connection(
+    fun toConnection(token: String): Connection = Connection(
         deviceInfo.name,
         ip,
         port,
-        Retrofit.Builder().client(secureClient.build()).baseUrl("https://$ip:$port")
+        Retrofit.Builder().client(secureClient.addInterceptor(TokenInterceptor(token)).build()).baseUrl("https://$ip:$port")
             .addConverterFactory(GsonConverterFactory.create())
             .build()
     )

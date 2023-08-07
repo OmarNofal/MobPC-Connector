@@ -3,13 +3,15 @@ package com.omar.pcconnector.db
 import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface DeviceDao {
 
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(device: DeviceEntity)
 
     @Update
@@ -23,5 +25,8 @@ interface DeviceDao {
 
     @Query("SELECT COUNT(*) > 1 FROM DeviceEntity WHERE id = :id LIMIT 1")
     suspend fun exists(id: String): Boolean
+
+    @Query("SELECT * FROM DeviceEntity WHERE id = :id")
+    fun getDeviceFlow(id: String): Flow<DeviceEntity>
 
 }
