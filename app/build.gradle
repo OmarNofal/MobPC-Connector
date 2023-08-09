@@ -3,6 +3,7 @@ plugins {
     id 'org.jetbrains.kotlin.android'
     id 'com.google.dagger.hilt.android'
     id 'kotlin-kapt'
+    id 'com.google.gms.google-services'
 }
 
 android {
@@ -86,6 +87,10 @@ dependencies {
     implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
     implementation("androidx.work:work-runtime-ktx:$work_version")
 
+
+    // Firebase Stuff
+    implementation platform("com.google.firebase:firebase-bom:32.2.2")
+    implementation("com.google.firebase:firebase-database-ktx")
 
     // Hilt
     implementation "com.google.dagger:hilt-android:2.44"

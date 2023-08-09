@@ -4,6 +4,7 @@ import com.omar.pcconnector.model.DetectedDevice
 import com.omar.pcconnector.model.DeviceInfo
 import com.omar.pcconnector.network.detection.DetectedHost
 import com.omar.pcconnector.network.detection.DetectionLocalNetworkStrategy
+import com.omar.pcconnector.network.detection.FirebaseDetectionStrategy
 
 
 object Connectivity {
@@ -18,8 +19,10 @@ object Connectivity {
      * Find a device with the given id on local networks on global network using Firebase
      */
     suspend fun findDevice(uuid: String, preference: ConnectionPreference = ConnectionPreference.LOCAL_NETWORK) =
-        DetectionLocalNetworkStrategy.findDevice(uuid)?.toDetectedDevice()
-
+        when (preference) {
+            ConnectionPreference.WIDE_NETWORK -> FirebaseDetectionStrategy.findDevice(uuid)?.toDetectedDevice()
+            else -> DetectionLocalNetworkStrategy.findDevice(uuid)?.toDetectedDevice()
+        }
 
     private fun DetectedHost.toDetectedDevice() =
         DetectedDevice(

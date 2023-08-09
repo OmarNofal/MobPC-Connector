@@ -37,8 +37,8 @@ class ConnectionHeartbeat(connection: Connection) {
         job = scope.launch {
             while (isActive) {
                 try {
-                    val response = api.status().execute()
-                    val jsonResponse = JsonParser.parseString(response.body()!!.string())
+                    val response = api.status()
+                    val jsonResponse = JsonParser.parseString(response.string())
                     if ((jsonResponse as JsonObject).has("ip")) {
                         Log.i("NETWORK", "Server pinged successfully")
                     }
