@@ -1,6 +1,8 @@
 package com.omar.pcconnector.operation
 
+import com.google.gson.JsonParser
 import com.omar.pcconnector.network.api.PCOperations
+import com.omar.pcconnector.network.api.StatusAPI
 import com.omar.pcconnector.network.api.getDataOrThrow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -85,3 +87,51 @@ class OpenLinkOperation(
 }
 
 
+class PingOperation(
+    val api: StatusAPI
+): Operation<Boolean>() {
+
+    override val name: String
+        get() = "Ping"
+
+    override val operationDescription: String
+        get() = "Pinging the Server"
+
+    override suspend fun start(): Boolean {
+        return withContext(Dispatchers.IO) {
+            try {
+                api.status()
+                true
+            } catch (e: Exception) {
+                false
+            }
+        }
+    }
+
+}
+
+
+data class HostInfo(
+    val name: String,
+    val uuid: String,
+    val os: String
+)
+
+class StatusOperation(
+    val api: StatusAPI
+): Operation<HostInfo>() {
+
+    override val name: String
+        get() = "Status Operation"
+    override val operationDescription: String
+        get() = TODO("Not yet implemented")
+
+    override suspend fun start(): HostInfo {
+        val bodyString = api.status().string()
+        val json = JsonParser.parseString(bodyString).asJsonObject
+        val name = json["name"].asString ?: throw IllegalStateException()
+        val os = json["os"].asString ?: throw IllegalStateException()
+        val id = json["id"].asString ?: throw IllegalStateException()
+        return HostInfo(name, id, os)
+    }
+}

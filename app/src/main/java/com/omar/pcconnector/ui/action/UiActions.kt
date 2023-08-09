@@ -63,7 +63,7 @@ fun ActionsDropdownMenu(
     DropdownMenu(modifier = modifier, expanded = show, onDismissRequest = onDismissRequest) {
         actions.forEach {
 
-            val backgroundColor = if (it.isDangerous) Color(0xFFE91E63) else Color.Transparent
+            val backgroundColor = Color.Transparent//if (it.isDangerous) Color(0xFFE91E63) else Color.Transparent
 
             DropdownMenuItem(
                 modifier = Modifier.background(backgroundColor),

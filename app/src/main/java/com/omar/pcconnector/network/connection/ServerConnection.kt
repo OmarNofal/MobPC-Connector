@@ -2,6 +2,7 @@ package com.omar.pcconnector.network.connection
 
 import com.omar.pcconnector.model.DetectedDevice
 import com.omar.pcconnector.network.api.StatusAPI
+import com.omar.pcconnector.operation.PingOperation
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -42,7 +43,7 @@ class ServerConnection(
      * global network.
      */
     private suspend fun findDevice(): DetectedDevice? = withContext(Dispatchers.IO) {
-        val device = Connectivity.findDevice(id) ?: return@withContext null
+        val device = Connectivity.findDevice(id, ConnectionPreference.WIDE_NETWORK) ?: return@withContext null
         if (!isActive) return@withContext null
         return@withContext device
     }
@@ -74,12 +75,13 @@ class ServerConnection(
 
     private suspend fun pingConnection(connection: Connection): Boolean = withContext(Dispatchers.IO) {
         val statusApi = connection.retrofit.create(StatusAPI::class.java)
-        try { // TODO refactor this method to an operation
-            statusApi.status().execute().body()
-            true // if no errors, then we we reached the server successfully
-        } catch (e: Exception) {
-            false
-        }
+        PingOperation(statusApi).start()
+//        try { // TODO refactor this method to an operation
+//            statusApi.status()
+//            true // if no errors, then we we reached the server successfully
+//        } catch (e: Exception) {
+//            false
+//        }
     }
 
     private fun onConnectionNotFound() {

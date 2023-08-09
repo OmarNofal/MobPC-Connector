@@ -8,5 +8,5 @@ import retrofit2.http.GET
 
 interface StatusAPI {
     @GET("/status")
-    fun status(): Call<ResponseBody>
+    suspend fun status(): ResponseBody
 }
