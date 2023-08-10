@@ -7,34 +7,36 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.omar.pcconnector.di.ViewModelFactoryProvider
 import com.omar.pcconnector.model.PairedDevice
 import com.omar.pcconnector.network.connection.Connection
+import com.omar.pcconnector.network.connection.ConnectionStatus
 import com.omar.pcconnector.network.connection.ServerConnection
 import com.omar.pcconnector.ui.main.FileSystemViewModel
 import com.omar.pcconnector.ui.main.ServerConnectionViewModel
 import com.omar.pcconnector.ui.main.ToolbarViewModel
 import com.omar.pcconnector.ui.preview.ImagePreviewViewModel
 import dagger.hilt.android.EntryPointAccessors
+import kotlinx.coroutines.flow.StateFlow
 import java.nio.file.Path
 
 
 @Composable
-fun toolbarViewModel(serverConnection: ServerConnection, serverName: String): ToolbarViewModel {
+fun toolbarViewModel(connectionStatus: StateFlow<ConnectionStatus>, serverName: String): ToolbarViewModel {
     val factory = EntryPointAccessors.fromActivity(
         LocalContext.current as Activity,
         ViewModelFactoryProvider::class.java
     ).toolbarViewModelFactory()
 
-    return viewModel(factory = ToolbarViewModel.provideFactory(factory, serverConnection, serverName))
+    return viewModel(factory = ToolbarViewModel.provideFactory(factory, connectionStatus, serverName))
 }
 
 
 @Composable
-fun fileSystemViewModel(serverConnection: ServerConnection): FileSystemViewModel {
+fun fileSystemViewModel(connectionStatus: StateFlow<ConnectionStatus>, serverId: String): FileSystemViewModel {
     val factory = EntryPointAccessors.fromActivity(
         LocalContext.current as Activity,
         ViewModelFactoryProvider::class.java
     ).fileSystemViewModelFactory()
 
-    return viewModel(factory = FileSystemViewModel.provideFactory(factory, serverConnection))
+    return viewModel(factory = FileSystemViewModel.provideFactory(factory, connectionStatus, serverId))
 }
 
 @Composable

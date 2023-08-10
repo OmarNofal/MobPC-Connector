@@ -5,7 +5,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.omar.pcconnector.network.connection.ConnectionStatus
-import com.omar.pcconnector.network.connection.ServerConnection
 import com.omar.pcconnector.operation.SimpleOperationManager
 import com.omar.pcconnector.pcApi
 import com.omar.pcconnector.ui.event.ApplicationEvent
@@ -15,11 +14,12 @@ import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 
 class ToolbarViewModel @AssistedInject constructor(
-    @Assisted val serverConnection: ServerConnection,
+    @Assisted val connectionStatusFlow: StateFlow<ConnectionStatus>,
     @Assisted val serverName: String,
     private val appEventsFlow: MutableSharedFlow<ApplicationEvent>
 ) : ViewModel() {
@@ -28,7 +28,7 @@ class ToolbarViewModel @AssistedInject constructor(
     init {
 
         viewModelScope.launch {
-            serverConnection.connectionStatus.collect {
+            connectionStatusFlow.collect {
                 operationManager = if (it is ConnectionStatus.Connected) {
                     SimpleOperationManager(it.connection.retrofit.pcApi())
                 } else {
@@ -115,18 +115,18 @@ class ToolbarViewModel @AssistedInject constructor(
 
     @AssistedFactory
     interface Factory {
-        fun create(serverConnection: ServerConnection, serverName: String): ToolbarViewModel
+        fun create(connectionStatusFlow: StateFlow<ConnectionStatus>, serverName: String): ToolbarViewModel
     }
 
     companion object {
         @Suppress("UNCHECKED_CAST")
         fun provideFactory(
             assistedFactory: Factory,
-            serverConnection: ServerConnection,
+            connectionStatusFlow: StateFlow<ConnectionStatus>,
             serverName: String
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return assistedFactory.create(serverConnection, serverName) as T
+                return assistedFactory.create(connectionStatusFlow, serverName) as T
             }
         }
     }

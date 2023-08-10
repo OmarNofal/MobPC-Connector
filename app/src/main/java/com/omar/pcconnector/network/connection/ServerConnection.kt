@@ -3,11 +3,11 @@ package com.omar.pcconnector.network.connection
 import android.util.Log
 import com.omar.pcconnector.model.DetectedDevice
 import com.omar.pcconnector.network.api.StatusAPI
+import com.omar.pcconnector.network.monitor.NetworkStatus
 import com.omar.pcconnector.operation.PingOperation
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -26,7 +26,8 @@ import kotlinx.coroutines.withTimeout
 class ServerConnection(
     val id: String,
     private val token: String,
-    private val scope: CoroutineScope
+    private val scope: CoroutineScope,
+    private val networkStatusFlow: StateFlow<NetworkStatus>,
 ) {
 
     private val  _connectionStatus = MutableStateFlow<ConnectionStatus>(ConnectionStatus.Searching)
@@ -34,9 +35,22 @@ class ServerConnection(
         get() = _connectionStatus
 
     private var monitorJob: Job? = null
+    private var searchJob: Job? = null
 
     init {
-        startMonitoring()
+        searchAndConnect()
+    }
+
+    init {
+
+        scope.launch {
+            networkStatusFlow.collect {
+                when(it) {
+                    NetworkStatus.NotConnected -> handleDisconnection()
+                    else -> handleNewNetwork()
+                }
+            }
+        }
     }
 
     /**
@@ -49,28 +63,67 @@ class ServerConnection(
         return@withContext device
     }
 
-    private fun startMonitoring() {
-        monitorJob = scope.launch(Dispatchers.IO) {
+    /**
+     * Starts the search process and returns immediately
+     */
+    fun searchAndConnect() {
+        searchJob?.cancel()
+        searchJob = scope.launch {
+            onStartSearching()
             try {
-                onStartSearching()
-                val device = withTimeout(5000) { findDevice() }
-                if (device == null) {
+                val device = withTimeout(5000) { findDevice() } ?: return@launch if (isActive) onConnectionNotFound() else Unit
+                if (isActive)
+                    onConnectionFound(device.toConnection(token))
+            } catch (e: Exception) {
+                Log.e(TAG, "Device not found ${e.stackTraceToString()}")
+                if (isActive)
                     onConnectionNotFound()
-                    return@launch
-                } else {
-                    val connection = device.toConnection(token)
-                    onConnectionFound(connection)
-                    Log.i("CONNECTION FOUND", connection.toString())
-                    while (isActive) {
-                        if (!pingConnection(connection)) {
-                            onConnectionLost()
-                        }
-                        delay(6000)
-                    }
+            }
+        }
+    }
+
+    private fun handleDisconnection() {
+        if (_connectionStatus.value is ConnectionStatus.Connected) {
+            onConnectionLost()
+        }
+    }
+
+    private fun handleNewNetwork() {
+        searchAndConnect()
+    }
+//    private fun startMonitoring() {
+//        monitorJob = scope.launch(Dispatchers.IO) {
+//            try {
+//                onStartSearching()
+//                val device = withTimeout(5000) { findDevice() }
+//                if (device == null) {
+//                    onConnectionNotFound()
+//                    return@launch
+//                } else {
+//                    val connection = device.toConnection(token)
+//                    onConnectionFound(connection)
+//                    Log.i("CONNECTION FOUND", connection.toString())
+//                    while (isActive) {
+//                        if (!pingConnection(connection)) {
+//                            onConnectionLost()
+//                        }
+//                        delay(6000)
+//                    }
+//                }
+//            } catch (e: TimeoutCancellationException) {
+//                onConnectionNotFound()
+//                return@launch
+//            }
+//        }
+//    }
+
+    private fun monitorJob(connection: Connection): Job {
+        return scope.launch {
+            while (isActive) {
+                if (!pingConnection(connection)) {
+                    onConnectionLost()
                 }
-            } catch (e: TimeoutCancellationException) {
-                onConnectionNotFound()
-                return@launch
+                delay(6000)
             }
         }
     }
@@ -83,23 +136,27 @@ class ServerConnection(
     private fun onConnectionNotFound() {
         _connectionStatus.value = ConnectionStatus.NotFound
         monitorJob?.cancel()
-        startMonitoring()
     }
 
     private fun onConnectionLost() {
-        _connectionStatus.value = ConnectionStatus.NotFound
         monitorJob?.cancel()
-        startMonitoring()
+        searchJob?.cancel()
+        _connectionStatus.value = ConnectionStatus.NotFound
     }
 
     private fun onConnectionFound(connection: Connection) {
         _connectionStatus.value = ConnectionStatus.Connected(connection)
+        monitorJob = monitorJob(connection)
+        searchJob?.cancel()
     }
 
     private fun onStartSearching() {
         _connectionStatus.value = ConnectionStatus.Searching
     }
 
+    companion object {
+        const val TAG = "ServerConnection"
+    }
 }
 
 sealed class ConnectionStatus {

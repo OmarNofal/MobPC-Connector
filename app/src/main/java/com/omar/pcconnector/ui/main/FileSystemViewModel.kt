@@ -13,7 +13,6 @@ import com.omar.pcconnector.model.Resource
 import com.omar.pcconnector.network.api.getDownloadURL
 import com.omar.pcconnector.network.connection.Connection
 import com.omar.pcconnector.network.connection.ConnectionStatus
-import com.omar.pcconnector.network.connection.ServerConnection
 import com.omar.pcconnector.operation.CopyResourcesOperation
 import com.omar.pcconnector.operation.DeleteOperation
 import com.omar.pcconnector.operation.GetDrivesOperation
@@ -33,6 +32,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.transformWhile
 import kotlinx.coroutines.launch
 import java.nio.file.Path
@@ -46,7 +46,8 @@ class FileSystemViewModel @AssistedInject constructor(
     private val transfersManager: TransfersManager,
     private val eventsFlow: MutableSharedFlow<ApplicationEvent>,
     private val navigator: Navigator,
-    @Assisted private val serverConnection: ServerConnection
+    @Assisted private val connectionStatusFlow: StateFlow<ConnectionStatus>,
+    @Assisted private val serverId: String
 ) : ViewModel() {
 
 
@@ -80,7 +81,7 @@ class FileSystemViewModel @AssistedInject constructor(
         // 2) when drives are loaded, get the home directory and load the path
         // Note we need to handle errors
         viewModelScope.launch {
-            serverConnection.connectionStatus.transformWhile {
+            connectionStatusFlow.transformWhile {
                 if (it is ConnectionStatus.Connected) {
                     emit(it)
                     false
@@ -98,8 +99,8 @@ class FileSystemViewModel @AssistedInject constructor(
         }
 
         viewModelScope.launch {
-            var previousState = serverConnection.connectionStatus.value
-            serverConnection.connectionStatus.collect {
+            var previousState = connectionStatusFlow.value
+            connectionStatusFlow.collect {
                 if (it is ConnectionStatus.Connected) {
                     eventsFlow.emit(ApplicationEvent(ApplicationOperation.PING_SERVER, true))
                 } else if ((it is ConnectionStatus.NotFound) && (previousState is ConnectionStatus.Connected)) {
@@ -245,7 +246,7 @@ class FileSystemViewModel @AssistedInject constructor(
         destinationFolder: DocumentFile
     ) {
         transfersManager.download(
-            serverConnection.id,
+            serverId,
             resource.path,
             destinationFolder
         )
@@ -256,14 +257,14 @@ class FileSystemViewModel @AssistedInject constructor(
     ) {
         assert(_state.value !is FileSystemState.Loading)
         val state = _state.value as FileSystemState.Initialized
-        transfersManager.upload(documents, serverConnection.id, state.currentDirectory)
+        transfersManager.upload(documents, serverId, state.currentDirectory)
     }
 
     /**
      * Get the connection if we are currently connected or return null and log error
      */
     private fun getConnectionOrShowError(): Connection? {
-        return when (val s = serverConnection.connectionStatus.value) {
+        return when (val s = connectionStatusFlow.value) {
             is ConnectionStatus.Connected -> s.connection
             else -> {
                 Log.e("VM", "No Connection currently")
@@ -274,16 +275,17 @@ class FileSystemViewModel @AssistedInject constructor(
 
     @AssistedFactory
     interface Factory {
-        fun create(serverConnection: ServerConnection): FileSystemViewModel
+        fun create(connectionStatusFlow: StateFlow<ConnectionStatus>, serverId: String): FileSystemViewModel
     }
 
     companion object {
         fun provideFactory(
             factory: Factory,
-            serverConnection: ServerConnection
+            connectionStatusFlow: StateFlow<ConnectionStatus>,
+            serverId: String
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return factory.create(serverConnection) as T
+                return factory.create(connectionStatusFlow, serverId) as T
             }
         }
     }

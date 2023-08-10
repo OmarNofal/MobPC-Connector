@@ -4,25 +4,34 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.omar.pcconnector.model.PairedDevice
+import com.omar.pcconnector.network.connection.ConnectionStatus
 import com.omar.pcconnector.network.connection.ServerConnection
+import com.omar.pcconnector.network.monitor.NetworkMonitor
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
-import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
-
+import kotlinx.coroutines.flow.StateFlow
 
 
 class ServerConnectionViewModel @AssistedInject constructor(
+    networkMonitor: NetworkMonitor,
     @Assisted private val pairedDevice: PairedDevice
 ): ViewModel() {
 
-    val serverConnection =
+    private val serverConnection =
         ServerConnection(
             pairedDevice.deviceInfo.id,
             pairedDevice.token,
-            viewModelScope
+            viewModelScope,
+            networkMonitor.networkStatus
         )
+
+
+    val connectionStatus: StateFlow<ConnectionStatus>
+        get() = serverConnection.connectionStatus
+
+    fun searchAndConnect() = serverConnection.searchAndConnect()
+
 
     @AssistedFactory
     interface Factory {
