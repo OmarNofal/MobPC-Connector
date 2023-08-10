@@ -145,6 +145,7 @@ class ServerConnection(
     }
 
     private fun onConnectionFound(connection: Connection) {
+        Log.i("CONNECTION FOUND", connection.toString())
         _connectionStatus.value = ConnectionStatus.Connected(connection)
         monitorJob = monitorJob(connection)
         searchJob?.cancel()

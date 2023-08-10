@@ -1,5 +1,6 @@
 package com.omar.pcconnector
 
+import android.util.Log
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -28,6 +29,7 @@ import kotlinx.coroutines.withContext
 import okio.BufferedSource
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.net.InetAddress
 import java.nio.ByteBuffer
 import java.nio.file.Path
 import kotlin.io.path.absolutePathString
@@ -66,6 +68,15 @@ val supportedImageExtension = listOf("jpg", "jpeg", "png", "bmp", "webp")
 fun String.isSupportedImageExtension() = this in supportedImageExtension
 
 
+fun String.isGlobalIp(): Boolean {
+    return try {
+        !InetAddress.getByName(this).isSiteLocalAddress
+    } catch (e: Exception) {
+        Log.e("GlobalIP", e.stackTraceToString())
+        false
+    }
+}
+
 fun getRetrofit(ip: String, port: Int): Retrofit {
     return Retrofit.Builder()
         .baseUrl("https://$ip:$port")
@@ -84,7 +95,6 @@ suspend fun BufferedSource.fillBuffer(byteBuffer: ByteBuffer) {
         }
     }
 }
-
 
 
 fun Modifier.drawAnimatedBorder(
