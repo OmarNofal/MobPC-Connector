@@ -77,13 +77,18 @@ class DownloadWorker @AssistedInject constructor(
 
     override suspend fun doWork(): Result {
 
-        val pathOnServer = inputData.getString("pathOnServer") ?: return Result.failure()
-        val downloadPathUri = inputData.getString("downloadUri")?.toUri() ?: return Result.failure()
-        val deviceId = inputData.getString("device_id") ?: return Result.failure()
+        val pathOnServer = inputData.getString("pathOnServer") ?:
+            return setToFailureAndReturn(WorkerException.UNKNOWN_EXCEPTION)
+
+        val downloadPathUri = inputData.getString("downloadUri")?.toUri() ?:
+            return setToFailureAndReturn(WorkerException.UNKNOWN_EXCEPTION)
+
+        val deviceId = inputData.getString("device_id") ?:
+            return setToFailureAndReturn(WorkerException.UNKNOWN_EXCEPTION)
 
 
         val deviceEntity = devicesRepository.getPairedDevice(deviceId)
-        val device = Connectivity.findDevice(deviceId) ?: return Result.retry()
+        val device = Connectivity.findDevice(deviceId) ?: return setToFailureAndReturn(WorkerException.IO_EXCEPTION)
 
         val connection = device.toConnection(deviceEntity.token)
 
@@ -122,9 +127,11 @@ class DownloadWorker @AssistedInject constructor(
             }
         }
         catch (e: IOException) {
+            Log.e(TAG, e.stackTraceToString())
             return setToFailureAndReturn(WorkerException.IO_EXCEPTION)
         }
         catch (e: FileNotFoundException) {
+            Log.e(TAG, e.stackTraceToString())
             return setToFailureAndReturn(WorkerException.CREATE_FILE_EXCEPTION)
         }
         catch (e: Exception) {
