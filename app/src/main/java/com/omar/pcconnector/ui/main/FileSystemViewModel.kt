@@ -10,12 +10,13 @@ import com.omar.pcconnector.fileSystemApi
 import com.omar.pcconnector.isSupportedImageExtension
 import com.omar.pcconnector.model.DirectoryResource
 import com.omar.pcconnector.model.Resource
-import com.omar.pcconnector.network.api.getDownloadURL
+import com.omar.pcconnector.network.api.getExternalDownloadURL
 import com.omar.pcconnector.network.connection.Connection
 import com.omar.pcconnector.network.connection.ConnectionStatus
 import com.omar.pcconnector.operation.CopyResourcesOperation
 import com.omar.pcconnector.operation.DeleteOperation
 import com.omar.pcconnector.operation.GetDrivesOperation
+import com.omar.pcconnector.operation.GetFileAccessToken
 import com.omar.pcconnector.operation.ListDirectoryOperation
 import com.omar.pcconnector.operation.MakeDirectoriesOperation
 import com.omar.pcconnector.operation.RenameOperation
@@ -149,19 +150,29 @@ class FileSystemViewModel @AssistedInject constructor(
         if (resource is DirectoryResource) {
             loadDirectory(resource.path)
         } else if (resource.path.extension.isSupportedImageExtension()) {
-            val connection = (connectionStatusFlow.value as? ConnectionStatus.Connected)?.connection ?: return
-            navigator.navigate(ImageScreen.navigationCommand(
-                resource.path.absolutePathString(),
-                connection.ip,
-                connection.port,
-                token
-            )
+            val connection =
+                (connectionStatusFlow.value as? ConnectionStatus.Connected)?.connection ?: return
+            navigator.navigate(
+                ImageScreen.navigationCommand(
+                    resource.path.absolutePathString(),
+                    connection.ip,
+                    connection.port,
+                    token
+                )
             )
         } else {
-            val connection = getConnectionOrShowError() ?: return
-            val fileDownloadURL = getDownloadURL(connection, resource.path.absolutePath)
             viewModelScope.launch {
-                _openFileEvents.emit(fileDownloadURL to resource.name)
+                val connection = getConnectionOrShowError() ?: return@launch
+                val accessToken = try {
+                    GetFileAccessToken(connection.retrofit.fileSystemApi(), resource.path).start()
+                } catch (e: Exception) {
+                    ""
+                }
+                val fileDownloadURL =
+                    getExternalDownloadURL(connection, resource.path.absolutePath, accessToken)
+                viewModelScope.launch {
+                    _openFileEvents.emit(fileDownloadURL to resource.name)
+                }
             }
         }
     }
@@ -283,7 +294,11 @@ class FileSystemViewModel @AssistedInject constructor(
 
     @AssistedFactory
     interface Factory {
-        fun create(connectionStatusFlow: StateFlow<ConnectionStatus>, serverId: String, @Assisted("token") token: String): FileSystemViewModel
+        fun create(
+            connectionStatusFlow: StateFlow<ConnectionStatus>,
+            serverId: String,
+            @Assisted("token") token: String
+        ): FileSystemViewModel
     }
 
     companion object {

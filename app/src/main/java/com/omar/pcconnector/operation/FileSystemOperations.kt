@@ -133,3 +133,20 @@ class CopyResourcesOperation(
         Unit
     }
 }
+
+
+class GetFileAccessToken(
+    private val api: FileSystemOperations,
+    private val src: Path
+): Operation<String>() {
+
+    override val name: String
+        get() = "File Access Token"
+    override val operationDescription: String
+        get() = "Obtaining file access token"
+
+    override suspend fun start() = withContext(Dispatchers.IO){
+        api.getFileAccessToken(src.absolutePath).getDataOrThrow()?.token
+            ?: throw IllegalArgumentException("Empty token")
+    }
+}

@@ -62,4 +62,10 @@ interface FileSystemOperations {
     suspend fun upload(
         @Part parts: List<MultipartBody.Part>
     ): GeneralResponse<Unit>
+
+    @GET("/getFileAccessToken")
+    suspend fun getFileAccessToken(
+        @Query("src") path: String
+    ): GeneralResponse<FileAccessTokenResponse>
+
 }

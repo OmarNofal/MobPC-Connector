@@ -76,6 +76,12 @@ data class LoginResponse(
     val token: Token
 )
 
+@Keep
+data class FileAccessTokenResponse(
+    @SerializedName("token")
+    val token: Token
+)
+
 fun NetworkResource.toDomainResource(path: Path): Resource {
 
     val resource: Resource = if (type.lowercase() == "file") {
