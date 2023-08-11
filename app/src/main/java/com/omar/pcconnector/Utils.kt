@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.unit.Dp
 import com.omar.pcconnector.network.api.secureClient
+import com.omar.pcconnector.network.connection.TokenInterceptor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okio.BufferedSource
@@ -84,6 +85,13 @@ fun getRetrofit(ip: String, port: Int): Retrofit {
         .addConverterFactory(GsonConverterFactory.create())
         .build()
 }
+
+fun getRetrofit(ip: String, port: Int, token: String) =
+    Retrofit.Builder().client(secureClient.addInterceptor(TokenInterceptor(token)).build()).baseUrl("https://$ip:$port")
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
+
+
 
 /**
  * Suspends coroutine until the buffer is filled

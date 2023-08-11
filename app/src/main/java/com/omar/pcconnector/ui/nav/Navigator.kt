@@ -33,16 +33,25 @@ val BackCommand = object : NavigationCommand {
 object ImageScreen {
 
     const val PATH_ARG = "path"
-    val arguments = listOf(navArgument(PATH_ARG) { type = NavType.StringType })
+    const val IP_ARG = "ip"
+    const val PORT_ARG = "port"
+    const val TOKEN_ARG = "token"
 
-    fun navigationCommand(imageUrl: String) = object : NavigationCommand {
+    val arguments = listOf(
+        navArgument(PATH_ARG) { type = NavType.StringType },
+        navArgument(IP_ARG) { type = NavType.StringType },
+        navArgument(PORT_ARG) { type = NavType.IntType },
+        navArgument(TOKEN_ARG) { type = NavType.StringType }
+    )
+
+    fun navigationCommand(imageUrl: String, ip: String, port: Int, token: String) = object : NavigationCommand {
         override val options: NavOptions
             get() = navOptions { }
         override val screen: Screen
             get() = Screen.ImageScreen
         override val destination: String
             get() =
-                "image/${Uri.encode(imageUrl)}"
+                "image/${Uri.encode(imageUrl)}/$ip/$port/$token"
     }
 
 }

@@ -1,10 +1,7 @@
 package com.omar.pcconnector.model
 
-import com.omar.pcconnector.network.api.secureClient
+import com.omar.pcconnector.getRetrofit
 import com.omar.pcconnector.network.connection.Connection
-import com.omar.pcconnector.network.connection.TokenInterceptor
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
 
 
 /**
@@ -38,8 +35,6 @@ data class DetectedDevice(
         deviceInfo.name,
         ip,
         port,
-        Retrofit.Builder().client(secureClient.addInterceptor(TokenInterceptor(token)).build()).baseUrl("https://$ip:$port")
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
+        getRetrofit(ip, port, token)
     )
 }

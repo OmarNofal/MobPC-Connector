@@ -91,31 +91,6 @@ class ServerConnection(
     private fun handleNewNetwork() {
         searchAndConnect()
     }
-//    private fun startMonitoring() {
-//        monitorJob = scope.launch(Dispatchers.IO) {
-//            try {
-//                onStartSearching()
-//                val device = withTimeout(5000) { findDevice() }
-//                if (device == null) {
-//                    onConnectionNotFound()
-//                    return@launch
-//                } else {
-//                    val connection = device.toConnection(token)
-//                    onConnectionFound(connection)
-//                    Log.i("CONNECTION FOUND", connection.toString())
-//                    while (isActive) {
-//                        if (!pingConnection(connection)) {
-//                            onConnectionLost()
-//                        }
-//                        delay(6000)
-//                    }
-//                }
-//            } catch (e: TimeoutCancellationException) {
-//                onConnectionNotFound()
-//                return@launch
-//            }
-//        }
-//    }
 
     private fun monitorJob(connection: Connection): Job {
         return scope.launch {

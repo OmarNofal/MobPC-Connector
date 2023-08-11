@@ -46,17 +46,17 @@ import androidx.core.net.toFile
 import androidx.documentfile.provider.DocumentFile
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.omar.pcconnector.network.connection.Connection
 import com.omar.pcconnector.ui.imagePreviewViewModel
+import retrofit2.Retrofit
 import java.nio.file.Path
 
 
 @Composable
 fun ImagePreview(
-    connection: Connection,
+    retrofit: Retrofit,
     imagePath: Path
 ) {
-    ImagePreviewViewModel(imagePreviewViewModel(connection, imagePath))
+    ImagePreviewViewModel(imagePreviewViewModel(retrofit, imagePath))
 }
 
 @Composable

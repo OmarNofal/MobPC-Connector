@@ -30,7 +30,6 @@ import androidx.compose.material.icons.rounded.Public
 import androidx.compose.material.icons.rounded.SignalWifiConnectedNoInternet4
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Snackbar
@@ -57,10 +56,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import androidx.documentfile.provider.DocumentFile
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.LocalImageLoader
 import com.omar.pcconnector.model.PairedDevice
 import com.omar.pcconnector.model.TransferState
 import com.omar.pcconnector.network.connection.Connection
@@ -71,6 +69,7 @@ import com.omar.pcconnector.ui.event.ApplicationOperation
 import com.omar.pcconnector.ui.fab.FileSystemFAB
 import com.omar.pcconnector.ui.fileSystemViewModel
 import com.omar.pcconnector.ui.fs.FileSystemUI
+import com.omar.pcconnector.ui.fs.imageLoader
 import com.omar.pcconnector.ui.main.FileSystemViewModel
 import com.omar.pcconnector.ui.serverConnectionViewModel
 import com.omar.pcconnector.ui.toolbar.MainToolbar
@@ -100,7 +99,11 @@ fun ServerSession(
 
     val toolbarViewModel =
         toolbarViewModel(serverConnectionViewModel.connectionStatus, pairedDevice.deviceInfo.name)
-    val fileSystemViewModel = fileSystemViewModel(serverConnectionViewModel.connectionStatus, pairedDevice.deviceInfo.id)
+    val fileSystemViewModel = fileSystemViewModel(
+        serverConnectionViewModel.connectionStatus,
+        pairedDevice.deviceInfo.id,
+        pairedDevice.token
+    )
     val transfersViewModel = hiltViewModel<TransferViewModel>()
 
 
@@ -186,20 +189,24 @@ fun ServerSession(
     ) { innerPadding ->
 
 
-        when(val s = connectionStatus) {
+        when (val s = connectionStatus) {
             is ConnectionStatus.Searching -> SearchingForServer(Modifier.fillMaxSize())
-            is ConnectionStatus.NotFound -> ConnectionNotFound(Modifier.fillMaxSize(), serverConnectionViewModel::searchAndConnect)
+            is ConnectionStatus.NotFound -> ConnectionNotFound(
+                Modifier.fillMaxSize(),
+                serverConnectionViewModel::searchAndConnect
+            )
+
             is ConnectionStatus.Connected ->
                 ConnectedScreen(
                     Modifier.fillMaxSize(),
+                    pairedDevice,
                     s.connection,
                     innerPadding,
                     fileSystemViewModel,
                     transfersViewModel,
                     fileUiListState,
-                    transfersShown,
-                    { transfersShown = false}
-                )
+                    transfersShown
+                ) { transfersShown = false }
         }
 
     }
@@ -208,7 +215,7 @@ fun ServerSession(
 }
 
 
-@OptIn(ExperimentalMaterial3Api::class)
+
 @Composable
 fun SearchingForServer(
     modifier: Modifier
@@ -237,8 +244,16 @@ fun ConnectionNotFound(
     onRetry: () -> Unit
 ) {
     Box(modifier = modifier) {
-        Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(modifier = Modifier.size(56.dp), imageVector = Icons.Rounded.SignalWifiConnectedNoInternet4, contentDescription = null)
+        Column(
+            Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                modifier = Modifier.size(56.dp),
+                imageVector = Icons.Rounded.SignalWifiConnectedNoInternet4,
+                contentDescription = null
+            )
             Text(text = "Could not find your computer", fontWeight = FontWeight.SemiBold)
             Spacer(modifier = Modifier.height(16.dp))
             TextButton(onClick = onRetry) {
@@ -251,6 +266,7 @@ fun ConnectionNotFound(
 @Composable
 fun ConnectedScreen(
     modifier: Modifier,
+    pairedDevice: PairedDevice,
     connection: Connection,
     paddingValues: PaddingValues,
     fileSystemViewModel: FileSystemViewModel,
@@ -261,7 +277,8 @@ fun ConnectedScreen(
 ) {
 
     CompositionLocalProvider(
-        LocalConnectionProvider provides connection
+        LocalConnectionProvider provides connection,
+        LocalImageLoader provides imageLoader(LocalContext.current, pairedDevice.token)
     ) {
 
         Box(modifier = modifier) {

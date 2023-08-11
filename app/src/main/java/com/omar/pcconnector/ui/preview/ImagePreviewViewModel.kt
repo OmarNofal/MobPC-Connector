@@ -7,6 +7,7 @@ import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.omar.pcconnector.fileSystemApi
 import com.omar.pcconnector.network.connection.Connection
 import com.omar.pcconnector.operation.transfer.TransfersManager
 import com.omar.pcconnector.ui.nav.Navigator
@@ -18,6 +19,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
+import retrofit2.Retrofit
 import java.io.IOException
 import java.nio.file.Path
 
@@ -25,7 +27,7 @@ import java.nio.file.Path
 class ImagePreviewViewModel @AssistedInject constructor(
     private val transfersManager: TransfersManager,
     private val navigator: Navigator,
-    @Assisted private val connection: Connection,
+    @Assisted private val retrofit: Retrofit,
     @Assisted private val imagePath: Path,
 ) : ViewModel() {
 
@@ -50,7 +52,7 @@ class ImagePreviewViewModel @AssistedInject constructor(
         viewModelScope.launch {
             try {
                 val fileUri =
-                    transfersManager.downloadTemporaryFile(connection, imagePath)
+                    transfersManager.downloadTemporaryFile(retrofit.fileSystemApi(), imagePath)
                 setReadyState(fileUri)
                 trySharing()
             } catch (e: IOException) {
@@ -119,17 +121,17 @@ class ImagePreviewViewModel @AssistedInject constructor(
 
     @AssistedFactory
     interface Factory {
-        fun create(connection: Connection, imagePath: Path): ImagePreviewViewModel
+        fun create(retrofit: Retrofit, imagePath: Path): ImagePreviewViewModel
     }
 
     companion object {
         fun provideFactory(
             factory: Factory,
-            connection: Connection,
+            retrofit: Retrofit,
             imagePath: Path,
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return factory.create(connection, imagePath) as T
+                return factory.create(retrofit, imagePath) as T
             }
         }
     }

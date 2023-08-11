@@ -26,11 +26,13 @@ import com.omar.pcconnector.ui.nav.ImageScreen
 import com.omar.pcconnector.ui.nav.Navigator
 import com.omar.pcconnector.ui.nav.Screen
 import com.omar.pcconnector.ui.nav.ServerScreen
+import com.omar.pcconnector.ui.preview.ImagePreview
 import com.omar.pcconnector.ui.session.ServerSession
 import com.omar.pcconnector.ui.theme.AppTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.map
+import java.nio.file.Paths
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -108,8 +110,20 @@ class MainActivity : ComponentActivity() {
                             arguments = ImageScreen.arguments,
                         ) {
                             val resourcePath = it.arguments?.getString(ImageScreen.PATH_ARG)
-                            Log.i("Resource", resourcePath.toString())
-                            //ImagePreview(null, Paths.get(resourcePath))
+                            val ip = it.arguments?.getString(ImageScreen.IP_ARG)
+                            val port = it.arguments?.getInt(ImageScreen.PORT_ARG)
+                            val token = it.arguments?.getString(ImageScreen.TOKEN_ARG)
+
+                            if (listOf(ip, port, token).any { it == null }) {
+                                navigator.goBack()
+                            } else {
+                                ImagePreview(
+                                    getRetrofit(ip!!, port!!, token!!),
+                                    Paths.get(resourcePath)
+                                )
+                                Log.i("Resource", resourcePath.toString())
+                            }
+
                         }
 
                     }

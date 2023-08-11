@@ -9,9 +9,7 @@ abstract class Resource(
     open val creationDateMs: Long,
     open val modificationDateMs: Long,
     open val path: Path
-) {
-    val parentPath get() = path.parent
-}
+)
 
 
 data class FileResource(
@@ -31,6 +29,4 @@ data class DirectoryResource(
     override val path: Path,
     val resources: List<Resource>,
     val numResources: Int
-): Resource(name, size, creationDateMs, modificationDateMs, path) {
-
-}
+): Resource(name, size, creationDateMs, modificationDateMs, path)

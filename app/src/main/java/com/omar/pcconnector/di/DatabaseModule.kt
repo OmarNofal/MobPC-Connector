@@ -3,7 +3,6 @@ package com.omar.pcconnector.di
 import android.content.Context
 import androidx.room.Room
 import com.omar.pcconnector.db.Database
-import com.omar.pcconnector.db.WorkerDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn

@@ -47,7 +47,8 @@ class FileSystemViewModel @AssistedInject constructor(
     private val eventsFlow: MutableSharedFlow<ApplicationEvent>,
     private val navigator: Navigator,
     @Assisted private val connectionStatusFlow: StateFlow<ConnectionStatus>,
-    @Assisted private val serverId: String
+    @Assisted private val serverId: String,
+    @Assisted("token") private val token: String,
 ) : ViewModel() {
 
 
@@ -148,7 +149,14 @@ class FileSystemViewModel @AssistedInject constructor(
         if (resource is DirectoryResource) {
             loadDirectory(resource.path)
         } else if (resource.path.extension.isSupportedImageExtension()) {
-            navigator.navigate(ImageScreen.navigationCommand(resource.path.absolutePathString()))
+            val connection = (connectionStatusFlow.value as? ConnectionStatus.Connected)?.connection ?: return
+            navigator.navigate(ImageScreen.navigationCommand(
+                resource.path.absolutePathString(),
+                connection.ip,
+                connection.port,
+                token
+            )
+            )
         } else {
             val connection = getConnectionOrShowError() ?: return
             val fileDownloadURL = getDownloadURL(connection, resource.path.absolutePath)
@@ -275,17 +283,18 @@ class FileSystemViewModel @AssistedInject constructor(
 
     @AssistedFactory
     interface Factory {
-        fun create(connectionStatusFlow: StateFlow<ConnectionStatus>, serverId: String): FileSystemViewModel
+        fun create(connectionStatusFlow: StateFlow<ConnectionStatus>, serverId: String, @Assisted("token") token: String): FileSystemViewModel
     }
 
     companion object {
         fun provideFactory(
             factory: Factory,
             connectionStatusFlow: StateFlow<ConnectionStatus>,
-            serverId: String
+            serverId: String,
+            token: String
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return factory.create(connectionStatusFlow, serverId) as T
+                return factory.create(connectionStatusFlow, serverId, token) as T
             }
         }
     }

@@ -21,7 +21,6 @@ import com.omar.pcconnector.model.TransferProgress
 import com.omar.pcconnector.model.TransferState
 import com.omar.pcconnector.model.TransferType
 import com.omar.pcconnector.network.api.FileSystemOperations
-import com.omar.pcconnector.network.connection.Connection
 import com.omar.pcconnector.operation.transfer.download.DownloadOperation
 import com.omar.pcconnector.worker.DownloadWorker
 import com.omar.pcconnector.worker.UploadWorker
@@ -226,13 +225,12 @@ class TransfersManager @Inject constructor(
      * @throws FileNotFoundException if the file could not be downloaded
      */
     suspend fun downloadTemporaryFile(
-        connection: Connection,
+        api: FileSystemOperations,
         pathOnServer: Path
     ): Uri {
-        val api = connection.retrofit
         val tempFolder = context.externalCacheDir!!
         val downloadOperation = DownloadOperation(
-            api.create(FileSystemOperations::class.java),
+            api,
             pathOnServer,
             DocumentFile.fromFile(tempFolder),
             context.contentResolver
