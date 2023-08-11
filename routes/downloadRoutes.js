@@ -7,10 +7,12 @@ const CombinedStream = require('combined-stream');
 const {parsePath} = require('../fs/operations');
 const mime = require('mime');
 const authMiddleware = require('./authMiddleware');
-
+const { env } = require("process");
+const jwt = require('jsonwebtoken');
+require('dotenv').config();
 
 function handleDownloadFile(path, res) {
-    console.log("Somebody downloads" + path);
+    console.log("Somebody downloads " + path);
     res.download(path);
 }
 
@@ -93,6 +95,55 @@ router.get('/downloadFiles', authMiddleware, (req, res) => {
 })
 
 
+router.get('/getFileAccessToken', authMiddleware, (req, res) => {
+
+    const path = req.query.src;
+
+    if (fs.existsSync(path)) {
+
+        const tokenPayload = {
+            path: path
+        }
+
+        const token = jwt.sign(
+            tokenPayload,
+            env.JWT_SECRET_KEY,
+            { expiresIn: '30d' }
+        )
+        res.json(new SuccessResponse({token: token}));
+    } else {
+        res.json(new ErrorResponse(1, "File does not exist"));
+    }
+    
+
+});
+
+router.get('/getFileExternal', (req, res) => {
+
+    const token = req.query.token;
+    const userPath = req.query.path;
+
+    if (!userPath || !token) {
+        return res.json(new ErrorResponse(2, "Missing token or file path"));
+    }
+
+    let payload
+    try {
+        payload = jwt.verify(token, env.JWT_SECRET_KEY)
+    } catch (e) {
+        return res.sendStatus(401);
+    }
+
+    // token ok
+    const tokenPath = payload.path
+    if (path.resolve(tokenPath) == path.resolve(userPath)) {
+        handleDownloadFile(tokenPath, res);
+    } else {
+        res.status(401);
+        return res.json(new ErrorResponse(3, "Path does not match the token"))
+    }
+
+})
 
 
 module.exports = router;
