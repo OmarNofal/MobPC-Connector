@@ -1,4 +1,5 @@
 const express = require('express');
+const https = require('https');
 const statusRoutes = require('./routes/statusRoutes.js');
 const browserRoutes = require('./routes/browserRoutes');
 const clipboardRoutes = require('./routes/clipboardRoutes');
@@ -12,8 +13,15 @@ const wsServer = require('./routes/fsWatcher.js')
 const auth = require("./auth/auth.js");
 const authExceptions = require('./auth/exceptions.js');
 const startFirebaseService = require('./firebase/firebase.js')
+const fs = require('fs');
+const { changePassword } = require('./auth/auth.js');
 
-const {ErrorResponse, SuccessResponse} = require('./model/response');
+
+var privateKey  = fs.readFileSync('cert/server.key', 'utf8');
+var certificate = fs.readFileSync('cert/server.crt', 'utf8');
+
+const credentials = {key: privateKey, cert: certificate};
+
 
 const {runDetectionServer, closeDetectionServer} = require('./detectionserver')
 
@@ -40,14 +48,15 @@ app.use(router);
 
 
 
-const httpServer = app.listen(PORT, () => {
-    console.log("Server running")
-})
+const httpsServer = https.createServer(credentials, app);
+
+httpsServer.listen(PORT)
+
 runDetectionServer();
 
 startFirebaseService();
 
-httpServer.on('upgrade', (request, socket, head) => {
+httpsServer.on('upgrade', (request, socket, head) => {
   wsServer.handleUpgrade(request, socket, head, socket => {
     wsServer.emit('connection', socket, request);
   });

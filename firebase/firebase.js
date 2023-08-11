@@ -3,6 +3,7 @@ const { initializeApp, deleteApp } = require("firebase/app");
 const { getDatabase, set, ref } = require('firebase/database')
 const getIp = require('./ipService');
 const { getUUID, setNewUUID } = require('../identification/appindentification');
+const config = require('../package.json')
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -28,7 +29,10 @@ function firebaseRoutine() {
     (ip) => {
         const uuid = getUUID();
         const locationRef = ref(db, uuid);
-        set(locationRef, ip)
+        set(locationRef, {
+            ip: ip,
+            port: config.globalPort
+        })
     },
     () => {
         console.error("Failed to sync ip to firebase");
@@ -41,7 +45,8 @@ function startFirebaseService() {
         () => {
             firebaseRoutine();
         },
-        5 * 60 * 1000
+        20 * 60 * 1000,
+        true
     );
     return timer;
 }

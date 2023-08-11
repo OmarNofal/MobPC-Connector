@@ -33,5 +33,6 @@
     "trash": "^7.2.0",
     "ws": "^8.13.0"
   },
-  "serverName": "Omar"
+  "serverName": "Omar",
+  "globalPort": 1919
 }

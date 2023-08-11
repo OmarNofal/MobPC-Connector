@@ -1,7 +1,7 @@
 const { ErrorResponse, SuccessResponse } = require('../model/response');
 
 const router = require('express').Router();
-const { logInAndGetAccessToken } = require('../auth/auth');
+const { logInAndGetAccessToken, isLoggedIn } = require('../auth/auth');
 const {} = require('../auth/exceptions');
 
 
@@ -25,6 +25,21 @@ router.post('/login', function(req, res) {
         return;
     }
 
+})
+
+router.get('/verifyToken', function(req, res) {
+    const params = req.query;
+    const token = params.token;
+
+    if (!token) {
+         res.json(new ErrorResponse(1, "Missing TOKEN"));
+    } else {
+        if (isLoggedIn(token)) {
+            res.json(new SuccessResponse({valid: true}));    
+        } else {
+            res.json(new SuccessResponse({valid: false}));
+        }
+    }
 })
 
 module.exports = router;
