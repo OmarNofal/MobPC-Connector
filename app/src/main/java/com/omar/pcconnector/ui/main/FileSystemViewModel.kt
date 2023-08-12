@@ -170,6 +170,7 @@ class FileSystemViewModel @AssistedInject constructor(
                 }
                 val fileDownloadURL =
                     getExternalDownloadURL(connection, resource.path.absolutePath, accessToken)
+                Log.i("OPEN_FILE", fileDownloadURL)
                 viewModelScope.launch {
                     _openFileEvents.emit(fileDownloadURL to resource.name)
                 }

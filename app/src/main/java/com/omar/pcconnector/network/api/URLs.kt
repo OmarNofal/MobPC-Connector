@@ -9,4 +9,4 @@ fun getDownloadURL(connection: Connection, filePath: String): String {
 
 
 fun getExternalDownloadURL(connection: Connection, filePath: String, accessToken: Token) =
-    connection.retrofit.baseUrl().toString() + "getFileExternal?path=$filePath&token=$accessToken"
+     "http://${connection.ip}:${connection.port + 1}/getFileExternal?path=$filePath&token=$accessToken"
