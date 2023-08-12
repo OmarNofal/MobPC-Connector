@@ -1,6 +1,5 @@
 package com.omar.pcconnector
 
-import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -42,10 +41,8 @@ import androidx.work.workDataOf
 import com.omar.pcconnector.data.DevicesRepository
 import com.omar.pcconnector.model.PairedDevice
 import com.omar.pcconnector.ui.theme.AppTheme
-import com.omar.pcconnector.worker.DownloadWorker
 import com.omar.pcconnector.worker.ProcessTextWorker
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -60,6 +57,7 @@ open class BaseProcessTextActivity : ComponentActivity() {
     mutableStateOf<ProcessTextUiState>(ProcessTextUiState.LoadingDevices)
 
     protected var action: String = ProcessTextWorker.ACTION_COPY
+    protected var data: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -155,7 +153,6 @@ open class BaseProcessTextActivity : ComponentActivity() {
         // Submit the stuff for processing
 
         val workManager = WorkManager.getInstance(this)
-        val data = intent.getStringExtra(Intent.EXTRA_PROCESS_TEXT)
 
         val actionWorkRequest =
             OneTimeWorkRequestBuilder<ProcessTextWorker>()

@@ -43,27 +43,35 @@
 
                 <data android:scheme="https" />
             </intent-filter>
+
+
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain"/>
+            </intent-filter>
+
+
         </activity>
 
 
         <activity
             android:name=".BaseProcessTextActivity"
             android:exported="true"
-            android:label="Do smthn bruv"
-            android:theme="@style/Theme.Transparent"/>
+            android:theme="@style/Theme.Transparent" />
 
         <activity
             android:name=".CopyTextActivity"
             android:exported="true"
             android:label="Copy To PC"
             android:theme="@style/Theme.Transparent">
+
             <intent-filter>
                 <action android:name="android.intent.action.PROCESS_TEXT" />
-
                 <data android:mimeType="text/plain" />
-
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
+
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
 
@@ -72,6 +80,13 @@
 
                 <data android:scheme="https" />
             </intent-filter>
+
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+
         </activity>
 
         <provider
