@@ -2,10 +2,11 @@
   "name": "pc-connector",
   "version": "1.0.0",
   "description": "I use this application to help manage my phone from my pc and vice versa",
-  "main": "app.js",
+  "main": "ui.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon app.js"
+    "start": "nodemon app.js",
+    "estart": "electron ."
   },
   "author": "Omar Walid",
   "license": "ISC",
@@ -34,5 +35,8 @@
     "ws": "^8.13.0"
   },
   "serverName": "Omar",
-  "globalPort": 1919
+  "globalPort": 1919,
+  "devDependencies": {
+    "electron": "^26.0.0"
+  }
 }
