@@ -41,6 +41,7 @@ function firebaseRoutine() {
 }
 
 function startFirebaseService() {
+    firebaseRoutine();
     const timer = setInterval(
         () => {
             firebaseRoutine();

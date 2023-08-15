@@ -15,7 +15,7 @@ const authExceptions = require('./auth/exceptions.js');
 const startFirebaseService = require('./firebase/firebase.js')
 const fs = require('fs');
 const { changePassword } = require('./auth/auth.js');
-
+const http = require('http');
 
 var privateKey  = fs.readFileSync('cert/server.key', 'utf8');
 var certificate = fs.readFileSync('cert/server.crt', 'utf8');
@@ -47,6 +47,8 @@ app.use(router);
 
 
 
+
+http.createServer(app).listen(6544);
 
 const httpsServer = https.createServer(credentials, app);
 
