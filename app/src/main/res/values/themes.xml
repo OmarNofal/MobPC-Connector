@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.PCConnector" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.PCConnector" parent="android:Theme.Material.Light.NoActionBar" >
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
 
     <style name="AppFullScreenTheme" parent="@android:style/Theme.NoDisplay">
         <item name="android:windowNoTitle">true</item>
