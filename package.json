@@ -2,11 +2,11 @@
   "name": "pc-connector",
   "version": "1.0.0",
   "description": "I use this application to help manage my phone from my pc and vice versa",
-  "main": "ui.js",
+  "main": "./src/ui.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon app.js",
-    "estart": "electron ."
+    "build": "tsc",
+    "start": "npm run build && electron ./build/ui.js"
   },
   "author": "Omar Walid",
   "license": "ISC",
@@ -38,6 +38,7 @@
   "globalPort": 1919,
   "devDependencies": {
     "electron": "^26.0.0",
-    "electron-rebuild": "^3.2.9"
+    "electron-rebuild": "^3.2.9",
+    "typescript": "^5.4.5"
   }
 }
