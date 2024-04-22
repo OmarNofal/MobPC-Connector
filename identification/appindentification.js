@@ -1,4 +1,4 @@
-const { readFile, readFileSync, writeFileSync } = require("fs");
+const { readFile, readFileSync, writeFileSync, existsSync } = require("fs");
 const { randomUUID } = require("crypto");
 
 
@@ -6,15 +6,15 @@ const { randomUUID } = require("crypto");
 // Each PC will be identified by a (hopefully) unique ID.
 // This will allow the apps to save the connection for faster access
 
-const UUID_FILE_PATH = './uuid'
-const UUID_V4_PATTERN = "/^[0-9A-F]{8}-[0-9A-F]{4}-[4][0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$/i"
+let uuidFilePath = './uuid'
+const UUID_V4_PATTERN = "/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i"
 
 
 function isUUIDSet() {
     try {
-        const uuid = readFileSync(UUID_FILE_PATH, {encoding: 'utf-8'});
-        return RegExp(UUID_V4_PATTERN).test(uuid);
+        return existsSync(uuidFilePath);
     } catch (e) {
+        console.log(e);
         return false;
     }
 }
@@ -22,7 +22,7 @@ function isUUIDSet() {
 function setNewUUID() {
     const uuid = randomUUID();
     try {
-        writeFileSync(UUID_FILE_PATH, uuid);
+        writeFileSync(uuidFilePath, uuid);
         return uuid;
     } catch (e) {
         console.log(e.code);
@@ -33,7 +33,7 @@ function setNewUUID() {
 // no checking here!
 function getUUID() {
     try {
-        const uuid = readFileSync(UUID_FILE_PATH, {encoding: 'utf-8'});
+        const uuid = readFileSync(uuidFilePath, {encoding: 'utf-8'});
         return uuid;
     } catch (e) {
         throw "UUID does not exist";
@@ -41,6 +41,11 @@ function getUUID() {
 }
 
 
+function setUUIDPath(path) {
+    uuidFilePath = path;
+}
+
 module.exports = {
-    getUUID, setNewUUID, isUUIDSet
+    getUUID, setNewUUID, isUUIDSet,
+    setUUIDPath
 }

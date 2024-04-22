@@ -1,5 +1,6 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const path = require('path');
 const fs = require('fs');
 const { assert } = require("console");
 const { InvalidPasswordException, PasswordNotSetException } = require("./exceptions");
@@ -7,8 +8,8 @@ const { env } = require("process");
 const { randomUUID } = require("crypto");
 require('dotenv').config();
 
-const PASSWORD_FILE_NAME = "pwd"
-const PASSWORD_VERSION_FILE_NAME = "pwd_version"
+let passwordPath = "pwd"
+let passwordVersion = "pwd_version"
 
 function changePassword(newPassword) {
 
@@ -18,25 +19,30 @@ function changePassword(newPassword) {
     const salt = bcrypt.genSaltSync();
     const encryptedPassword = bcrypt.hashSync(newPassword, salt);
 
-    fs.writeFileSync(PASSWORD_FILE_NAME, encryptedPassword);
-    fs.writeFileSync(PASSWORD_VERSION_FILE_NAME, randomUUID());
+    fs.writeFileSync(passwordPath, encryptedPassword);
+    fs.writeFileSync(passwordVersion, randomUUID());
+}
+
+function isPasswordSet() {
+    return fs.existsSync(passwordPath) && fs.existsSync(passwordVersion);
 }
 
 
 function logInAndGetAccessToken(password) {
     let encryptedPassword = "";
-
+    
     try {
-        encryptedPassword = fs.readFileSync(PASSWORD_FILE_NAME, { encoding: 'utf-8'});
+        encryptedPassword = fs.readFileSync(passwordPath, { encoding: 'utf-8'});
     } catch (e) {
         if (e.code == "ENOENT")
             throw new PasswordNotSetException("Password is not set");
         else throw e
     }
+    console.log(encryptedPassword);
     const result = bcrypt.compareSync(password, encryptedPassword);
     if (result) {
-        const passwordVersion = fs.readFileSync(PASSWORD_VERSION_FILE_NAME, { encoding: "utf-8" });
-        return jwt.sign({passwordVersion: passwordVersion}, env.JWT_SECRET_KEY, {expiresIn: "30d"});
+        const version = fs.readFileSync(passwordVersion, { encoding: "utf-8" });
+        return jwt.sign({passwordVersion: version}, env.JWT_SECRET_KEY, {expiresIn: "30d"});
     } else {
         throw new InvalidPasswordException("Passwords don't match");
     }
@@ -49,14 +55,21 @@ function isLoggedIn(token) {
     } catch (e) {
         return false;
     }
-    const passwordVersion = jwt.decode(token).passwordVersion;
-    const currentPasswordVersion = fs.readFileSync(PASSWORD_VERSION_FILE_NAME, {encoding: "utf-8"});
-    return (passwordVersion == currentPasswordVersion)
+    const version = jwt.decode(token).passwordVersion;
+    const currentPasswordVersion = fs.readFileSync(passwordVersion, {encoding: "utf-8"});
+    return (version == currentPasswordVersion)
 }
 
+
+function setPasswordDir(dir) {
+    passwordPath = path.join(dir, 'pwd');
+    passwordVersion = path.join(dir, 'pwd_version');
+}
 
 module.exports = {
     isLoggedIn, 
     logInAndGetAccessToken,
-    changePassword
+    changePassword,
+    setPasswordDir,
+    isPasswordSet
 }

@@ -1,4 +1,4 @@
-const { isLoggedIn } = require('../auth/auth');
+const { isLoggedIn } = require('../storage');
 
 
 function authMiddleware(req, res, next) {

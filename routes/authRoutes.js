@@ -1,7 +1,7 @@
 const { ErrorResponse, SuccessResponse } = require('../model/response');
 
 const router = require('express').Router();
-const { logInAndGetAccessToken, isLoggedIn } = require('../auth/auth');
+const { logInAndGetAccessToken, isLoggedIn } = require('../storage');
 const {} = require('../auth/exceptions');
 
 
@@ -14,13 +14,16 @@ router.post('/login', function(req, res) {
     if (!password) {
         res.statusCode = 400;
         res.json(new ErrorResponse(10, "Password field not set"));
+        console.log("Password not set")
         return;
     }
-
+    console.log(password);
     try {
         const token = logInAndGetAccessToken(password);
         res.json(new SuccessResponse({token: token}));
     } catch (e) {
+        console.log(e);
+        console.log("Wrong password")
         res.json(new ErrorResponse(10, "Wrong Password"));
         return;
     }
