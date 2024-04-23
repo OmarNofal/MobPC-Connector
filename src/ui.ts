@@ -1,8 +1,8 @@
-const { ipcMain, BrowserWindow, app } = require('electron')
-const path = require('path');
-const { startServer, stopServer, events, isServerOpen } = require('./app');
-const { start } = require('repl');
-const storage = require('./storage');
+import { ipcMain, BrowserWindow, app } from 'electron';
+import path from 'path';
+import { startServer, stopServer, events, isServerOpen } from './app';
+import { start } from 'repl';
+import storage from './storage';
 
 function initWindow() {
 

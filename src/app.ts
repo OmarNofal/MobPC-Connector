@@ -1,20 +1,19 @@
-const express = require('express');
-const https = require('https');
-const statusRoutes = require('./routes/statusRoutes.js');
-const browserRoutes = require('./routes/browserRoutes.js');
-const clipboardRoutes = require('./routes/clipboardRoutes.js');
-const directoryRoutes = require('./routes/directoryRoutes.js');
-const osRoutes = require('./routes/osRoutes.js');
-const fileOperationsRoutes = require('./routes/fileOperationsRoutes.js');
-const uploadRoutes = require('./routes/uploadRoutes.js');
-const downloadRoutes = require('./routes/downloadRoutes.js');
-const loginRouter = require('./routes/authRoutes.js')
-const wsServer = require('./routes/fsWatcher.js')
-const startFirebaseService = require('./firebase/firebase.js')
-const fs = require('fs');
-const http = require('http');
-const EventEmitter = require('events');
-const { changePassword } = require('./auth/auth.js');
+import express from 'express';
+import https from 'https';
+import statusRoutes from './routes/statusRoutes.js';
+import browserRoutes from './routes/browserRoutes.js';
+import clipboardRoutes from './routes/clipboardRoutes.js';
+import directoryRoutes from './routes/directoryRoutes.js';
+import osRoutes from './routes/osRoutes.js';
+import fileOperationsRoutes from './routes/fileOperationsRoutes.js';
+import uploadRoutes from './routes/uploadRoutes.js';
+import downloadRoutes from './routes/downloadRoutes.js';
+import loginRouter from './routes/authRoutes.js';
+import wsServer from './routes/fsWatcher.js';
+import startFirebaseService from './firebase/firebase.js';
+import fs from 'fs';
+import http from 'http';
+import EventEmitter from 'events';
 
 
 var privateKey  = fs.readFileSync('src/cert/server.key', 'utf8');
@@ -23,7 +22,8 @@ var certificate = fs.readFileSync('src/cert/server.crt', 'utf8');
 const credentials = {key: privateKey, cert: certificate};
 
 
-const {runDetectionServer, closeDetectionServer} = require('./detectionserver.js')
+import DetectionServer, { DetectionServerConfiguration, DetectionServerState } from './detectionserver.js';
+import { BehaviorSubject } from 'rxjs';
 
 const PORT = 6543
 
@@ -45,22 +45,26 @@ app.use(loginRouter);
 app.use(router);
 
 
-const events = new EventEmitter();
+
+let detectionServerConfiguration = new BehaviorSubject<DetectionServerConfiguration>({portNumber: 4285})
+let detectionServer = new DetectionServer(detectionServerConfiguration);
+
+export const events = new EventEmitter();
 
 let https_server = null;
 let http_server = null;
 
-function startServer(port) {
-    runDetectionServer();
+export function startServer() {
+    detectionServer.run()
     startFirebaseService();
     http_server = http.createServer(app).listen(6544);
     https_server = httpsServer.listen(PORT);
     events.emit('server-started');
 }
 
-function stopServer(port) {
+export function stopServer() {
     if (https_server != null) {
-        closeDetectionServer();
+        detectionServer.close()
 
         http_server.close();
         http_server = null;
@@ -72,7 +76,7 @@ function stopServer(port) {
     }
 }
 
-function isServerOpen() {
+export function isServerOpen() {
   return https_server != null
 }
 
@@ -85,8 +89,10 @@ httpsServer.on('upgrade', (request, socket, head) => {
   });
 });
 
-startServer(4043);
+startServer()
 
-module.exports = {
-  startServer, stopServer, events, isServerOpen
-}
+setTimeout(() => {
+  detectionServer.close()
+  setTimeout(detectionServer.run, 3000)
+}, 3000)
+

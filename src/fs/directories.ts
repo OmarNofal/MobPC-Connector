@@ -6,7 +6,7 @@ const {File, Directory} = require('./resource')
 
 
 
-function getDirectoryStructure(dir) {
+export function getDirectoryStructure(dir) {
     const files = fs.readdirSync(dir);
 
 
@@ -50,6 +50,3 @@ function getDirectoryStructure(dir) {
 
     return result;
 }
-
-
-module.exports = { getDirectoryStructure }

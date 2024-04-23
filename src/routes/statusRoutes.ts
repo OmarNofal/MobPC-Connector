@@ -1,9 +1,9 @@
 
-const pkg = require('../../package.json');
+import pkg from '../../package.json';
 const networkInterface = require('os').networkInterfaces;
 const statusRoutes = require('express').Router();
-const os = require('os');
-const {getUUID} = require('../identification/appindentification');
+import os from 'os';
+import { getUUID } from '../identification/appindentification';
 
 statusRoutes.get('/status', (req, res) => {
     
@@ -20,5 +20,4 @@ statusRoutes.get('/status', (req, res) => {
     });
 });
 
-
-module.exports = statusRoutes;
+export default statusRoutes

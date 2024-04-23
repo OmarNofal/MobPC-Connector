@@ -1,10 +1,10 @@
-const {  app } = require('electron');
-const id = require('./identification/appindentification');
-const auth = require('./auth/auth');
-const path = require('path');
+import { app } from 'electron';
+import { getUUID as getUID, setNewUUID, setUUIDPath, isUUIDSet } from './identification/appindentification';
+import { isLoggedIn as isLIn, isPasswordSet, changePassword as cP, setPasswordDir, logInAndGetAccessToken as logInAndGetToken} from './auth/auth';
+import path from 'path';
 
 
-function init() {
+export function init() {
     
     let appDir;
     try {
@@ -14,41 +14,36 @@ function init() {
         appDir = app.getPath('exe');
     }
 
-    id.setUUIDPath(path.join(appDir, "id"));
-    auth.setPasswordDir(appDir);
+    setUUIDPath(path.join(appDir, "id"));
+    setPasswordDir(appDir);
 
-    if (!id.isUUIDSet()) {
+    if (!isUUIDSet()) {
         console.log("UUID not set");
-        id.setNewUUID()
+        setNewUUID()
     }
 
-    if (!auth.isPasswordSet()) {
+    if (!isPasswordSet()) {
         changePassword('00000000')
     };
 }
 
 
-function changePassword(newPassword) {
-    return auth.changePassword(newPassword);
+export function changePassword(newPassword) {
+    return cP(newPassword);
 }
 
-function isLoggedIn(token) {
-    return auth.isLoggedIn(token);
+export function isLoggedIn(token) {
+    return isLIn(token);
 }
 
-function logInAndGetAccessToken(password) {
-    return auth.logInAndGetAccessToken(password);
+export function logInAndGetAccessToken(password) {
+    return logInAndGetToken(password);
 }
 
-function getUUID() {
-    return id.getUUID();
+export function getUUID() {
+    return getUID();
 }
 
-
-module.exports = {
-    getUUID,
-    logInAndGetAccessToken,
-    isLoggedIn,
-    changePassword,
-    init
+export default {
+    init, changePassword, isLoggedIn, logInAndGetAccessToken, getUUID
 }

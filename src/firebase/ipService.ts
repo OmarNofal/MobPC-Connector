@@ -4,7 +4,7 @@ const axios = require('axios').default;
 
 
 // This finds the global ip of the device
-function getIp(
+export default function getIp(
     onFinished,
     onFailure
 ) {
@@ -18,5 +18,3 @@ function getIp(
         onFailure(err);
     })
 }
-
-module.exports = getIp;

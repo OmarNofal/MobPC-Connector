@@ -1,6 +1,6 @@
-const ws = require('ws');
-const fs = require('fs');
-const { parsePath } = require('../fs/operations');
+import ws from 'ws';
+import fs from 'fs';
+import { parsePath } from '../fs/operations';
 
 const server = new ws.Server({noServer: true});
 
@@ -45,4 +45,4 @@ server.on('connection', socket => {
 });
 
 
-module.exports = server;
+export default server

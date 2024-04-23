@@ -1,13 +1,14 @@
-const {getDirectoryStructure} = require('../fs/directories');
-const { ResourceAlreadyExists } = require('../fs/exceptions');
-const { copyResources, renameResource, moveResources, deleteResources, parsePath } = require('../fs/operations');
-const router = require('express').Router();
-const { SuccessResponse, ErrorResponse } = require('../model/response');
-const path = require('path');
-const getDrives = require('../fs/drives');
-const authMiddleware = require('./authMiddleware');
+import { getDirectoryStructure } from '../fs/directories'
+import { ResourceAlreadyExists } from '../fs/exceptions'
+import { copyResources, renameResource, moveResources, deleteResources, parsePath } from '../fs/operations'
+import { Router } from 'express'
+import { SuccessResponse, ErrorResponse } from '../model/response'
+import path from 'path'
+import getDrives from '../fs/drives'
+import authMiddleware from './authMiddleware'
 
 
+const router = Router()
 
 router.post('/copyResources', authMiddleware, (req, res) => {
 
@@ -169,4 +170,4 @@ router.get('/drives', authMiddleware, function(req, res) {
     }));
 })
 
-module.exports = router;
+export default router

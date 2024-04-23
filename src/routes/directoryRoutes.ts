@@ -1,12 +1,13 @@
-const {getDirectoryStructure} = require('../fs/directories');
-const router = require('express').Router();
-const { SuccessResponse, ErrorResponse } = require('../model/response');
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
-const { parsePath } = require('../fs/operations');
-const authMiddleware = require('./authMiddleware');
+import { getDirectoryStructure } from '../fs/directories'
+import { Router } from 'express'
+import { SuccessResponse, ErrorResponse } from '../model/response'
+import fs from 'fs'
+import path from 'path'
+import { parsePath } from '../fs/operations'
+import authMiddleware from './authMiddleware'
 
+
+const router = Router()
 
 
 router.get('/listDirectory', authMiddleware, (req, res) => {
@@ -54,4 +55,4 @@ router.post('/mkdirs', authMiddleware, (req, res) => {
 });
 
 
-module.exports = router;
+export default router

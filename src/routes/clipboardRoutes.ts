@@ -1,16 +1,15 @@
-const router = require('express').Router();
-const clipboardy = require('clipboardy');
-const { notifyOfNewClipboardItem } = require('../utilities/notificationSystem')
-
-const { SuccessResponse, ErrorResponse } = require('../model/response');
-const authMiddleware = require('./authMiddleware');
-
+import { Router } from "express"
+import clipboardy from "clipboardy"
+import { notifyOfNewClipboardItem } from "../utilities/notificationSystem"
+import { SuccessResponse, ErrorResponse } from "../model/response"
+import authMiddleware from './authMiddleware'
 
 
+const router = Router()
 
 router.post('/copyToClipboard', authMiddleware, (req, res) => {
 
-    const text = req.body.text;
+    const text: string | undefined = req.body.text;
 
     if (text == undefined)
         res.json(new ErrorResponse(11, "Missing [text] field"));
@@ -31,5 +30,4 @@ router.post('/copyToClipboard', authMiddleware, (req, res) => {
 });
 
 
-
-module.exports = router;
+export default router

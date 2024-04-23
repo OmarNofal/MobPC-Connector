@@ -6,7 +6,8 @@
         "allowJs": true,
         "moduleResolution": "NodeNext",
         "module": "NodeNext",
-        "strict": false
+        "strict": false,
+        "resolveJsonModule": true
     },
-    "include": ["./src/**/*"]
+    "include": ["./src/**/*"],
 }

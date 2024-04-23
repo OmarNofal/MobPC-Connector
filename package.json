@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc",
-    "start": "npm run build && electron ./build/ui.js"
+    "start": "npm run build && electron ./build/src/ui.js"
   },
   "author": "Omar Walid",
   "license": "ISC",
@@ -31,12 +31,18 @@
     "node-notifier": "^10.0.1",
     "nodemon": "^2.0.20",
     "open": "^8.4.0",
+    "rxjs": "^7.8.1",
     "trash": "^7.2.0",
     "ws": "^8.13.0"
   },
   "serverName": "Omar",
   "globalPort": 1919,
   "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
+    "@types/express": "^4.17.21",
+    "@types/jsonwebtoken": "^9.0.6",
+    "@types/multer": "^1.4.11",
+    "@types/node-notifier": "^8.0.5",
     "electron": "^26.0.0",
     "electron-rebuild": "^3.2.9",
     "typescript": "^5.4.5"

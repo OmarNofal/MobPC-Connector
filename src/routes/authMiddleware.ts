@@ -1,7 +1,7 @@
-const { isLoggedIn } = require('../storage');
+import { isLoggedIn } from '../storage'
 
 
-function authMiddleware(req, res, next) {
+export default function authMiddleware(req, res, next) {
     const authHeader = req.headers['authorization'];
   
     if (!authHeader) {
@@ -22,4 +22,3 @@ function authMiddleware(req, res, next) {
     }
   }
   
-  module.exports = authMiddleware;

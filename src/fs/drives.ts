@@ -1,8 +1,8 @@
-const drivelist = require('drivelist');
-//const driveInfo = require('diskusage');
+import drivelist from 'drivelist';
 
 
-function getDrives(
+
+export default function getDrives(
     onError,
     onSuccess
 ) {
@@ -13,6 +13,3 @@ function getDrives(
     });
 
 }
-
-
-module.exports = getDrives;

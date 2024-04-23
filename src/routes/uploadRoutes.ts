@@ -1,14 +1,19 @@
-const {getDirectoryStructure} = require('../fs/directories');
-const router = require('express').Router();
-const { SuccessResponse, ErrorResponse } = require('../model/response');
-const path = require('path');
-const multer = require('multer');
-const { DaemonicProgress } = require('fsprogress')
+import { getDirectoryStructure } from '../fs/directories'
+import { Router, Request } from 'express'
+import { SuccessResponse, ErrorResponse } from '../model/response'
+import path from 'path'
+import multer from 'multer'
+import { DaemonicProgress } from 'fsprogress'
 var fs = require('fs')
-const { parsePath } = require('../fs/operations');
-const authMiddleware = require('./authMiddleware');
+import { parsePath } from '../fs/operations'
+import authMiddleware from './authMiddleware'
+
 
 const upload = multer({ dest: 'C:\\Users\\omarw\\OneDrive\\Documents\\Programming\\PC Connector\\Backend\\temp' });
+
+const router = Router()
+
+
 
 router.post('/uploadFiles', authMiddleware, upload.any(), (req, res) => {
 
@@ -24,8 +29,10 @@ router.post('/uploadFiles', authMiddleware, upload.any(), (req, res) => {
         return
     }
 
+    const files = req.files as Express.Multer.File[];
+
     console.log(req.files.length)
-    for (const file of req.files) {
+    for (const file of files) {
         console.log(file);
 
         var directory = file.fieldname;
@@ -65,4 +72,4 @@ router.post('/uploadFiles', authMiddleware, upload.any(), (req, res) => {
 
 
 
-module.exports = router;
+export default router

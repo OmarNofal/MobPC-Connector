@@ -1,9 +1,9 @@
-const router = require('express').Router();
-const open = require('open');
-const { SuccessResponse, ErrorResponse } = require('../model/response');
-const authMiddleware = require('./authMiddleware');
+import { Router } from 'express' 
+import open from "open"
+import { SuccessResponse, ErrorResponse } from "../model/response"
+import authMiddleware from "./authMiddleware"
 
-
+const router = Router()
 
 function isValidURL(url) {
     try {
@@ -36,4 +36,4 @@ router.post('/openLink', authMiddleware, (req, res) => {
 });
 
 
-module.exports = router;
+export default router;

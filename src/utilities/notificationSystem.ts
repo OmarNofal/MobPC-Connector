@@ -1,8 +1,7 @@
-const notifier = require('node-notifier');
+import notifier from 'node-notifier'
 
 
-
-function notifyOfNewClipboardItem(text) {
+export function notifyOfNewClipboardItem(text: string) {
 
     const message = {
         title: "New text in your clipboard",
@@ -12,8 +11,4 @@ function notifyOfNewClipboardItem(text) {
     }
 
     notifier.notify(message)
-
 }
-
-
-module.exports =  { notifyOfNewClipboardItem }

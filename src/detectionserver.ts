@@ -1,20 +1,82 @@
-const dgram = require('node:dgram')
-const pkg = require('../package.json')
-const { getUUID } = require('./storage')
-const os = require('os');
-// This is a UDP socket server to help other devices discover the server
-// Typically, you would send a broadcast message to the whole local network
-// to the port 4285 and if the server is there it will respond with the status of the system
+import dgram from 'node:dgram';
+import os from 'os';
+import { BehaviorSubject, Subscription, distinctUntilKeyChanged } from 'rxjs';
+import pkg from '../package.json';
+import { getUUID } from './storage';
 
-const SOCKET_SERVER_PORT = 4285
-let server = dgram.createSocket('udp4')
 
-function addServerListeners() { 
-    server.on('listening', () => {
-        console.log("Detection Server is up and running on PORT: " + server.address().port)
-    })
+export type DetectionServerConfiguration = {
+    portNumber: number
+}
 
-    server.on('message', (msg, remoteInfo) => {
+
+export enum DetectionServerState {
+    RUNNING,
+    STOPPED,
+}
+
+/**
+ * A UDP server which allows client devices to discover
+ * this PC. A client sends a UDP broadcast message on the LAN to the server's port
+ * and the server will respond with information about the device like 
+ * its name, IP address, port and the app's version.
+ */
+export default class DetectionServer {
+
+    /**The socket server itself which listens for broadcast messages */
+    private socket: dgram.Socket
+
+    /**The current configuration of the server */
+    private currentConfiguration: DetectionServerConfiguration
+
+    /**The subscription to the servcer configuration Subject */
+    private subscription: Subscription
+
+    /**The current state of the server */
+    state: BehaviorSubject<DetectionServerState>
+
+    /**
+     * @param config A behavior subject containing the current configuration of the server
+     */
+    constructor(config: BehaviorSubject<DetectionServerConfiguration>) {
+        this.state = new BehaviorSubject<DetectionServerState>(DetectionServerState.STOPPED)
+        this.socket = dgram.createSocket('udp4')
+
+        this.currentConfiguration = config.value
+        this.subscription = config.asObservable()
+            .pipe(distinctUntilKeyChanged("portNumber"))
+            .subscribe((val) => this.currentConfiguration = val)
+    }
+
+    /**Start running the detection server, the port will be determined based on
+     * the current value of the configuration passed to the class
+    */
+    run = () => {
+        if (this.state.value == DetectionServerState.RUNNING) {
+            console.log("Detection Server already running")
+        } else {
+            this.socket = dgram.createSocket('udp4')
+            this.socket.bind(this.currentConfiguration.portNumber, '0.0.0.0', this.emitServerStarted)
+            this.socket.on('message', this.onMessageReceived)
+        }
+    }
+
+    /**Close the ongoing running socket if any */
+    close = () => {
+        this.socket.close(this.emitServerClosed)
+    }
+
+    private emitServerClosed = () => {
+        console.log("Detection server closed")
+        this.state.next(DetectionServerState.STOPPED)
+    }
+
+    private emitServerStarted = () => {
+        console.log("Detection server started")
+        this.state.next(DetectionServerState.RUNNING)
+    }
+
+    private onMessageReceived = (msg: Buffer, remoteInfo: dgram.RemoteInfo) => {
         console.log("Received " + msg)
         if (msg.toString() === 'PC Connector Discovery') {
             // respond with server info
@@ -22,30 +84,23 @@ function addServerListeners() {
                 name: pkg.serverName,
                 version: pkg.version,
                 port: 6543,
-                ip: server.address().address,
+                ip: this.socket.address().address,
                 id: getUUID(),
                 os: os.platform()
             }
 
-            server.send(JSON.stringify(data), remoteInfo.port, remoteInfo.address, (error, _) => {
+            this.socket.send(JSON.stringify(data), remoteInfo.port, remoteInfo.address, (error, _) => {
                 if (error != null) {
                     console.log(`Device ${remoteInfo.address} discovered`)
                 }
             })
         }
-    })
+    }
+
+    /**Closes the socket and frees all resources. Can't be run again! */
+    clean = () => {
+        this.close()
+        this.subscription.unsubscribe()
+    }
+
 }
-
-
-function closeDetectionServer() {
-    server.close();
-    server = dgram.createSocket('udp4');
-}
-
-function runDetectionServer() {
-    addServerListeners();
-    server.bind(SOCKET_SERVER_PORT, '0.0.0.0');
-}
-
-
-module.exports = {runDetectionServer, closeDetectionServer}

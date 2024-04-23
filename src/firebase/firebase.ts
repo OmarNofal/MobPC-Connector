@@ -1,9 +1,9 @@
 // Import the functions you need from the SDKs you need
-const { initializeApp, deleteApp } = require("firebase/app");
-const { getDatabase, set, ref } = require('firebase/database')
-const getIp = require('./ipService');
-const { getUUID, setNewUUID } = require('../identification/appindentification');
-const config = require('../../package.json')
+import { initializeApp, deleteApp } from "firebase/app";
+import { getDatabase, set, ref } from 'firebase/database';
+import getIp from './ipService';
+import { getUUID, setNewUUID } from '../identification/appindentification';
+import config from '../../package.json';
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -40,7 +40,7 @@ function firebaseRoutine() {
 )
 }
 
-function startFirebaseService() {
+export default function startFirebaseService() {
     firebaseRoutine();
     const timer = setInterval(
         () => {
@@ -51,5 +51,3 @@ function startFirebaseService() {
     );
     return timer;
 }
-
-module.exports = startFirebaseService;

@@ -1,21 +1,21 @@
-const fs = require('fs');
-const path = require('path');
-const { ResourceAlreadyExists } = require('./exceptions');
-const copy = require('cpy');
-const { DaemonicProgress } = require('fsprogress')
-const trash  = require('trash')
-const os = require('os');
+import fs from 'fs';
+import path from 'path';
+import { ResourceAlreadyExists } from './exceptions';
+import copy from 'cpy';
+import { DaemonicProgress } from 'fsprogress';
+import trash from 'trash';
+import os from 'os';
 
 
-function parsePath(src) {
+export function parsePath(src) {
     if (typeof src == 'string') 
         src = src.replace('~', os.homedir())
     return src
 }
 
 // check to see if any file or dir exists
-function checkIfAnyExists(src) {
-    if (src instanceof String) {
+export function checkIfAnyExists(src) {
+    if (typeof src == 'string') {
         if (fs.existsSync(src)) return true;
     } else if (src instanceof Array) {
         for (const path of src) {
@@ -25,12 +25,12 @@ function checkIfAnyExists(src) {
     return false;
 }
 
-function copyResources(src, dest, onProgress, onFinish, onError ,overwrite = false) {
+export function copyResources(src, dest, onProgress, onFinish, onError ,overwrite = false) {
 
 
     if (overwrite) {
         var pathsToCheck;
-        if (typeof src == 'string' || src instanceof String) {
+        if (typeof src == 'string') {
             pathsToCheck = path.join(dest, path.parse(src).base);
             console.log(pathsToCheck)
         } else {
@@ -63,11 +63,11 @@ function copyResources(src, dest, onProgress, onFinish, onError ,overwrite = fal
 
 }
 
-function moveResources(src, dest, onProgress, onFinish, onError ,overwrite = false) {
+export function moveResources(src, dest, onProgress, onFinish, onError ,overwrite = false) {
 
     if (!overwrite) {
         var pathsToCheck;
-        if (typeof src == 'string' || src instanceof String) {
+        if (typeof src == 'string') {
             pathsToCheck = path.join(dest, path.parse(src).base);
         } else {
             pathsToCheck = src.map((value, index, _) => {
@@ -95,7 +95,7 @@ function moveResources(src, dest, onProgress, onFinish, onError ,overwrite = fal
 }
 
 
-async function deleteResources(src, permanentlyDelete, onProgress, onFinished) {
+export async function deleteResources(src, permanentlyDelete, onProgress, onFinished) {
 
     if (typeof src == 'string' || src instanceof String) {
         src = [src];
@@ -121,7 +121,7 @@ async function deleteResources(src, permanentlyDelete, onProgress, onFinished) {
 }
 
 
-function renameResource(
+export function renameResource(
     src, 
     newName, 
     overwrite = false
@@ -137,6 +137,3 @@ function renameResource(
 
     fs.renameSync(src, destPath);
 }
-
-
-module.exports = { copyResources, renameResource, moveResources, deleteResources, parsePath };
