@@ -4,11 +4,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.pcOps = void 0;
+const child_process_1 = require("child_process");
 const lock_your_windows_1 = __importDefault(require("lock-your-windows"));
+const node_notifier_1 = __importDefault(require("node-notifier"));
 const os_1 = __importDefault(require("os"));
 const exceptions_1 = require("./exceptions");
-const child_process_1 = require("child_process");
-const node_notifier_1 = __importDefault(require("node-notifier"));
 function lockPc() {
     if (os_1.default.platform() != 'win32') {
         throw new exceptions_1.UnsupportedOperationException("Locking is only available on Windows currently");

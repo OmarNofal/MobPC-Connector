@@ -1,15 +1,10 @@
-
-import pkg from '../../package.json';
-const networkInterface = require('os').networkInterfaces;
-const statusRoutes = require('express').Router();
+import { Request, Response, Router } from 'express';
 import os from 'os';
+import pkg from '../../package.json';
 import { getUUID } from '../identification/appindentification';
 
-statusRoutes.get('/status', (req, res) => {
-    
-    const networkInterfaces = networkInterface();
-    
 
+function statusController(req: Request, res: Response) {
     res.json({
         name: pkg.serverName,
         version: pkg.version,
@@ -18,6 +13,8 @@ statusRoutes.get('/status', (req, res) => {
         id: getUUID(),
         os: os.platform()
     });
-});
+}
 
-export default statusRoutes
+export default function addStatusRoutes(app: Router) {
+    app.get('/status', statusController)
+}

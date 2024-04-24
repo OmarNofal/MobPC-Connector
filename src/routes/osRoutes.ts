@@ -1,14 +1,11 @@
-import { Router } from 'express';
-import { SuccessResponse, ErrorResponse } from '../model/response';
-import { pcOps } from '../pc/pcOperations';
+import { Request, Response, Router } from 'express';
+import { ErrorResponse, SuccessResponse } from '../model/response';
 import { UnsupportedOperationException } from '../pc/exceptions';
-import authMiddleware from './authMiddleware'
+import { pcOps } from '../pc/pcOperations';
+import { AuthMiddlewareFunction } from './authMiddleware';
 
 
-const router = Router()
-
-router.get('/lockPc', authMiddleware, (_, res) => {
-
+function lockPcController(_: Request, res: Response) {
     try {
         pcOps.lockPc()
     } catch (err) {
@@ -18,15 +15,14 @@ router.get('/lockPc', authMiddleware, (_, res) => {
     }
     
     return res.json(new SuccessResponse());
-})
+}
 
-
-router.get('/shutdownPc', authMiddleware, (_, res) => {
+function shutdownPcController(req: Request, res: Response) {
     res.json(new SuccessResponse()) // send response first
     pcOps.shutdownPc()
-})
+}
 
-router.post('/sendNotification', authMiddleware, (req, res) => {
+function sendNotificationController(req: Request, res: Response) {
     const body = req.body
 
     const title = body.title
@@ -46,6 +42,13 @@ router.post('/sendNotification', authMiddleware, (req, res) => {
     })
 
     res.json(new SuccessResponse())
-})
+}
 
-export default router
+export default function addOSRoutes(
+    app: Router, 
+    authMiddleware: AuthMiddlewareFunction
+) {
+    app.get('/lockPc', authMiddleware, lockPcController)
+    app.get('/shutdownPc', authMiddleware, shutdownPcController)
+    app.post('/sendNotification', authMiddleware, sendNotificationController)
+}

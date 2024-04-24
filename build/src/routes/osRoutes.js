@@ -1,15 +1,9 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-const express_1 = require("express");
 const response_1 = require("../model/response");
-const pcOperations_1 = require("../pc/pcOperations");
 const exceptions_1 = require("../pc/exceptions");
-const authMiddleware_1 = __importDefault(require("./authMiddleware"));
-const router = (0, express_1.Router)();
-router.get('/lockPc', authMiddleware_1.default, (_, res) => {
+const pcOperations_1 = require("../pc/pcOperations");
+function lockPcController(_, res) {
     try {
         pcOperations_1.pcOps.lockPc();
     }
@@ -19,12 +13,12 @@ router.get('/lockPc', authMiddleware_1.default, (_, res) => {
         }
     }
     return res.json(new response_1.SuccessResponse());
-});
-router.get('/shutdownPc', authMiddleware_1.default, (_, res) => {
+}
+function shutdownPcController(req, res) {
     res.json(new response_1.SuccessResponse()); // send response first
     pcOperations_1.pcOps.shutdownPc();
-});
-router.post('/sendNotification', authMiddleware_1.default, (req, res) => {
+}
+function sendNotificationController(req, res) {
     const body = req.body;
     const title = body.title;
     const message = body.message;
@@ -40,5 +34,10 @@ router.post('/sendNotification', authMiddleware_1.default, (req, res) => {
         iconPath: undefined
     });
     res.json(new response_1.SuccessResponse());
-});
-exports.default = router;
+}
+function addOSRoutes(app, authMiddleware) {
+    app.get('/lockPc', authMiddleware, lockPcController);
+    app.get('/shutdownPc', authMiddleware, shutdownPcController);
+    app.post('/sendNotification', authMiddleware, sendNotificationController);
+}
+exports.default = addOSRoutes;

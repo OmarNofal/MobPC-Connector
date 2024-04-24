@@ -1,17 +1,13 @@
-import { SuccessResponse, ErrorResponse } from "../model/response";
-import { Router } from "express";
-import { logInAndGetAccessToken, isLoggedIn } from "../storage";
-
-
-const router = Router();
+import { Request, Response, Router } from "express";
+import AuthenticationManager from "../auth/auth";
+import { ErrorResponse, SuccessResponse } from "../model/response";
 
 
 type LoginData = {
     password?: string
 }
 
-router.post('/login', function(req, res) {
-
+function loginController(req: Request, res: Response, authManager: AuthenticationManager) {
     const body: LoginData = req.body;
 
     const password: string | undefined = body.password;
@@ -24,31 +20,33 @@ router.post('/login', function(req, res) {
     }
 
     try {
-        const token = logInAndGetAccessToken(password)
-        res.json(new SuccessResponse({token: token}))
+        const token = authManager.logInAndGetAccessToken(password)
+        res.json(new SuccessResponse({ token: token }))
     } catch (e) {
         console.log(e)
         console.log("Wrong password")
         res.json(new ErrorResponse(10, "Wrong Password"))
         return
     }
+}
 
-})
-
-router.get('/verifyToken', function(req, res) {
-
+function verifyTokenController(req: Request, res: Response, authManager: AuthenticationManager) {
     const params = req.query
     const token = params.token
 
-    if (!token) {
-         res.json(new ErrorResponse(1, "Missing TOKEN"))
+    if (!token || typeof token != "string") {
+        res.json(new ErrorResponse(1, "Missing TOKEN"))
     } else {
-        if (isLoggedIn(token)) {
-            res.json(new SuccessResponse({valid: true}))
+        if (authManager.isValidToken(token)) {
+            res.json(new SuccessResponse({ valid: true }))
         } else {
-            res.json(new SuccessResponse({valid: false}))
+            res.json(new SuccessResponse({ valid: false }))
         }
     }
-})
+}
 
-export default router
+
+export default function addAuthRoutes(app: Router, authManager: AuthenticationManager) {
+    app.post('/login', (req, res) => loginController(req, res, authManager))
+    app.get('/verifyToken', (req, res) => verifyTokenController(req, res, authManager))
+}

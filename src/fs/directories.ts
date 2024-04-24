@@ -1,8 +1,6 @@
-const { FILE } = require('dns');
-const e = require('express');
-const fs = require('fs');
-const path = require('path');
-const {File, Directory} = require('./resource')
+import fs from 'fs';
+import path from 'path';
+import { File, Directory } from './resource';
 
 
 

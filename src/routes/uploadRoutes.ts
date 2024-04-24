@@ -1,22 +1,14 @@
-import { getDirectoryStructure } from '../fs/directories'
-import { Router, Request } from 'express'
-import { SuccessResponse, ErrorResponse } from '../model/response'
-import path from 'path'
-import multer from 'multer'
+import { Request, Response, Router } from 'express'
+import fs from 'fs'
 import { DaemonicProgress } from 'fsprogress'
-var fs = require('fs')
+import multer from 'multer'
+import path from 'path'
 import { parsePath } from '../fs/operations'
-import authMiddleware from './authMiddleware'
+import { ErrorResponse, SuccessResponse } from '../model/response'
+import { AuthMiddlewareFunction } from './authMiddleware'
 
 
-const upload = multer({ dest: 'C:\\Users\\omarw\\OneDrive\\Documents\\Programming\\PC Connector\\Backend\\temp' });
-
-const router = Router()
-
-
-
-router.post('/uploadFiles', authMiddleware, upload.any(), (req, res) => {
-
+function uploadFilesController(req: Request, res: Response) {
     const body = req.body; 
 
     const destination = parsePath(body.dest);
@@ -68,8 +60,14 @@ router.post('/uploadFiles', authMiddleware, upload.any(), (req, res) => {
     }
 
     res.json(new SuccessResponse());
-});
+}
 
 
-
-export default router
+export default function addUploadRoutes(
+    app: Router,
+    uploadTempDestination: string,
+    authMiddleware: AuthMiddlewareFunction
+) {
+    const upload = multer({ dest: uploadTempDestination });
+    app.post('/uploadFiles', authMiddleware, upload.any(), uploadFilesController)
+}

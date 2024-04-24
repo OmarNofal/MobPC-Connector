@@ -5,8 +5,8 @@ const axios = require('axios').default;
 
 // This finds the global ip of the device
 export default function getIp(
-    onFinished,
-    onFailure
+    onFinished: (ip: string) => void,
+    onFailure: (err: any) => void
 ) {
     axios.get('https://api.ipify.org')
     .then( (res) => {

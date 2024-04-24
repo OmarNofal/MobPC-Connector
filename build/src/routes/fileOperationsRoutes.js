@@ -3,14 +3,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.addFileOperationsRoutes = void 0;
 const exceptions_1 = require("../fs/exceptions");
 const operations_1 = require("../fs/operations");
 const express_1 = require("express");
 const response_1 = require("../model/response");
 const drives_1 = __importDefault(require("../fs/drives"));
-const authMiddleware_1 = __importDefault(require("./authMiddleware"));
 const router = (0, express_1.Router)();
-router.post('/copyResources', authMiddleware_1.default, (req, res) => {
+function copyResourcesController(req, res) {
     var _a;
     const body = req.body;
     console.log(body);
@@ -48,8 +48,8 @@ router.post('/copyResources', authMiddleware_1.default, (req, res) => {
         else
             return res.json(new response_1.ErrorResponse(10, "Uncaught error: " + err));
     }
-});
-router.post('/moveResources', authMiddleware_1.default, (req, res) => {
+}
+function moveResourcesController(req, res) {
     var _a;
     const body = req.body;
     const resourcesPath = body.src;
@@ -84,20 +84,18 @@ router.post('/moveResources', authMiddleware_1.default, (req, res) => {
         else
             return res.json(new response_1.ErrorResponse(10, "Uncaught error: " + err));
     }
-});
-router.post('/deleteResources', authMiddleware_1.default, (req, res) => {
+}
+function deleteResourceController(req, res) {
     var _a;
     const body = req.body;
     var src = body.src;
     var permanentlyDelete = (((_a = body.permanentlyDelete) !== null && _a !== void 0 ? _a : 0) == 1) ? true : false;
     src = (0, operations_1.parsePath)(src);
-    (0, operations_1.deleteResources)(src, permanentlyDelete, (progress) => {
-        //res.write(JSON.stringify(progress) + "\n");
-    }, () => {
+    (0, operations_1.deleteResources)(src, permanentlyDelete, (_) => { }, () => {
         res.json(new response_1.SuccessResponse());
     });
-});
-router.post('/renameResource', authMiddleware_1.default, (req, res) => {
+}
+function renameResourceController(req, res) {
     var _a;
     const body = req.body;
     var src = body.src;
@@ -119,8 +117,8 @@ router.post('/renameResource', authMiddleware_1.default, (req, res) => {
         }
     }
     res.json(new response_1.SuccessResponse());
-});
-router.get('/drives', authMiddleware_1.default, function (req, res) {
+}
+function getDrivesController(req, res) {
     (0, drives_1.default)((err => {
         res.send(new response_1.ErrorResponse(1, "Failed to retrieve drives"));
     }), (drives => {
@@ -128,5 +126,12 @@ router.get('/drives', authMiddleware_1.default, function (req, res) {
         const names = drives.flatMap((d => d.mountpoints)).map((d => d.path));
         res.send(new response_1.SuccessResponse(names));
     }));
-});
-exports.default = router;
+}
+function addFileOperationsRoutes(app, authMiddleware) {
+    app.post('/copyResources', authMiddleware, copyResourcesController);
+    app.post('/moveResources', authMiddleware, moveResourcesController);
+    app.post('/deleteResources', authMiddleware, deleteResourceController);
+    app.post('/renameResource', authMiddleware, renameResourceController);
+    app.get('/drives', authMiddleware, getDrivesController);
+}
+exports.addFileOperationsRoutes = addFileOperationsRoutes;

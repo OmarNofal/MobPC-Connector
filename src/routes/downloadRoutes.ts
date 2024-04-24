@@ -1,22 +1,20 @@
 
-import { Router } from 'express'
-import { SuccessResponse, ErrorResponse } from '../model/response'
-import path from 'path'
-import fs from 'fs'
 import CombinedStream from 'combined-stream'
-import { parsePath } from '../fs/operations'
-import mime from 'mime';
-import authMiddleware from './authMiddleware'
-import { env } from "process"
+import { Request, Response, Router } from 'express'
+import fs from 'fs'
 import jwt from 'jsonwebtoken'
+import mime from 'mime'
+import path from 'path'
+import { env } from "process"
+import { parsePath } from '../fs/operations'
+import { ErrorResponse, SuccessResponse } from '../model/response'
+import { AuthMiddlewareFunction } from './authMiddleware'
 require('dotenv').config()
 
 function handleDownloadFile(path, res) {
     console.log("Somebody downloads " + path)
     res.download(path)
 }
-
-const router = Router()
 
 function handleDownloadFolder(src, res) {
 
@@ -40,8 +38,7 @@ function handleDownloadFolder(src, res) {
 
             if (file.isDirectory()) dirQueue.push(filePath)
             else if (file.isFile()) {
-                fs.createReadStream(filePath)
-            
+           
                 const fileStats = fs.statSync(filePath)
 
                 responseHeader.numberOfFiles++
@@ -60,17 +57,18 @@ function handleDownloadFolder(src, res) {
     console.log(responseHeader)
     res.setHeader('Content-Type', "folder")
 
+    const header = JSON.stringify(responseHeader)
     const headerSizeBuffer = Buffer.allocUnsafe(8)
-    headerSizeBuffer.writeBigInt64BE(BigInt(JSON.stringify(responseHeader).length), 0)
+    headerSizeBuffer.writeBigInt64BE(BigInt(header.length), 0)
     res.write(headerSizeBuffer)
-    res.write(JSON.stringify(responseHeader))
+    res.write(header)
     
     responseStream.pipe(res)
 }
 
 
-router.get('/downloadFiles', authMiddleware, (req, res) => {
 
+function downloadFilesController(req: Request, res: Response) {
     const body = req.body
 
     var src = body.src ?? req.query.src
@@ -91,18 +89,17 @@ router.get('/downloadFiles', authMiddleware, (req, res) => {
     } else {
         res.json(new ErrorResponse(1, "This resource does not exist"))
     }
+}
 
-})
 
-
-router.get('/getFileAccessToken', authMiddleware, (req, res) => {
-
+function getFileAccessTokenController(req: Request, res: Response) {
     const path = req.query.src
 
     if (typeof path != 'string') {
         return
     }
 
+    
     if (fs.existsSync(path)) {
 
         const tokenPayload = {
@@ -118,12 +115,9 @@ router.get('/getFileAccessToken', authMiddleware, (req, res) => {
     } else {
         res.json(new ErrorResponse(1, "File does not exist"))
     }
-    
+}
 
-});
-
-router.get('/getFileExternal', (req, res) => {
-
+function getFileExternalController(req: Request, res: Response) {
     const token = req.query.token;
     const userPath = req.query.path;
 
@@ -146,8 +140,14 @@ router.get('/getFileExternal', (req, res) => {
         res.status(401);
         return res.json(new ErrorResponse(3, "Path does not match the token"))
     }
+}
 
-})
 
-
-export default router
+export default function addDownloadRoutes(
+    app: Router,
+    authMiddleware: AuthMiddlewareFunction
+) {
+    app.get('/downloadFiles', authMiddleware, downloadFilesController)
+    app.get('/getFileAccessToken', authMiddleware, getFileAccessTokenController)
+    app.get('/getFileExternal', getFileExternalController)
+}

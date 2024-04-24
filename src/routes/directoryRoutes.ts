@@ -1,18 +1,13 @@
-import { getDirectoryStructure } from '../fs/directories'
-import { Router } from 'express'
-import { SuccessResponse, ErrorResponse } from '../model/response'
+import { Request, Response, Router } from 'express'
 import fs from 'fs'
 import path from 'path'
+import { getDirectoryStructure } from '../fs/directories'
 import { parsePath } from '../fs/operations'
-import authMiddleware from './authMiddleware'
+import { ErrorResponse, SuccessResponse } from '../model/response'
+import { AuthMiddlewareFunction } from './authMiddleware'
 
 
-const router = Router()
-
-
-router.get('/listDirectory', authMiddleware, (req, res) => {
-
-    
+function listDirectoryController(req: Request, res: Response) {
     let dir = req.query.path;
 
     
@@ -26,12 +21,9 @@ router.get('/listDirectory', authMiddleware, (req, res) => {
 
     const files= getDirectoryStructure(path.parse(dir).dir);
     res.json(new SuccessResponse(files));
+}
 
-});
-
-
-router.post('/mkdirs', authMiddleware, (req, res) => {
-
+function mkdirsController(req: Request, res: Response) {
     const body = req.body;
 
     const name = body.name;
@@ -50,9 +42,14 @@ router.post('/mkdirs', authMiddleware, (req, res) => {
     catch(err) {
         return res.json(new ErrorResponse(4, "Failed to create directories: " + err));
     }
+}
 
 
-});
 
-
-export default router
+export default function addDirectoryRoutes(
+    app: Router,
+    authMiddleware: AuthMiddlewareFunction
+) {
+    app.get('/listDirectory', authMiddleware, listDirectoryController)
+    app.post('/mkdirs', authMiddleware, mkdirsController)
+}

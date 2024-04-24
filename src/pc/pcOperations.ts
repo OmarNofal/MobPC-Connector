@@ -1,8 +1,8 @@
+import { exec } from 'child_process'
 import lockYourWindows from 'lock-your-windows'
+import notifier from 'node-notifier'
 import os from 'os'
 import { UnsupportedOperationException } from './exceptions'
-import { exec } from 'child_process'
-import notifier from 'node-notifier'
 
 
 

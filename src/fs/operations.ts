@@ -1,10 +1,9 @@
 import fs from 'fs';
-import path from 'path';
-import { ResourceAlreadyExists } from './exceptions';
-import copy from 'cpy';
 import { DaemonicProgress } from 'fsprogress';
-import trash from 'trash';
 import os from 'os';
+import path from 'path';
+import trash from 'trash';
+import { ResourceAlreadyExists } from './exceptions';
 
 
 export function parsePath(src) {

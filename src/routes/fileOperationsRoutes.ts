@@ -1,18 +1,17 @@
 import { getDirectoryStructure } from '../fs/directories'
 import { ResourceAlreadyExists } from '../fs/exceptions'
 import { copyResources, renameResource, moveResources, deleteResources, parsePath } from '../fs/operations'
-import { Router } from 'express'
+import { Request, Response, Router } from 'express'
 import { SuccessResponse, ErrorResponse } from '../model/response'
 import path from 'path'
 import getDrives from '../fs/drives'
-import authMiddleware from './authMiddleware'
+import authMiddleware, { AuthMiddlewareFunction } from './authMiddleware'
 
 
 const router = Router()
 
-router.post('/copyResources', authMiddleware, (req, res) => {
 
-
+function copyResourcesController(req: Request, res: Response) {
     const body = req.body
 
     console.log(body);
@@ -59,11 +58,9 @@ router.post('/copyResources', authMiddleware, (req, res) => {
         }
         else return res.json(new ErrorResponse(10, "Uncaught error: " + err));
     }
-})
+}
 
-
-router.post('/moveResources', authMiddleware, (req, res) => {
-
+function moveResourcesController(req: Request, res: Response) {
     const body = req.body
 
     const resourcesPath = body.src;
@@ -104,13 +101,10 @@ router.post('/moveResources', authMiddleware, (req, res) => {
             return res.json(new ErrorResponse(10, "A resource already exists. Please enable the overwrite flag"))
         }
         else return res.json(new ErrorResponse(10, "Uncaught error: " + err));
-    }
-})
+    }    
+}
 
-
-
-router.post('/deleteResources', authMiddleware,(req, res) => {
-
+function deleteResourceController(req: Request, res: Response) {
     const body = req.body;
 
     
@@ -121,18 +115,14 @@ router.post('/deleteResources', authMiddleware,(req, res) => {
     src = parsePath(src);
     
     deleteResources(src, permanentlyDelete,
-        (progress) => {
-            //res.write(JSON.stringify(progress) + "\n");
-        },
+        (_) => {},
         () => {
             res.json(new SuccessResponse());
         }
     )
+}
 
-});
-
-router.post('/renameResource', authMiddleware, (req, res) => {
-
+function renameResourceController(req: Request, res: Response) {
     const body = req.body;
 
     var src = body.src;
@@ -155,10 +145,9 @@ router.post('/renameResource', authMiddleware, (req, res) => {
         }
     }
     res.json(new SuccessResponse());
-})
+}
 
-
-router.get('/drives', authMiddleware, function(req, res) {
+function getDrivesController(req: Request, res: Response) {
     getDrives(
         (err => {
             res.send(new ErrorResponse(1, "Failed to retrieve drives"))
@@ -166,8 +155,18 @@ router.get('/drives', authMiddleware, function(req, res) {
         , (drives => {
         // return all drive paths
         const names = drives.flatMap((d => d.mountpoints)).map((d => d.path))
+
         res.send(new SuccessResponse(names));
     }));
-})
+}
 
-export default router
+export function addFileOperationsRoutes(
+    app: Router,
+    authMiddleware: AuthMiddlewareFunction
+) {
+    app.post('/copyResources', authMiddleware, copyResourcesController)
+    app.post('/moveResources', authMiddleware, moveResourcesController)
+    app.post('/deleteResources', authMiddleware, deleteResourceController)
+    app.post('/renameResource', authMiddleware, renameResourceController)
+    app.get('/drives', authMiddleware, getDrivesController)
+}

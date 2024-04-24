@@ -3,8 +3,8 @@ import drivelist from 'drivelist';
 
 
 export default function getDrives(
-    onError,
-    onSuccess
+    onError: (error: any) => void,
+    onSuccess: (drives: drivelist.Drive[]) => void 
 ) {
 
     drivelist.list( (err, devices) => {

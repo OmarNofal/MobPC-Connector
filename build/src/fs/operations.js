@@ -14,11 +14,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.renameResource = exports.deleteResources = exports.moveResources = exports.copyResources = exports.checkIfAnyExists = exports.parsePath = void 0;
 const fs_1 = __importDefault(require("fs"));
-const path_1 = __importDefault(require("path"));
-const exceptions_1 = require("./exceptions");
 const fsprogress_1 = require("fsprogress");
-const trash_1 = __importDefault(require("trash"));
 const os_1 = __importDefault(require("os"));
+const path_1 = __importDefault(require("path"));
+const trash_1 = __importDefault(require("trash"));
+const exceptions_1 = require("./exceptions");
 function parsePath(src) {
     if (typeof src == 'string')
         src = src.replace('~', os_1.default.homedir());

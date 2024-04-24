@@ -1,53 +1,89 @@
-// Import the functions you need from the SDKs you need
-import { initializeApp, deleteApp } from "firebase/app";
-import { getDatabase, set, ref } from 'firebase/database';
+import { initializeApp } from "firebase/app";
+import { Database, getDatabase, ref, set } from 'firebase/database';
+import { BehaviorSubject } from "rxjs";
+import { getUUID } from '../identification/appindentification';
+import firebaseConfig from './config.json';
 import getIp from './ipService';
-import { getUUID, setNewUUID } from '../identification/appindentification';
-import config from '../../package.json';
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyDKOicL06qK6j9ENuKzJ1fT8NrNn0O4w3c",
-  authDomain: "pc-connector-2557a.firebaseapp.com",
-  databaseURL: "https://pc-connector-2557a-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "pc-connector-2557a",
-  storageBucket: "pc-connector-2557a.appspot.com",
-  messagingSenderId: "518476452024",
-  appId: "1:518476452024:web:49d458d5e9b80df1bf644d"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-
-const db = getDatabase(app);
 
 
-function firebaseRoutine() {
-    getIp(
-    (ip) => {
-        const uuid = getUUID();
-        const locationRef = ref(db, uuid);
-        set(locationRef, {
-            ip: ip,
-            port: config.globalPort
-        })
-    },
-    () => {
-        console.error("Failed to sync ip to firebase");
-    }
-)
+
+const twentyMinutes = 1000 * 60 * 20
+
+
+export type FirebaseServiceConfiguration = {
+    globalPort: number
 }
 
-export default function startFirebaseService() {
-    firebaseRoutine();
-    const timer = setInterval(
-        () => {
-            firebaseRoutine();
-        },
-        20 * 60 * 1000,
-        true
-    );
-    return timer;
+/**
+ * A service that syncs this device's global ip address
+ * to a database hosted on firebase. 
+ * 
+ * This database allows clients devices to find the global ip address and port
+ * of a device to be able to connect to it from the WAN.
+ * 
+ * Note: The port exposed on firebase should be forwarded by the router
+ * to the real server port using port forwarding.
+ */
+export default class FirebaseIPService {
+
+    /**The firebase database instance  */
+    private db?: Database
+
+    /**The interval that is executing the routine */
+    private runningInterval?: number
+
+    /**Current configuration of the service */
+    private serviceConfiguration: BehaviorSubject<FirebaseServiceConfiguration>
+
+    constructor(firebaseServiceConfiguration: BehaviorSubject<FirebaseServiceConfiguration>) {
+        this.serviceConfiguration = firebaseServiceConfiguration
+    }
+
+    private initDB = () => {
+        let app = initializeApp(firebaseConfig)
+        this.db = getDatabase(app)
+    }
+
+    /**Starts syncing the global ip address to firebase every `interval` milliseconds */
+    startService = (interval: number = twentyMinutes) => {
+        if (!this.db) this.initDB()
+        this.runningInterval = setInterval(
+            this.firebaseRoutine,
+            interval, true
+        )
+        this.firebaseRoutine() // do initial one at the beginning
+    }
+
+    /**
+     * Stops synchronizing the global ip to firebase.
+     * Can be restarted using `startService`
+     */
+    stopService = () => {
+        if (!this.runningInterval) return
+        clearInterval(this.runningInterval)
+        this.runningInterval = undefined
+    }
+
+    private firebaseRoutine = () => {
+        getIp(
+            (ip: string) => {
+                const db = this.db
+                if (!db) {
+                    console.error("Firebase DB closed")
+                    this.stopService()
+                    return
+                }
+                const uuid = getUUID();
+                const locationRef = ref(db, uuid);
+                set(locationRef, {
+                    ip: ip,
+                    port: this.serviceConfiguration.value.globalPort
+                })
+            },
+            () => {
+                console.error("Failed to sync ip to firebase");
+            }
+        )
+    }
+
 }

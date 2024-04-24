@@ -1,7 +1,6 @@
-import { ipcMain, BrowserWindow, app } from 'electron';
+import { BrowserWindow, app, ipcMain } from 'electron';
 import path from 'path';
-import { startServer, stopServer, events, isServerOpen } from './app';
-import { start } from 'repl';
+import { events, isServerOpen, startServer, stopServer } from './app';
 import storage from './storage';
 
 function initWindow() {

@@ -1,14 +1,9 @@
-import { Router } from "express"
-import clipboardy from "clipboardy"
-import { notifyOfNewClipboardItem } from "../utilities/notificationSystem"
-import { SuccessResponse, ErrorResponse } from "../model/response"
-import authMiddleware from './authMiddleware'
+import { Request, Response, Router } from "express";
+import { ErrorResponse, SuccessResponse } from "../model/response";
+import { clipboardService } from "../service/clipboardService";
 
 
-const router = Router()
-
-router.post('/copyToClipboard', authMiddleware, (req, res) => {
-
+function copyToClipboardController(req: Request, res: Response) {
     const text: string | undefined = req.body.text;
 
     if (text == undefined)
@@ -18,16 +13,14 @@ router.post('/copyToClipboard', authMiddleware, (req, res) => {
         res.json(new ErrorResponse(12, "[text] must be a string"));
     }
 
-    clipboardy.write(text)
-        .then(() => {
-            res.json(new SuccessResponse());
-            notifyOfNewClipboardItem(text);
-        }).catch( err => {
-            console.log(err);
-            res.json(new ErrorResponse(14, err));
-        });
+    clipboardService.writeTextToClipboard(text)
 
-});
+    return res.json(new SuccessResponse())
+}
 
-
-export default router
+export default function addClipboardRoutes(
+    app: Router,
+    authMiddleware: (req: Request, res: Response, next: () => void) => void
+) {
+    app.post('/copyToClipboard', authMiddleware, copyToClipboardController)
+}

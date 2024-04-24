@@ -7,7 +7,7 @@ exports.notifyOfNewClipboardItem = void 0;
 const node_notifier_1 = __importDefault(require("node-notifier"));
 function notifyOfNewClipboardItem(text) {
     const message = {
-        title: "New text in your clipboard",
+        title: "Copied to clipboard",
         message: text,
         icon: "static/icons/clipboard.png",
         appID: "PC Connector"

@@ -27,7 +27,7 @@ export class ErrorResponse extends Response {
     /** Message summarizing the error*/
     message: string
 
-    constructor(code, message) {
+    constructor(code: number, message: string) {
         super(false)
         this.code = code
         this.message = message
