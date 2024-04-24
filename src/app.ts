@@ -7,8 +7,9 @@ import https from 'https'
 import path from 'path'
 import { BehaviorSubject } from 'rxjs'
 import AuthenticationManager from './auth/auth.js'
-import DetectionServer, { DetectionServerConfiguration } from './detectionserver.js'
+import DetectionServer from './detectionserver.js'
 import FirebaseIPService, { FirebaseServiceConfiguration } from './firebase/firebase.js'
+import PreferencesManager from './preferences/PreferencesManager.js'
 import createAuthMiddlewareFunction from './routes/authMiddleware.js'
 import addAuthRoutes from './routes/authRoutes.js'
 import addBrowserRoutes from './routes/browserRoutes.js'
@@ -20,6 +21,8 @@ import FileSystemWatcherService from './routes/fsWatcher.js'
 import addOSRoutes from './routes/osRoutes.js'
 import addStatusRoutes from './routes/statusRoutes.js'
 import addUploadRoutes from './routes/uploadRoutes.js'
+import { mapBehaviorSubject } from './utilities/rxUtils.js'
+
 
 var privateKey  = fs.readFileSync('src/cert/server.key', 'utf8')
 var certificate = fs.readFileSync('src/cert/server.crt', 'utf8')
@@ -49,10 +52,16 @@ addUploadRoutes(app, path.join(appDirectory, 'uploadTemp'), authMiddleware)
 addAuthRoutes(app, authManager)
 
 
-let detectionServerConfiguration = new BehaviorSubject<DetectionServerConfiguration>({portNumber: 4285})
-let detectionServer = new DetectionServer(detectionServerConfiguration);
 
-let firebaseServerConfig = new BehaviorSubject<FirebaseServiceConfiguration>({globalPort: 1919})
+
+let preferencesManager = new PreferencesManager(path.join(appDirectory, "preferences"))
+
+
+
+let detectionServerConfiguration = mapBehaviorSubject(preferencesManager.currentPreferences, v => v.detectionServerPrefs)
+let detectionServer = new DetectionServer(detectionServerConfiguration)
+
+let firebaseServerConfig = mapBehaviorSubject(preferencesManager.currentPreferences, v => v.firebaseServicePrefs)
 let firebaseService = new FirebaseIPService(firebaseServerConfig)
 
 export const events = new EventEmitter();

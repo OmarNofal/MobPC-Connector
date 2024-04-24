@@ -3,11 +3,8 @@ import os from 'os';
 import { BehaviorSubject, Subscription, distinctUntilKeyChanged } from 'rxjs';
 import pkg from '../package.json';
 import { getUUID } from './storage';
+import { DetectionServerConfiguration } from './model/preferences';
 
-
-export type DetectionServerConfiguration = {
-    portNumber: number
-}
 
 
 export enum DetectionServerState {
@@ -44,7 +41,7 @@ export default class DetectionServer {
 
         this.currentConfiguration = config.value
         this.subscription = config.asObservable()
-            .pipe(distinctUntilKeyChanged("portNumber"))
+            .pipe(distinctUntilKeyChanged("port"))
             .subscribe((val) => this.currentConfiguration = val)
     }
 
@@ -56,7 +53,7 @@ export default class DetectionServer {
             console.log("Detection Server already running")
         } else {
             this.socket = dgram.createSocket('udp4')
-            this.socket.bind(this.currentConfiguration.portNumber, '0.0.0.0', this.emitServerStarted)
+            this.socket.bind(this.currentConfiguration.port, '0.0.0.0', this.emitServerStarted)
             this.socket.on('message', this.onMessageReceived)
         }
     }
