@@ -7,7 +7,8 @@
         "moduleResolution": "NodeNext",
         "module": "NodeNext",
         "strict": false,
-        "resolveJsonModule": true
+        "resolveJsonModule": true,
+        "jsx": "react-jsx"
     },
     "include": ["./src/**/*"],
 }

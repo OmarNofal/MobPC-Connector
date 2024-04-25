@@ -54,7 +54,7 @@ addAuthRoutes(app, authManager)
 
 
 
-let preferencesManager = new PreferencesManager(path.join(appDirectory, "preferences"))
+let preferencesManager = new PreferencesManager(path.join(appDirectory, "app_preferences"))
 
 
 
