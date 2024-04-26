@@ -1,16 +1,13 @@
 import dgram from 'node:dgram';
 import os from 'os';
 import { BehaviorSubject, Subscription, distinctUntilKeyChanged } from 'rxjs';
-import pkg from '../package.json';
-import { getUUID } from './storage';
-import { DetectionServerConfiguration } from './model/preferences';
+import pkg from '../../package.json';
+import { getUUID } from '../storage';
+import { DetectionServerConfiguration } from '../model/preferences';
+import { DetectionServerState } from '../model/detectionServerState';
 
 
 
-export enum DetectionServerState {
-    RUNNING,
-    STOPPED,
-}
 
 /**
  * A UDP server which allows client devices to discover
@@ -45,7 +42,8 @@ export default class DetectionServer {
             .subscribe((val) => this.currentConfiguration = val)
     }
 
-    /**Start running the detection server, the port will be determined based on
+    /**
+     * Start running the detection server, the port will be determined based on
      * the current value of the configuration passed to the class
     */
     run = () => {

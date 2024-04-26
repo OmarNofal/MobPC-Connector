@@ -1,9 +1,8 @@
 import fs from 'fs';
+import { IncomingMessage } from 'http';
+import { Duplex } from 'stream';
 import { RawData, default as WebSocket, default as ws } from 'ws';
 import { parsePath } from '../fs/operations';
-import { Request } from 'express';
-import { IncomingMessage } from 'http'
-import { Duplex } from 'stream'
 
 /**
  * Represents a single connection to the `FileSystemWatcherService`

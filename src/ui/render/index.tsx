@@ -1,21 +1,12 @@
 
-const { createRoot } = require('react-dom/client')
+import { createRoot } from 'react-dom/client'
+import MainScreen from './MainScreen'
+import { MainScreenViewModel } from './MainScreenViewModel'
 
-
-
+const vm = new MainScreenViewModel()
 
 const body = document.body
 
 const root = createRoot(body)
 
-
-
-
-function MyBasicComponent() {
-
-    return (
-        <a href='https://reactjs.org'>Hello from React!</a>
-    )
-}
-
-root.render(<MyBasicComponent/>)
+root.render(<MainScreen vm={vm} onToggle={undefined}/>)

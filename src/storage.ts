@@ -15,30 +15,12 @@ export function init() {
     }
 
     setUUIDPath(path.join(appDir, "id"));
-    //setPasswordDir(appDir);
 
     if (!isUUIDSet()) {
         console.log("UUID not set");
         setNewUUID()
     }
-
-    //if (!isPasswordSet()) {
-    //    changePassword('00000000')
-    //};
 }
-
-
-// export function changePassword(newPassword) {
-//     return cP(newPassword);
-// }
-
-// export function isLoggedIn(token) {
-//     return isLIn(token);
-// }
-
-// export function logInAndGetAccessToken(password) {
-//     return logInAndGetToken(password);
-// }
 
 export function getUUID() {
     return getUID();

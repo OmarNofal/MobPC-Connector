@@ -2,17 +2,21 @@
   "name": "pc-connector",
   "version": "1.0.0",
   "description": "This application enables you to control you PC from a mobile device (Android currently)",
-  "main": "./build/src/ui.js",
+  "main": ".webpack/main/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc",
-    "start": "npm run build && electron-forge start",
+    "start": "npx electron-forge start",
     "package": "electron-forge package",
     "make": "electron-forge make"
   },
   "author": "Omar Walid",
   "license": "ISC",
   "dependencies": {
+    "@electron-forge/plugin-webpack": "^7.4.0",
+    "@emotion/react": "^11.11.4",
+    "@emotion/styled": "^11.11.5",
+    "@mui/material": "^5.15.15",
     "@types/react": "^18.2.79",
     "@types/react-dom": "^18.2.25",
     "axios": "^0.21.2",
@@ -60,8 +64,12 @@
     "@types/multer": "^1.4.11",
     "@types/node-notifier": "^8.0.5",
     "@types/ws": "^8.5.10",
+    "@vercel/webpack-asset-relocator-loader": "^1.7.3",
     "electron": "^26.0.0",
     "electron-rebuild": "^3.2.9",
+    "node-loader": "^2.0.0",
+    "ts-loader": "^9.5.1",
+    "ts-node": "^10.9.2",
     "typescript": "^5.4.5"
   }
 }

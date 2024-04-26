@@ -1,108 +1,141 @@
-import electronApp from 'electron'
-import EventEmitter from 'events'
-import express from 'express'
-import fs from 'fs'
-import http from 'http'
-import https from 'https'
+import { BrowserWindow, app, ipcMain, screen } from 'electron'
 import path from 'path'
-import { BehaviorSubject } from 'rxjs'
-import AuthenticationManager from './auth/auth.js'
-import DetectionServer from './detectionserver.js'
-import FirebaseIPService, { FirebaseServiceConfiguration } from './firebase/firebase.js'
-import PreferencesManager from './preferences/PreferencesManager.js'
-import createAuthMiddlewareFunction from './routes/authMiddleware.js'
-import addAuthRoutes from './routes/authRoutes.js'
-import addBrowserRoutes from './routes/browserRoutes.js'
-import addClipboardRoutes from './routes/clipboardRoutes.js'
-import addDirectoryRoutes from './routes/directoryRoutes.js'
-import addDownloadRoutes from './routes/downloadRoutes.js'
-import { addFileOperationsRoutes } from './routes/fileOperationsRoutes.js'
-import FileSystemWatcherService from './routes/fsWatcher.js'
-import addOSRoutes from './routes/osRoutes.js'
-import addStatusRoutes from './routes/statusRoutes.js'
-import addUploadRoutes from './routes/uploadRoutes.js'
-import { mapBehaviorSubject } from './utilities/rxUtils.js'
-
-
-var privateKey  = fs.readFileSync('src/cert/server.key', 'utf8')
-var certificate = fs.readFileSync('src/cert/server.crt', 'utf8')
-
-const credentials = {key: privateKey, cert: certificate}
-
-
-const PORT = 6543
-
-const app = express()
-
-const appDirectory = electronApp.app.getPath('userData')
-
-const authManager = new AuthenticationManager(appDirectory)
-const authMiddleware = createAuthMiddlewareFunction(authManager.isValidToken)
-
-app.use(express.json())
-app.use(express.urlencoded({extended: true}))
-addDownloadRoutes(app, authMiddleware)
-addDirectoryRoutes(app, authMiddleware)
-addClipboardRoutes(app, authMiddleware)
-addBrowserRoutes(app, authMiddleware)
-addStatusRoutes(app)
-addOSRoutes(app, authMiddleware)
-addFileOperationsRoutes(app, authMiddleware)
-addUploadRoutes(app, path.join(appDirectory, 'uploadTemp'), authMiddleware)
-addAuthRoutes(app, authManager)
+import AuthenticationManager from './auth/auth'
+import FirebaseIPService from './firebase/firebase'
+import PreferencesManager from './preferences/PreferencesManager'
+import DetectionServer from './server/detectionServer'
+import MainServer from './server/mainServer'
+import storage from './storage'
+import { pipeObservableToIPC } from './utilities/rxIPC'
+import { mapBehaviorSubject } from './utilities/rxUtils'
+import { DetectionServerState } from './model/detectionServerState'
+import AppWindow from './window/appWindow'
 
 
 
 
-let preferencesManager = new PreferencesManager(path.join(appDirectory, "app_preferences"))
+
+declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
+declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
+
+/**
+ * This is the main application class.
+ * 
+ * It contains the entire state of the application, 
+ * and additionaly contains the `AppWindow` object
+ * if it is open
+ * 
+ * This must be only instantiated once
+ */
+export default class Application {
+
+
+    authManager: AuthenticationManager
+
+    prefsManager: PreferencesManager
+
+    detectionServer: DetectionServer
+
+    mainServer: MainServer
+
+    firebaseService: FirebaseIPService
+
+
+    window: AppWindow
+
+    constructor() { }
+
+
+    init = () => {
+
+        const appDirectory = app.getPath('userData')
+
+        const authManager = new AuthenticationManager(appDirectory)
+        let preferencesManager = new PreferencesManager(path.join(appDirectory, "app_preferences"))
+
+        let detectionServerConfiguration = mapBehaviorSubject(
+            preferencesManager.currentPreferences, 
+            v => v.detectionServerPrefs
+        )
+        let detectionServer = new DetectionServer(detectionServerConfiguration)
+
+
+        let firebaseServerConfig = mapBehaviorSubject(
+            preferencesManager.currentPreferences, 
+            v => v.firebaseServicePrefs
+        )
+        let firebaseService = new FirebaseIPService(firebaseServerConfig)
+
+        const mainServer = new MainServer(appDirectory, authManager)
+
+        this.authManager = authManager
+        this.prefsManager = preferencesManager
+
+        this.detectionServer = detectionServer
+        this.firebaseService = firebaseService
+
+        this.mainServer = mainServer
 
 
 
-let detectionServerConfiguration = mapBehaviorSubject(preferencesManager.currentPreferences, v => v.detectionServerPrefs)
-let detectionServer = new DetectionServer(detectionServerConfiguration)
+        app.whenReady().then(
+            () => {
+                storage.init();
+                //storage.changePassword('00000023');
 
-let firebaseServerConfig = mapBehaviorSubject(preferencesManager.currentPreferences, v => v.firebaseServicePrefs)
-let firebaseService = new FirebaseIPService(firebaseServerConfig)
+                ipcMain.on(
+                    'toggle-server',
+                    () => {
+                        if (detectionServer.state.value == DetectionServerState.RUNNING)
+                            detectionServer.close() 
+                        else this.detectionServer.run()
+                    }
+                )
 
-export const events = new EventEmitter();
+                this.showWindow();
+            });
 
-let https_server = null;
-let http_server = null;
+        app.on('window-all-closed', app.quit);
 
-export function startServer() {
-    detectionServer.run()
-    firebaseService.startService()
-    http_server = http.createServer(app).listen(6544);
-    https_server = httpsServer.listen(PORT);
-    events.emit('server-started');
-}
-
-export function stopServer() {
-    if (https_server != null) {
-        detectionServer.close()
-        firebaseService.stopService()
-
-        http_server.close();
-        http_server = null;
-
-        https_server.close();
-        https_server = null;
-        
-        events.emit('server-closed');
     }
+
+    runServers = () => {
+        this.mainServer.run()
+        this.detectionServer.run()
+        this.firebaseService.startService()
+    }
+
+    showWindow = () => {
+
+        const primaryDisplay = screen.getPrimaryDisplay()
+        const width = primaryDisplay.size.width / 2
+        const height = primaryDisplay.size.height / 2
+
+        const window = new AppWindow(
+            {
+                width: width,
+                height: height,
+                webPreferences: {
+                    preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY
+                },
+                show: true,
+                hasShadow: true
+            }, 
+            [
+                {
+                    observable: this.detectionServer.state,
+                    channelName: 'detection-server-state'
+                },
+
+            ]
+        );
+    
+        window.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
+
+        if (!app.isPackaged) window.webContents.openDevTools()
+    }
+
+
+
 }
 
-export function isServerOpen() {
-  return https_server != null
-}
-
-
-const fileSystemWatcherService = new FileSystemWatcherService()
-
-const httpsServer = https.createServer(credentials, app);
-
-httpsServer.on('upgrade', (request, socket, head) => {
-    fileSystemWatcherService.handleIncomingConnection(request, socket, head)
-});
-
-startServer()
