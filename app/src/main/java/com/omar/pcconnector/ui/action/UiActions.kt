@@ -10,8 +10,10 @@ import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Power
+import androidx.compose.material.icons.rounded.PowerSettingsNew
 import androidx.compose.material.icons.rounded.Web
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -43,9 +45,9 @@ object Actions {
     fun renameAction(onClick: () -> Unit) = ResourceAction("Rename", Icons.Rounded.Edit, false, onClick)
     fun copyAction(onClick: () -> Unit) = ResourceAction("Copy", Icons.Rounded.ContentCopy, false, onClick)
     fun downloadAction(onClick: () -> Unit) = ResourceAction("Download", Icons.Rounded.Download, false, onClick)
-    fun shutdownPCAction(onClick: () -> Unit) = ResourceAction("Shutdown PC", Icons.Rounded.Power, true, onClick)
+    fun shutdownPCAction(onClick: () -> Unit) = ResourceAction("Shutdown PC", Icons.Rounded.PowerSettingsNew, true, onClick)
     fun lockPCAction(onClick: () -> Unit) = ResourceAction("Lock PC", Icons.Rounded.Lock, false, onClick)
-    fun openLinkAction(onClick: () -> Unit) = ResourceAction("Open Link in Browser", Icons.Rounded.Web, false, onClick)
+    fun openLinkAction(onClick: () -> Unit) = ResourceAction("Open Link in Browser", Icons.Rounded.Language, false, onClick)
     fun copyToClipboardAction(onClick: () -> Unit) = ResourceAction("Copy to PC Clipboard", Icons.Rounded.ContentCopy, false, onClick)
 }
 
@@ -74,7 +76,7 @@ fun ActionsDropdownMenu(
                     ) {
                         it.actionIcon?.let { icon ->
                             Icon(imageVector = icon, contentDescription = "")
-                            Spacer(modifier = Modifier.width(8.dp))
+                            Spacer(modifier = Modifier.width(12.dp))
                         }
                         Text(text = it.actionName)
                     }

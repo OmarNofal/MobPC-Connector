@@ -6,8 +6,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.ContentCopy
+import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
@@ -53,7 +57,10 @@ fun MakeDirDialog(
                     keyboardActions = KeyboardActions(
                         onDone = { onConfirm(dirName); onCancel() }
                     ),
-                    keyboardOptions = KeyboardOptions(autoCorrect = false, imeAction = ImeAction.Done)
+                    keyboardOptions = KeyboardOptions(
+                        autoCorrect = false,
+                        imeAction = ImeAction.Done
+                    )
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(text = "Tip: Use / to create nested directories")
@@ -75,7 +82,6 @@ fun MakeDirDialog(
         focusRequester.requestFocus()
     }
 }
-
 
 
 @Composable
@@ -124,7 +130,10 @@ fun RenameDialog(
                     keyboardActions = KeyboardActions(
                         onDone = { onConfirm(newName, overwrite); onCancel() }
                     ),
-                    keyboardOptions = KeyboardOptions(autoCorrect = false, imeAction = ImeAction.Done)
+                    keyboardOptions = KeyboardOptions(
+                        autoCorrect = false,
+                        imeAction = ImeAction.Done
+                    )
                 )
                 Spacer(Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -151,44 +160,48 @@ fun RenameDialog(
 fun URLDialog(
     onDismiss: () -> Unit,
     onConfirm: (String, Boolean) -> Unit,
-    ) {
+) {
     val clipboardManager = LocalClipboardManager.current
 
     // check first if the clipboard content is a url and then paste if so
     val initialText = remember {
         val clipboardText = clipboardManager.getText()?.text
         val textUriScheme = clipboardText?.toUri()?.scheme ?: return@remember "https://"
-        return@remember if (textUriScheme in listOf("http", "https"))  clipboardText else "https://"
+        return@remember if (textUriScheme in listOf("http", "https")) clipboardText else "https://"
     }
     var inputText by remember { mutableStateOf(initialText) }
     var isIncognito by remember { mutableStateOf(false) }
 
 
     AlertDialog(
+        icon = { Icon(Icons.Rounded.Language, contentDescription = null) },
         onDismissRequest = onDismiss,
-        title = { Text(text = "Enter URL") },
+        title = { Text(text = "Open link on PC") },
         text = {
             Column {
                 TextField(
-                    value = inputText, onValueChange = {inputText = it}
-                    ,
+                    value = inputText, onValueChange = { inputText = it },
                     keyboardActions = KeyboardActions(
                         onDone = { onConfirm(inputText, isIncognito); onDismiss() }
                     ),
-                    keyboardOptions = KeyboardOptions(autoCorrect = false, imeAction = ImeAction.Done)
+                    keyboardOptions = KeyboardOptions(
+                        autoCorrect = false,
+                        imeAction = ImeAction.Done
+                    )
                 )
 
                 Spacer(Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(text = "Incognito?")
-                    Checkbox(checked = isIncognito, onCheckedChange = {isIncognito = it})
+                    Checkbox(checked = isIncognito, onCheckedChange = { isIncognito = it })
                 }
             }
         },
         confirmButton = {
             TextButton(onClick = { onConfirm(inputText, isIncognito); onDismiss() }) {
                 Text(text = "Open")
-            }},
+            }
+        },
         dismissButton = {
             TextButton(onClick = onDismiss) {
                 Text(text = "Cancel")
@@ -206,18 +219,23 @@ fun ClipboardDialog(
     var inputText by remember { mutableStateOf(clipboardManager.getText()?.text ?: "") }
 
     AlertDialog(
+        icon = { Icon(imageVector = Icons.Rounded.ContentCopy, contentDescription = null) },
         onDismissRequest = onDismiss,
-        title = { Text(text = "Enter Text") },
+        title = { Text(text = "Send to clipboard") },
         text = {
 
             Column {
-                TextField(value = inputText, onValueChange = {inputText = it}, placeholder = { Text("Enter text..." )})
+                TextField(
+                    value = inputText,
+                    onValueChange = { inputText = it },
+                    placeholder = { Text("Enter text...") })
             }
         },
         confirmButton = {
             TextButton(onClick = { onConfirm(inputText); onDismiss() }) {
                 Text(text = "Send")
-            }},
+            }
+        },
         dismissButton = {
             TextButton(onClick = onDismiss) {
                 Text(text = "Cancel")

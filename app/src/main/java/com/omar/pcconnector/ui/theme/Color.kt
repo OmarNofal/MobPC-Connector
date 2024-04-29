@@ -1,5 +1,4 @@
 package com.omar.pcconnector.ui.theme
-
 import androidx.compose.ui.graphics.Color
 
 val md_theme_light_primary = Color(0xFF1860A5)
@@ -65,7 +64,8 @@ val md_theme_dark_outlineVariant = Color(0xFF43474E)
 val md_theme_dark_scrim = Color(0xFF000000)
 
 
-val seed = Color(0xFF003868)
+
 
 val darkGreen = Color(0xFF00AC00)
 val darkYellow = Color(0xFFF7E119)
+

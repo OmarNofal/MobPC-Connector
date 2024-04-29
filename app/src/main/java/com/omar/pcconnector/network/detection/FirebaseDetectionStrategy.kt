@@ -22,6 +22,7 @@ object FirebaseDetectionStrategy : DeviceFinder {
 
     override suspend fun findDevice(uuid: String): DetectedHost? {
         val ref = firebaseDb.getReference(uuid)
+        Log.d("Firebase", "Locating device")
         try {
             val deviceInfo = ref.get().await() ?: return null
             val ip = deviceInfo.child("ip").getValue(String::class.java) ?: return null

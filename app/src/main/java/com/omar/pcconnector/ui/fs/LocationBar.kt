@@ -23,7 +23,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material.icons.rounded.ArrowDropDown
-import androidx.compose.material.icons.rounded.ArrowRightAlt
+import androidx.compose.material.icons.rounded.ArrowForwardIos
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.AssistChip
@@ -34,7 +34,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -61,6 +60,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import java.nio.file.Path
 import java.nio.file.Paths
+import kotlin.io.path.Path
+import kotlin.io.path.name
 
 
 @Composable
@@ -77,7 +78,7 @@ fun LocationBar(
 
     Row(
         modifier = modifier
-            .background(MaterialTheme.colorScheme.surfaceColorAtElevation(4.dp)),
+            .background(MaterialTheme.colorScheme.surfaceVariant),
         verticalAlignment = Alignment.CenterVertically
     ) {
 
@@ -113,7 +114,7 @@ fun LocationBar(
                         imeAction = ImeAction.Search
                     ),
                     keyboardActions = KeyboardActions(
-                        onSearch = { focusManager.clearFocus()}
+                        onSearch = { focusManager.clearFocus() }
                     ),
                     singleLine = true,
                 )
@@ -129,6 +130,7 @@ fun LocationBar(
                     )
                 }
                 val focusRequester = remember { FocusRequester() }
+
                 val resourceIcon =
                     if (path in drives) Icons.Outlined.Storage
                     else Icons.Outlined.Folder
@@ -182,11 +184,11 @@ fun LocationBar(
         }
 
 
-        Divider(
-            Modifier
-                .fillMaxHeight()
-                .width(1.dp)
-        )
+//        Divider(
+//            Modifier
+//                .fillMaxHeight()
+//                .width(1.dp)
+//        )
 
         // 2) Refresh button
         Box(
@@ -238,13 +240,18 @@ fun LocationIdleView(
             )
         }
 
-        LazyRow(Modifier.weight(1f), state = scrollState) {
+        LazyRow(
+            Modifier
+                .weight(1f)
+                .padding(start = 8.dp), state = scrollState
+        ) {
             item {
                 Divider(
                     Modifier
                         .fillMaxHeight()
                         .width(1.dp)
-                        .padding(start = 2.dp))
+                        .padding(start = 2.dp)
+                )
             }
             items(path.nameCount - 1) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -259,16 +266,22 @@ fun LocationIdleView(
                     ) {
                         Text(
                             modifier = Modifier,
-                            text = path.getName(it + 1).toString(), // +1 to avoid listing the drive twice
+                            text = path.getName(it + 1)
+                                .toString(), // +1 to avoid listing the drive twice
                             maxLines = 1,
                             fontWeight = FontWeight.Medium,
                             fontSize = 14.sp
                         )
                     }
                     if (it != path.nameCount - 2) {
-                        Spacer(modifier = Modifier.width(4.dp))
                         // TODO Support RTL
-                        Icon(imageVector = Icons.Rounded.ArrowRightAlt, contentDescription = null)
+                        Icon(
+                            modifier = Modifier
+                                .padding(horizontal = 6.dp)
+                                .size(10.dp),
+                            imageVector = Icons.Rounded.ArrowForwardIos, contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
             }

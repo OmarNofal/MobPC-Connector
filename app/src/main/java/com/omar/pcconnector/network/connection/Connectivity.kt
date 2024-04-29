@@ -23,7 +23,7 @@ object Connectivity {
      */
     suspend fun findDevice(
         uuid: String,
-        preference: ConnectionPreference = ConnectionPreference.ANY
+        preference: ConnectionPreference = ConnectionPreference.LOCAL_NETWORK
     ): DetectedDevice? {
         return when (preference) {
             ConnectionPreference.WIDE_NETWORK -> FirebaseDetectionStrategy.findDevice(uuid)?.toDetectedDevice()

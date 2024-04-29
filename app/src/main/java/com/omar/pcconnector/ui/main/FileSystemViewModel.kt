@@ -13,6 +13,7 @@ import com.omar.pcconnector.model.Resource
 import com.omar.pcconnector.network.api.getExternalDownloadURL
 import com.omar.pcconnector.network.connection.Connection
 import com.omar.pcconnector.network.connection.ConnectionStatus
+import com.omar.pcconnector.network.ws.FileSystemWatcher
 import com.omar.pcconnector.operation.CopyResourcesOperation
 import com.omar.pcconnector.operation.DeleteOperation
 import com.omar.pcconnector.operation.GetDrivesOperation
@@ -34,6 +35,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.transformWhile
 import kotlinx.coroutines.launch
 import java.nio.file.Path
@@ -64,17 +66,11 @@ class FileSystemViewModel @AssistedInject constructor(
         get() = _copiedResource
 
 
-    //private val watcher = FileSystemWatcher(connection)
+    private lateinit var watcher: FileSystemWatcher
 
     init {
 
         launchInitFunctions()
-
-//        viewModelScope.launch {
-//            watcher.eventFlow.collectLatest {
-//                refresh()
-//            }
-//        }
 
     }
 
@@ -86,6 +82,14 @@ class FileSystemViewModel @AssistedInject constructor(
             connectionStatusFlow.transformWhile {
                 if (it is ConnectionStatus.Connected) {
                     emit(it)
+
+                    watcher = FileSystemWatcher(it.connection)
+                    viewModelScope.launch {
+                        watcher.eventFlow.collectLatest {
+                            refresh()
+                        }
+                    }
+
                     false
                 } else {
                     true
@@ -134,6 +138,7 @@ class FileSystemViewModel @AssistedInject constructor(
             try {
                 val api = getConnectionOrShowError()?.retrofit?.fileSystemApi() ?: return@launch
                 val directoryContents = ListDirectoryOperation(api, currentPath).start()
+                    .filter { !it.name.startsWith(".") }
                 _state.value =
                     FileSystemState.Initialized.Loaded(currentPath, state.drives, directoryContents)
             } catch (e: Exception) { // if for any reason we can't access the folder, just go to its parent
@@ -252,9 +257,10 @@ class FileSystemViewModel @AssistedInject constructor(
     }
 
     private fun watchCurrentDirectory() {
-        /*val state = _state.value
+        if (!::watcher.isInitialized) return
+        val state = _state.value
         if (state is FileSystemState.Initialized)
-            watcher.watch(state.currentDirectory)*/
+            watcher.watch(state.currentDirectory)
     }
 
     fun copyResource(resource: Resource) {

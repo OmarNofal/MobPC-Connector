@@ -4,6 +4,7 @@ package com.omar.pcconnector.ui.fs
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
+import android.icu.text.DateFormat
 import android.net.Uri
 import android.util.Log
 import android.widget.Toast
@@ -15,23 +16,45 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Folder
-import androidx.compose.material.icons.rounded.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Divider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -58,7 +81,6 @@ import com.omar.pcconnector.ui.session.LocalConnectionProvider
 import com.omar.pcconnector.ui.theme.iconForExtension
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
-import okhttp3.Headers
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -128,6 +150,26 @@ fun LoadingScreen(
 }
 
 
+data class FileSystemTreeState(
+    val directory: String,
+    val content: List<Resource>,
+    val isLoading: Boolean
+) {
+
+    override fun equals(other: Any?): Boolean {
+        if (other !is FileSystemTreeState) return false
+
+        return content == other.content
+    }
+
+    override fun hashCode(): Int {
+        var result = directory.hashCode()
+        result = 31 * result + content.hashCode()
+        result = 31 * result + isLoading.hashCode()
+        return result
+    }
+}
+
 @OptIn(ExperimentalFoundationApi::class, ExperimentalAnimationApi::class)
 @Composable
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -169,10 +211,20 @@ fun FileSystemTree(
             )
             Divider(Modifier.fillMaxWidth())
 
-            AnimatedContent(
-                targetState = directoryStructure, label = ""
-            ) { directory ->
 
+            val fsState = remember(currentDirectory, directoryStructure, isLoading) {
+                FileSystemTreeState(
+                    currentDirectory,
+                    directoryStructure,
+                    isLoading
+                )
+            }
+            AnimatedContent(
+                targetState = fsState, label = "",
+                transitionSpec = { createTransition() }
+            ) { fsState ->
+
+                val directory = fsState.content
 
                 val directoryItems = remember(key1 = searchFilter, key2 = isSearchFilterEnabled) {
                     if (isSearchFilterEnabled) directory.filter {
@@ -212,9 +264,13 @@ fun FileSystemTree(
                                 Divider(
                                     Modifier
                                         .fillMaxWidth()
-                                        .padding(start = 72.dp)
+                                        .padding(start = 82.dp)
                                 )
                             }
+                        }
+
+                        item {
+                            Spacer(modifier = Modifier.navigationBarsPadding())
                         }
                     }
 
@@ -292,28 +348,42 @@ fun ResourceRow(
             ) {
                 onClick()
             }
-            .padding(16.dp),
+            .padding(end = 6.dp, top = 12.dp, bottom = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
 
         ResourceIcon(
-            Modifier.size(34.dp),
+            Modifier
+                .padding(horizontal = 28.dp)
+                .size(26.dp),
             resource
         )
 
-        Spacer(modifier = Modifier.width(24.dp))
+        //Spacer(modifier = Modifier.width(32.dp))
         Column(Modifier.weight(1f)) {
             Text(
                 text = resource.name,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                fontWeight = FontWeight.Medium,
                 fontSize = 16.sp
             )
+            Spacer(modifier = Modifier.height(2.dp))
+
+            val dateFormat = remember {
+                DateFormat.getDateInstance()
+            }
 
             val subText =
-                if (resource is DirectoryResource) "${resource.numResources} items" else resource.size.bytesToSizeString()
-            Text(text = subText, fontWeight = FontWeight.Light, fontSize = 12.sp)
+                if (resource is DirectoryResource) "${resource.numResources} items" else resource.size.bytesToSizeString() + ",  ${
+                    dateFormat.format(
+                        resource.creationDateMs
+                    )
+                }"
+            Text(
+                text = subText,
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
 
         Column {
@@ -412,7 +482,7 @@ fun ImagePreviewIcon(
         contentScale = ContentScale.Crop,
         modifier = modifier,
         imageLoader = loader
-        )
+    )
 }
 
 
