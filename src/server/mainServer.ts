@@ -4,8 +4,8 @@ import https from 'https'
 import path from 'path'
 import { BehaviorSubject, fromEvent, map, merge } from 'rxjs'
 import AuthenticationManager from '../auth/auth'
-import { CERTIFICATE } from '../cert/cert'
-import { PRIVATE_KEY } from '../cert/key'
+import { CERTIFICATE } from '../credentials/cert'
+import { PRIVATE_KEY } from '../credentials/key'
 import { MainServerState } from '../model/mainServerState'
 import createAuthMiddlewareFunction from '../routes/authMiddleware'
 import addAuthRoutes from '../routes/authRoutes'
@@ -19,6 +19,7 @@ import addOSRoutes from '../routes/osRoutes'
 import addStatusRoutes from '../routes/statusRoutes'
 import addUploadRoutes from '../routes/uploadRoutes'
 import { getUUID } from '../storage'
+import CredentialsManager from '../credentials/CredentialsManager'
 
 /**
  * This is the class which manages the server
@@ -112,7 +113,6 @@ export default class MainServer {
         httpsServerObservable
             .pipe(
                 map((val): MainServerState => {
-                    
                     if (val == 'listening') {
                         return {
                             state: 'running',
@@ -151,8 +151,9 @@ export default class MainServer {
         const uploadTemporaryPath = path.join(appDirectory, 'uploadTemp')
         addUploadRoutes(app, uploadTemporaryPath, authMiddleware)
 
+        const credentials = this.getServerCredentials()
         this.httpServer = http.createServer(app)
-        this.httpsServer = https.createServer(this.getServerCredentials(), app)
+        this.httpsServer = https.createServer({ key: credentials.privateKey, cert: credentials.cert }, app)
         this.fsWatcherServer = new FileSystemWatcherService()
 
         //this.registerCallbacks()
@@ -162,12 +163,6 @@ export default class MainServer {
         })
     }
 
-    private getServerCredentials = () => {
-        //TODO we will have to allow the user to specify a custom SSL certificate
-        //var privateKey = fs.readFileSync('src/cert/server.key', 'utf8')
-        //var certificate = fs.readFileSync('src/cert/server.crt', 'utf8')
-
-        const credentials = { key: PRIVATE_KEY, cert: CERTIFICATE, passphrase: 'om2301axd' }
-        return credentials
-    }
+    private credentialsManager = new CredentialsManager()
+    private getServerCredentials = this.credentialsManager.getCredentials
 }
