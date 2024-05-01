@@ -1,4 +1,4 @@
-import { BrowserWindow } from "electron";
+import { BrowserWindow, Menu } from "electron";
 import { BehaviorSubject, Observable, Subscription } from "rxjs";
 import { pipeObservableToIPC } from "../utilities/rxIPC";
 
@@ -39,7 +39,7 @@ export default class AppWindow extends BrowserWindow {
         observables: IPCObservable[]
     ) {
         super(options)
-        
+        this.setMenu(new Menu())
         this.setupObservables(observables)
         this.on('close', () => this.cleanUpObservables())
     }

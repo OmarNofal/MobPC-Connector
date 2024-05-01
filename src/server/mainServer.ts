@@ -1,10 +1,12 @@
-
 import express from 'express'
-import fs from 'fs'
 import http from 'http'
 import https from 'https'
 import path from 'path'
+import { BehaviorSubject, fromEvent, map, merge } from 'rxjs'
 import AuthenticationManager from '../auth/auth'
+import { CERTIFICATE } from '../cert/cert'
+import { PRIVATE_KEY } from '../cert/key'
+import { MainServerState } from '../model/mainServerState'
 import createAuthMiddlewareFunction from '../routes/authMiddleware'
 import addAuthRoutes from '../routes/authRoutes'
 import addBrowserRoutes from '../routes/browserRoutes'
@@ -17,15 +19,11 @@ import addOSRoutes from '../routes/osRoutes'
 import addStatusRoutes from '../routes/statusRoutes'
 import addUploadRoutes from '../routes/uploadRoutes'
 import { getUUID } from '../storage'
-import { BehaviorSubject } from 'rxjs'
-import { MainServerState, MainServerInitState, MainServerClosedState } from '../model/mainServerState'
-
-
 
 /**
  * This is the class which manages the server
  * that the user connects to, to perfrom operations on the PC.
- * 
+ *
  * It contains 3 main servers:
  * 1. An https server where almost all operations are performed on
  * 2. An http server that is used to server content to apps outside the client app
@@ -34,20 +32,18 @@ import { MainServerState, MainServerInitState, MainServerClosedState } from '../
  * 3. A websocket server to watch for folder changes and notify observer devices of the change
  */
 export default class MainServer {
-
-
     /**
      * The http server that serves unencrypted content
-     * to external apps. These apps normally reject 
+     * to external apps. These apps normally reject
      * loading content over self-signed certificate,
-     * and so this http server mitigates this issue 
+     * and so this http server mitigates this issue
      */
     private httpsServer: https.Server
 
     /**
      * The main `https` server which the client devices
      * mainly interact with. It uses a self-signed certificate
-     * to secure communication. 
+     * to secure communication.
      */
     private httpServer: http.Server
 
@@ -58,7 +54,6 @@ export default class MainServer {
      */
     private fsWatcherServer: FileSystemWatcherService
 
-
     /**
      * This behavior subject contains the current state
      * of the server
@@ -66,23 +61,19 @@ export default class MainServer {
     state: BehaviorSubject<MainServerState>
 
     /**
-     * 
-     * @param appDirectory The directory of the app configuration files. This is used 
+     *
+     * @param appDirectory The directory of the app configuration files. This is used
      * to create a folder to store temporarily uploaded files
      * @param authManager An authentication manager to check for authentication and authorization
      */
-    constructor(
-        appDirectory: string,
-        authManager: AuthenticationManager
-    ) {
-        this.state = new BehaviorSubject(MainServerInitState)
+    constructor(appDirectory: string, authManager: AuthenticationManager) {
         this.setupServers(appDirectory, authManager)
+        this.setupObservables()
     }
-
 
     /**
      * Starts running all servers
-     * 
+     *
      * Note: The `fsWatcherServer` is always running and waiting to upgrade connections
      */
     run = () => {
@@ -99,7 +90,7 @@ export default class MainServer {
         this.httpServer.close()
 
         this.httpsServer.closeAllConnections()
-        this.httpsServer.close();
+        this.httpsServer.close()
     }
 
     /**
@@ -109,14 +100,45 @@ export default class MainServer {
         return this.httpsServer.listening
     }
 
+    setupObservables = () => {
+        const closeEvent = fromEvent(this.httpsServer, 'close').pipe(map(() => 'closed'))
+        const openEvent = fromEvent(this.httpsServer, 'listening').pipe(map(() => 'listening'))
+        const errorEvent = fromEvent(this.httpsServer, 'error').pipe(map(() => 'error'))
+
+        // holds the current state of the express server (opened or closed or error)
+        const httpsServerObservable = merge(closeEvent, openEvent, errorEvent)
+
+        this.state = new BehaviorSubject<MainServerState>('init')
+        httpsServerObservable
+            .pipe(
+                map((val): MainServerState => {
+                    
+                    if (val == 'listening') {
+                        return {
+                            state: 'running',
+                            httpPort: 6544,
+                            httpsPort: 6543,
+                            serverName: 'Omar Walid',
+                        }
+                    } else {
+                        return {
+                            state: 'closed',
+                            httpPort: 6544,
+                            httpsPort: 6543,
+                            serverName: 'Omar Walid',
+                        }
+                    }
+                })
+            )
+            .subscribe(this.state)
+    }
 
     private setupServers = (appDirectory: string, authManager: AuthenticationManager) => {
-
         const authMiddleware = createAuthMiddlewareFunction(authManager.isValidToken)
 
         const app = express()
-        app.use(express.urlencoded({extended: true}))
-        
+        app.use(express.urlencoded({ extended: true }))
+
         addDownloadRoutes(app, authMiddleware)
         addDirectoryRoutes(app, authMiddleware)
         addClipboardRoutes(app, authMiddleware)
@@ -130,36 +152,22 @@ export default class MainServer {
         addUploadRoutes(app, uploadTemporaryPath, authMiddleware)
 
         this.httpServer = http.createServer(app)
-        this.httpsServer = https.createServer(this.getServerCredentials(), app);
+        this.httpsServer = https.createServer(this.getServerCredentials(), app)
+        this.fsWatcherServer = new FileSystemWatcherService()
 
-        this.registerCallbacks()
-        this.httpsServer.on('upgrade', (request, socket, head) => {
+        //this.registerCallbacks()
+        this.httpServer.on('upgrade', (request, socket, head) => {
+            console.log('Client wants to watch -___-')
             this.fsWatcherServer.handleIncomingConnection(request, socket, head)
-        });
+        })
     }
 
     private getServerCredentials = () => {
         //TODO we will have to allow the user to specify a custom SSL certificate
-        var privateKey  = fs.readFileSync('src/cert/server.key', 'utf8')
-        var certificate = fs.readFileSync('src/cert/server.crt', 'utf8')
+        //var privateKey = fs.readFileSync('src/cert/server.key', 'utf8')
+        //var certificate = fs.readFileSync('src/cert/server.crt', 'utf8')
 
-        const credentials = {key: privateKey, cert: certificate}
+        const credentials = { key: PRIVATE_KEY, cert: CERTIFICATE, passphrase: 'om2301axd' }
         return credentials
     }
-
-    private registerCallbacks = () => {
-        this.httpServer.on(
-            'listening',
-            () => {
-                this.state.next({ state: 'running', port: 6543})
-            }
-        )
-        this.httpServer.on(
-            'close',
-            () => {
-                this.state.next(MainServerClosedState)
-            }
-        )
-    }
-
 }

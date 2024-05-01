@@ -11,12 +11,16 @@ import { ErrorResponse, SuccessResponse } from '../model/response'
 import { AuthMiddlewareFunction } from './authMiddleware'
 require('dotenv').config()
 
-function handleDownloadFile(path, res) {
-    console.log("Somebody downloads " + path)
-    res.download(path)
+function handleDownloadFile(file_path: string, res: Response) {
+    
+    console.log("Somebody downloads " + file_path)
+
+    const fileName = path.basename(file_path)
+    res.set('Content-Disposition', `inline; filename="${fileName}"`);
+    res.sendFile(file_path)
 }
 
-function handleDownloadFolder(src, res) {
+function handleDownloadFolder(src: string, res: Response) {
 
     const responseHeader = {
         numberOfFiles: 0,
@@ -118,6 +122,9 @@ function getFileAccessTokenController(req: Request, res: Response) {
 }
 
 function getFileExternalController(req: Request, res: Response) {
+
+    console.log(req)
+
     const token = req.query.token;
     const userPath = req.query.path;
 
@@ -135,6 +142,8 @@ function getFileExternalController(req: Request, res: Response) {
     // token ok
     const tokenPath = payload.path
     if (path.resolve(tokenPath) == path.resolve(userPath)) {
+        // redirect to another url to get correct file name 
+        // to show on apps
         handleDownloadFile(tokenPath, res);
     } else {
         res.status(401);
@@ -149,5 +158,5 @@ export default function addDownloadRoutes(
 ) {
     app.get('/downloadFiles', authMiddleware, downloadFilesController)
     app.get('/getFileAccessToken', authMiddleware, getFileAccessTokenController)
-    app.get('/getFileExternal', getFileExternalController)
+    app.get('/download/*', getFileExternalController)
 }

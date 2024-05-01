@@ -6,3 +6,4 @@ build
 out/
 .webpack
 dist
+notes.md

@@ -3,6 +3,7 @@ import { IncomingMessage } from 'http';
 import { Duplex } from 'stream';
 import { RawData, default as WebSocket, default as ws } from 'ws';
 import { parsePath } from '../fs/operations';
+import crypto from 'crypto'
 
 /**
  * Represents a single connection to the `FileSystemWatcherService`

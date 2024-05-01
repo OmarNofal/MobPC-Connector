@@ -1,35 +1,37 @@
-import { BrowserWindow, app, ipcMain, screen } from 'electron'
+import { Menu, Notification, Tray, app, ipcMain, screen } from 'electron'
 import path from 'path'
 import AuthenticationManager from './auth/auth'
 import FirebaseIPService from './firebase/firebase'
+import { DetectionServerState } from './model/detectionServerState'
 import PreferencesManager from './preferences/PreferencesManager'
 import DetectionServer from './server/detectionServer'
 import MainServer from './server/mainServer'
 import storage from './storage'
-import { pipeObservableToIPC } from './utilities/rxIPC'
 import { mapBehaviorSubject } from './utilities/rxUtils'
-import { DetectionServerState } from './model/detectionServerState'
 import AppWindow from './window/appWindow'
 
+import clipboardImage from './static/icons/clipboard.png'
+import { START_SERVER_COMMAND, STOP_SERVER_COMMAND } from './server/bridges'
+import observeNetworkInterfaces, { NetworkInterface } from './utilities/networkInterfaces'
+import { BehaviorSubject } from 'rxjs'
 
+declare const MAIN_WINDOW_WEBPACK_ENTRY: string
+declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string
 
-
-
-declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
-declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
+if (process.platform === 'win32') {
+    app.setAppUserModelId(app.name)
+}
 
 /**
  * This is the main application class.
- * 
- * It contains the entire state of the application, 
+ *
+ * It contains the entire state of the application,
  * and additionaly contains the `AppWindow` object
  * if it is open
- * 
+ *
  * This must be only instantiated once
  */
 export default class Application {
-
-
     authManager: AuthenticationManager
 
     prefsManager: PreferencesManager
@@ -40,29 +42,29 @@ export default class Application {
 
     firebaseService: FirebaseIPService
 
-
     window: AppWindow
 
-    constructor() { }
+    tray: Tray
 
+    networkInterfacesObservable: BehaviorSubject<NetworkInterface[]>
+
+    constructor() {}
 
     init = () => {
-
         const appDirectory = app.getPath('userData')
 
         const authManager = new AuthenticationManager(appDirectory)
-        let preferencesManager = new PreferencesManager(path.join(appDirectory, "app_preferences"))
+        let preferencesManager = new PreferencesManager(path.join(appDirectory, 'app_preferences'))
 
         let detectionServerConfiguration = mapBehaviorSubject(
-            preferencesManager.currentPreferences, 
-            v => v.detectionServerPrefs
+            preferencesManager.currentPreferences,
+            (v) => v.detectionServerPrefs
         )
         let detectionServer = new DetectionServer(detectionServerConfiguration)
 
-
         let firebaseServerConfig = mapBehaviorSubject(
-            preferencesManager.currentPreferences, 
-            v => v.firebaseServicePrefs
+            preferencesManager.currentPreferences,
+            (v) => v.firebaseServicePrefs
         )
         let firebaseService = new FirebaseIPService(firebaseServerConfig)
 
@@ -75,28 +77,33 @@ export default class Application {
         this.firebaseService = firebaseService
 
         this.mainServer = mainServer
+        
+        this.networkInterfacesObservable = observeNetworkInterfaces()
 
+        app.whenReady().then(() => {
+            this.registerIpcEvents()
+            storage.init()
+            //storage.changePassword('00000023');
 
+            ipcMain.on('toggle-server', () => {
+                if (detectionServer.state.value == DetectionServerState.RUNNING) detectionServer.close()
+                else this.detectionServer.run()
+            })
 
-        app.whenReady().then(
-            () => {
-                storage.init();
-                //storage.changePassword('00000023');
+            this.showWindow()
+            this.setupTray()
+        })
 
-                ipcMain.on(
-                    'toggle-server',
-                    () => {
-                        if (detectionServer.state.value == DetectionServerState.RUNNING)
-                            detectionServer.close() 
-                        else this.detectionServer.run()
-                    }
-                )
+        app.on('window-all-closed', (e) => e.preventDefault())
+    }
 
-                this.showWindow();
-            });
+    setupTray = () => {
+        this.tray = new Tray(path.resolve(clipboardImage))
+        const contextMenu = Menu.buildFromTemplate([])
+        this.tray.setToolTip('PC Connector')
+        this.tray.setContextMenu(contextMenu)
 
-        app.on('window-all-closed', app.quit);
-
+        this.tray.on('click', () => this.showWindow())
     }
 
     runServers = () => {
@@ -106,36 +113,69 @@ export default class Application {
     }
 
     showWindow = () => {
+        if (this.window != undefined && !this.window.isDestroyed()) {
+            this.window.show()
+            return
+        }
 
         const primaryDisplay = screen.getPrimaryDisplay()
-        const width = primaryDisplay.size.width / 2
-        const height = primaryDisplay.size.height / 2
+        const width = primaryDisplay.size.width
+        const height = primaryDisplay.size.height
 
         const window = new AppWindow(
             {
                 width: width,
                 height: height,
                 webPreferences: {
-                    preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY
+                    preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
                 },
                 show: true,
-                hasShadow: true
-            }, 
+                hasShadow: true,
+            },
             [
+                // the observables that are pushed through IPC to the browser window to be rendered by the UI
                 {
                     observable: this.detectionServer.state,
-                    channelName: 'detection-server-state'
+                    channelName: 'detection-server-state',
                 },
-
+                {
+                    observable: this.mainServer.state,
+                    channelName: 'main-server-state',
+                },
+                {
+                    observable: this.networkInterfacesObservable,
+                    channelName: 'network-interfaces-state',
+                },
             ]
-        );
-    
-        window.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
+        )
+        this.window = window
+        window.loadURL(MAIN_WINDOW_WEBPACK_ENTRY)
 
+        window.on('close', () => {
+            let notification = new Notification({
+                title: 'Server running',
+                body: 'The app is running in the background',
+                silent: true,
+                subtitle: 'Pc Connector',
+            })
+            notification.show()
+        })
         if (!app.isPackaged) window.webContents.openDevTools()
     }
 
+    registerIpcEvents = () => {
+        ipcMain.on(START_SERVER_COMMAND, this.mainServer.run)
+        ipcMain.on(STOP_SERVER_COMMAND, this.mainServer.stop)
 
+        ipcMain.on('send-subject-latest-value', (event, name: string) => {
+            const webContents = event.sender
 
+            if (name == 'main-server-state') {
+                webContents.send(name, this.mainServer.state.value)
+            }
+            if (name == 'network-interfaces-state') {
+                webContents.send(name, this.networkInterfacesObservable.value)
+            }
+        })
+    }
 }
-

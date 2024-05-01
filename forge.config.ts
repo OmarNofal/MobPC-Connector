@@ -40,10 +40,10 @@ module.exports = {
         entryPoints: [
           {
             name: 'main_window',
-            html: './src/ui/render/index.html',
-            js: './src/ui/render/index.tsx',
+            html: './src/ui/static/index.html',
+            js: './src/ui/index.tsx',
             preload: {
-              js: './src/ui/render/preload.ts'
+              js: './src/ui/preload.ts'
             }
           }
         ]
