@@ -4,8 +4,7 @@ import https from 'https'
 import path from 'path'
 import { BehaviorSubject, fromEvent, map, merge } from 'rxjs'
 import AuthenticationManager from '../auth/auth'
-import { CERTIFICATE } from '../credentials/cert'
-import { PRIVATE_KEY } from '../credentials/key'
+import CredentialsManager from '../credentials/CredentialsManager'
 import { MainServerState } from '../model/mainServerState'
 import createAuthMiddlewareFunction from '../routes/authMiddleware'
 import addAuthRoutes from '../routes/authRoutes'
@@ -19,7 +18,6 @@ import addOSRoutes from '../routes/osRoutes'
 import addStatusRoutes from '../routes/statusRoutes'
 import addUploadRoutes from '../routes/uploadRoutes'
 import { getUUID } from '../storage'
-import CredentialsManager from '../credentials/CredentialsManager'
 
 /**
  * This is the class which manages the server

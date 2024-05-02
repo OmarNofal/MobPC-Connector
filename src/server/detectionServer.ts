@@ -1,22 +1,18 @@
-import dgram from 'node:dgram';
-import os from 'os';
-import { BehaviorSubject, Subscription, distinctUntilKeyChanged } from 'rxjs';
-import pkg from '../../package.json';
-import { getUUID } from '../storage';
-import { DetectionServerConfiguration } from '../model/preferences';
-import { DetectionServerState } from '../model/detectionServerState';
-
-
-
+import dgram from 'node:dgram'
+import os from 'os'
+import { BehaviorSubject, Subscription, distinctUntilKeyChanged } from 'rxjs'
+import pkg from '../../package.json'
+import { getUUID } from '../storage'
+import { DetectionServerConfiguration } from '../model/preferences'
+import { DetectionServerState } from '../model/detectionServerState'
 
 /**
  * A UDP server which allows client devices to discover
  * this PC. A client sends a UDP broadcast message on the LAN to the server's port
- * and the server will respond with information about the device like 
+ * and the server will respond with information about the device like
  * its name, IP address, port and the app's version.
  */
 export default class DetectionServer {
-
     /**The socket server itself which listens for broadcast messages */
     private socket: dgram.Socket
 
@@ -37,20 +33,21 @@ export default class DetectionServer {
         this.socket = dgram.createSocket('udp4')
 
         this.currentConfiguration = config.value
-        this.subscription = config.asObservable()
-            .pipe(distinctUntilKeyChanged("port"))
-            .subscribe((val) => this.currentConfiguration = val)
+        this.subscription = config
+            .asObservable()
+            .pipe(distinctUntilKeyChanged('port'))
+            .subscribe((val) => (this.currentConfiguration = val))
     }
 
     /**
      * Start running the detection server, the port will be determined based on
      * the current value of the configuration passed to the class
-    */
+     */
     run = () => {
         if (this.state.value == DetectionServerState.RUNNING) {
-            console.log("Detection Server already running")
+            console.log('Detection Server already running')
         } else {
-            this.socket = dgram.createSocket('udp4')
+            this.socket = dgram.createSocket({ type: 'udp4', reuseAddr: true })
             this.socket.bind(this.currentConfiguration.port, '0.0.0.0', this.emitServerStarted)
             this.socket.on('message', this.onMessageReceived)
         }
@@ -62,17 +59,17 @@ export default class DetectionServer {
     }
 
     private emitServerClosed = () => {
-        console.log("Detection server closed")
+        console.log('Detection server closed')
         this.state.next(DetectionServerState.STOPPED)
     }
 
     private emitServerStarted = () => {
-        console.log("Detection server started")
+        console.log('Detection server started')
         this.state.next(DetectionServerState.RUNNING)
     }
 
     private onMessageReceived = (msg: Buffer, remoteInfo: dgram.RemoteInfo) => {
-        console.log("Received " + msg)
+        console.log('Received ' + msg)
         if (msg.toString() === 'PC Connector Discovery') {
             // respond with server info
             const data = {
@@ -81,7 +78,7 @@ export default class DetectionServer {
                 port: 6543,
                 ip: this.socket.address().address,
                 id: getUUID(),
-                os: os.platform()
+                os: os.platform(),
             }
 
             this.socket.send(JSON.stringify(data), remoteInfo.port, remoteInfo.address, (error, _) => {
@@ -97,5 +94,4 @@ export default class DetectionServer {
         this.close()
         this.subscription.unsubscribe()
     }
-
 }
