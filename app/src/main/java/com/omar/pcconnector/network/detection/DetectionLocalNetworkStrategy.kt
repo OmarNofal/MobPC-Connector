@@ -151,7 +151,7 @@ object DetectionLocalNetworkStrategy : DetectionStrategy, DeviceFinder {
             }
         }
 
-        return result
+        return result + "10.0.2.2" // <---- This IP needs to be there for emulator to detect devices
     }
 
     private fun String.toOSString() = when(this.lowercase()) {

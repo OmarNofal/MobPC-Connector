@@ -5,6 +5,7 @@ import android.util.Log
 import android.widget.Toast
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
+import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
 import com.omar.pcconnector.data.DevicesRepository
 import com.omar.pcconnector.network.connection.Connection
@@ -83,6 +84,7 @@ class ProcessTextWorker @AssistedInject constructor(
 
         return connection!!.toConnection(device.token)
     }
+
 
     companion object {
         const val ACTION_COPY = "COPY"

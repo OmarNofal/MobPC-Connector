@@ -156,7 +156,7 @@ open class BaseProcessTextActivity : ComponentActivity() {
 
         val actionWorkRequest =
             OneTimeWorkRequestBuilder<ProcessTextWorker>()
-                .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+                //.setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
                 .setInputData(
                     workDataOf(
                         ProcessTextWorker.ACTION_KEY to action,

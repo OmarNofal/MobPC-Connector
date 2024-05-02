@@ -97,6 +97,7 @@ fun AppTheme(
             val window = (view.context as Activity).window
             // here change the status bar element color
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !useDarkTheme
+            WindowCompat.getInsetsController(window, view).isAppearanceLightNavigationBars = !useDarkTheme
         }
     }
 

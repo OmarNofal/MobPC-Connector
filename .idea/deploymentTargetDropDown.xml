@@ -4,18 +4,17 @@
     <value>
       <entry key="app">
         <State>
-          <runningDeviceTargetSelectedWithDropDown>
+          <targetsSelectedWithDialog>
             <Target>
-              <type value="RUNNING_DEVICE_TARGET" />
+              <type value="QUICK_BOOT_TARGET" />
               <deviceKey>
                 <Key>
-                  <type value="SERIAL_NUMBER" />
-                  <value value="adb-RZCW41MTXCT-qcSvxr._adb-tls-connect._tcp" />
+                  <type value="VIRTUAL_DEVICE_PATH" />
+                  <value value="F:\Android\avd\Pie.avd" />
                 </Key>
               </deviceKey>
             </Target>
-          </runningDeviceTargetSelectedWithDropDown>
-          <timeTargetWasSelectedWithDropDown value="2024-04-29T15:30:50.018669600Z" />
+          </targetsSelectedWithDialog>
         </State>
       </entry>
     </value>

@@ -20,6 +20,7 @@ import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import com.omar.pcconnector.data.DevicesRepository
 import com.omar.pcconnector.model.PairedDevice
+import com.omar.pcconnector.security.trustCertificate
 import com.omar.pcconnector.ui.detection.DetectionScreen
 import com.omar.pcconnector.ui.event.ApplicationEvent
 import com.omar.pcconnector.ui.nav.BackCommand
@@ -35,6 +36,43 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.map
 import java.nio.file.Paths
 import javax.inject.Inject
+
+
+const val CERT = """-----BEGIN CERTIFICATE-----
+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
+-----END CERTIFICATE-----
+"""
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -52,6 +90,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
+
+        ///trustCertificate(CERT)
         setContent {
 
             val navController = rememberNavController()
