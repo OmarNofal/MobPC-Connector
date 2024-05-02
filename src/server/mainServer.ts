@@ -18,6 +18,7 @@ import addOSRoutes from '../routes/osRoutes'
 import addStatusRoutes from '../routes/statusRoutes'
 import addUploadRoutes from '../routes/uploadRoutes'
 import { getUUID } from '../storage'
+import credentialsManager from '../credentials/CredentialsManager'
 
 /**
  * This is the class which manages the server
@@ -161,6 +162,6 @@ export default class MainServer {
         })
     }
 
-    private credentialsManager = new CredentialsManager()
-    private getServerCredentials = this.credentialsManager.getCredentials
+    
+    private getServerCredentials = credentialsManager.getCredentials
 }

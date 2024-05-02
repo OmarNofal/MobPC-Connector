@@ -11,9 +11,11 @@ import { mapBehaviorSubject } from './utilities/rxUtils'
 import AppWindow from './window/appWindow'
 
 import clipboardImage from './static/icons/clipboard.png'
-import { START_SERVER_COMMAND, STOP_SERVER_COMMAND } from './server/bridges'
+import { START_SERVER_COMMAND, STOP_SERVER_COMMAND } from './bridges/mainServerBridge'
 import observeNetworkInterfaces, { NetworkInterface } from './utilities/networkInterfaces'
 import { BehaviorSubject } from 'rxjs'
+import { GENERATE_PAIRING_PAYLOAD } from './bridges/authBridges'
+import generatePairingPayload from './service/pairing/pairint'
 
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string
@@ -77,7 +79,7 @@ export default class Application {
         this.firebaseService = firebaseService
 
         this.mainServer = mainServer
-        
+
         this.networkInterfacesObservable = observeNetworkInterfaces()
 
         app.whenReady().then(() => {
@@ -166,6 +168,11 @@ export default class Application {
     registerIpcEvents = () => {
         ipcMain.on(START_SERVER_COMMAND, this.mainServer.run)
         ipcMain.on(STOP_SERVER_COMMAND, this.mainServer.stop)
+
+        ipcMain.handle(GENERATE_PAIRING_PAYLOAD, () => {
+            const payload = generatePairingPayload(this.prefsManager, this.networkInterfacesObservable.value)
+            return JSON.stringify(payload)
+        })
 
         ipcMain.on('send-subject-latest-value', (event, name: string) => {
             const webContents = event.sender

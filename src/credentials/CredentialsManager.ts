@@ -15,7 +15,7 @@ type Credentials = {
  * Initialy, the class will generate a certificate and save it to the app directory
  * and then it will reuse this certificate until it is deleted.
  */
-export default class CredentialsManager {
+class CredentialsManager {
     /**
      * Path to directory containing the certificate
      */
@@ -106,3 +106,8 @@ export default class CredentialsManager {
         }
     }
 }
+
+const credentialsManager = new CredentialsManager()
+
+// only 1 instance
+export default credentialsManager

@@ -1,20 +1,11 @@
 import { Stack, ThemeProvider, Typography, createTheme, useMediaQuery } from '@mui/material'
+import { useEffect, useMemo } from 'react'
+import { Route, Routes, useLocation } from 'react-router-dom'
 import AppDrawer from '../components/drawer/drawer'
 import { Screen } from '../model/screens'
-import {
-    BrowserRouter,
-    HashRouter,
-    Link,
-    MemoryRouter,
-    Route,
-    Router,
-    Routes,
-    Switch,
-    useLocation,
-} from 'react-router-dom'
 import ServerScreen from './server/ServerScreen'
 import { ServerScreenViewModel } from './server/ServerScreenViewModel'
-import { useEffect, useMemo } from 'react'
+import { DevicesScreen } from './devices/devicesScreen'
 
 const theme = createTheme({
     palette: {
@@ -69,7 +60,7 @@ export default function App() {
                     />
                     <Route
                         path='/devices'
-                        element={<Typography>Devices</Typography>}
+                        element={<DevicesScreen />}
                     />
                     <Route
                         path='/settings'

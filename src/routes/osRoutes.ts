@@ -1,7 +1,7 @@
 import { Request, Response, Router } from 'express';
 import { ErrorResponse, SuccessResponse } from '../model/response';
-import { UnsupportedOperationException } from '../pc/exceptions';
-import { pcOps } from '../pc/pcOperations';
+import { UnsupportedOperationException } from '../service/pcOperations/exceptions';
+import { pcOps } from '../service/pcOperations/pcOperations';
 import { AuthMiddlewareFunction } from './authMiddleware';
 
 

@@ -16,7 +16,7 @@ export default function TopBar(props: TopBarProps) {
             <Toolbar sx={{ padding: '12' }}>
                 <Typography
                     variant='h3'
-                    sx={{ position: 'absolute', userSelect: 'none' }}
+                    sx={{ userSelect: 'none' }}
                     color={(theme) => theme.palette.primary.light}
                     fontWeight={'600'}
                 >

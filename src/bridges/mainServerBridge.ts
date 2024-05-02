@@ -13,8 +13,3 @@ export const mainServerBridge = {
     },
 }
 
-declare global {
-    interface Window {
-        mainServer: typeof mainServerBridge
-    }
-}

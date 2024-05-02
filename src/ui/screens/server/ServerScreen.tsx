@@ -5,6 +5,7 @@ import TopBar from '../../components/topbar'
 import { ServerScreenInitializedState, ServerScreenViewModel } from './ServerScreenViewModel'
 import ServerInformationCard from '../../components/server/serverInformation'
 import NetworkInterfacesCard from '../../components/server/networkInterfaceInformation'
+import { useUnwrap } from '../../utils'
 
 export default function ServerScreen(props: { vm: ServerScreenViewModel }) {
     const vm = props.vm
@@ -93,22 +94,4 @@ function InitializedScreen(props: { state: ServerScreenInitializedState; onToggl
     )
 }
 
-function get<T>(observable$: Observable<T>): T {
-    let value
-    observable$.subscribe((val) => (value = val)).unsubscribe()
-    return value
-}
 
-// Custom React hook for unwrapping observables
-function useUnwrap<T>(observable$: BehaviorSubject<T>): T {
-    const [value, setValue] = useState(() => get(observable$))
-
-    useEffect(() => {
-        const subscription = observable$.subscribe(setValue)
-        return function cleanup() {
-            subscription.unsubscribe()
-        }
-    }, [observable$])
-
-    return value
-}
