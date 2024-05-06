@@ -3,7 +3,7 @@ import http from 'http'
 import https from 'https'
 import path from 'path'
 import { BehaviorSubject, fromEvent, map, merge } from 'rxjs'
-import AuthenticationManager from '../auth/auth'
+import AuthorizationManager from '../auth/auth'
 import CredentialsManager from '../credentials/CredentialsManager'
 import { MainServerState } from '../model/mainServerState'
 import createAuthMiddlewareFunction from '../routes/authMiddleware'
@@ -66,7 +66,7 @@ export default class MainServer {
      * to create a folder to store temporarily uploaded files
      * @param authManager An authentication manager to check for authentication and authorization
      */
-    constructor(appDirectory: string, authManager: AuthenticationManager) {
+    constructor(appDirectory: string, authManager: AuthorizationManager) {
         this.setupServers(appDirectory, authManager)
         this.setupObservables()
     }
@@ -132,8 +132,8 @@ export default class MainServer {
             .subscribe(this.state)
     }
 
-    private setupServers = (appDirectory: string, authManager: AuthenticationManager) => {
-        const authMiddleware = createAuthMiddlewareFunction(authManager.isValidToken)
+    private setupServers = (appDirectory: string, authManager: AuthorizationManager) => {
+        const authMiddleware = createAuthMiddlewareFunction(authManager.isValidDeviceToken)
 
         const app = express()
         app.use(express.urlencoded({ extended: true }))
@@ -162,6 +162,5 @@ export default class MainServer {
         })
     }
 
-    
     private getServerCredentials = credentialsManager.getCredentials
 }

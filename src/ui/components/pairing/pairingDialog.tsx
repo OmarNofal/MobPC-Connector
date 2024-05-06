@@ -19,7 +19,12 @@ import PairingViewModel from './pairingDialogViewModel'
 import { useUnwrap } from '../../utils'
 import CloseOutlined from '@mui/icons-material/CloseOutlined'
 
-export default function PairingDialog() {
+export type PairingDialogProps = {
+    open: boolean
+    onClose: () => void
+}
+
+export default function PairingDialog({ open, onClose }: PairingDialogProps) {
     const viewModel = useMemo(() => new PairingViewModel(), [])
 
     const state = useUnwrap(viewModel.state)
@@ -28,7 +33,7 @@ export default function PairingDialog() {
 
     return (
         <Dialog
-            open={true}
+            open={open}
             PaperProps={{
                 sx: {
                     borderTop: '5px solid',
@@ -56,7 +61,7 @@ export default function PairingDialog() {
                             Pair a New Device
                         </Typography>
                         <div style={{ flex: '1', display: 'flex', justifyContent: 'flex-end' }}>
-                            <IconButton>
+                            <IconButton onClick={onClose}>
                                 <CloseOutlined sx={{ opacity: '60%' }} />
                             </IconButton>
                         </div>
@@ -81,14 +86,11 @@ export default function PairingDialog() {
                     variant='subtitle2'
                     marginBottom={'24'}
                     paddingLeft={'24px'}
-                    fontStyle={'italic'}
-                    sx={{
-                        textDecoration: 'underline',
-                    }}
+                    color={useTheme().palette.warning.light}
                 >
-                    Never share this code with anyone
+                    ⚠  Never share this code with anyone
                 </Typography>
-                <Collapse in={qrImageBase64 != 'none'}>
+                <Collapse in={qrImageBase64 != 'none' && open}>
                     <div style={{ display: 'flex', justifyContent: 'center' }}>
                         <img
                             src={qrImageBase64}
@@ -103,7 +105,12 @@ export default function PairingDialog() {
                     background: dialogActionsColors().background,
                 }}
             >
-                <Button sx={{ color: dialogActionsColors().textColor }}>Cancel</Button>
+                <Button
+                    onClick={onClose}
+                    sx={{ color: dialogActionsColors().textColor }}
+                >
+                    Cancel
+                </Button>
             </DialogActions>
         </Dialog>
     )

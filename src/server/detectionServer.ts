@@ -3,7 +3,7 @@ import os from 'os'
 import { BehaviorSubject, Subscription, distinctUntilKeyChanged } from 'rxjs'
 import pkg from '../../package.json'
 import { getUUID } from '../storage'
-import { DetectionServerConfiguration } from '../model/preferences'
+import { DetectionServerConfiguration, ServerInformation } from '../model/preferences'
 import { DetectionServerState } from '../model/detectionServerState'
 
 /**
@@ -25,13 +25,17 @@ export default class DetectionServer {
     /**The current state of the server */
     state: BehaviorSubject<DetectionServerState>
 
+    serverInformation: BehaviorSubject<ServerInformation>
+
     /**
      * @param config A behavior subject containing the current configuration of the server
      */
-    constructor(config: BehaviorSubject<DetectionServerConfiguration>) {
+    constructor(config: BehaviorSubject<DetectionServerConfiguration>, serverInformation: BehaviorSubject<ServerInformation>) {
         this.state = new BehaviorSubject<DetectionServerState>(DetectionServerState.STOPPED)
         this.socket = dgram.createSocket('udp4')
 
+        this.serverInformation = serverInformation
+        
         this.currentConfiguration = config.value
         this.subscription = config
             .asObservable()
@@ -73,11 +77,11 @@ export default class DetectionServer {
         if (msg.toString() === 'PC Connector Discovery') {
             // respond with server info
             const data = {
-                name: pkg.serverName,
+                name: this.serverInformation.value.name,
                 version: pkg.version,
                 port: 6543,
                 ip: this.socket.address().address,
-                id: getUUID(),
+                id: this.serverInformation.value.uuid,
                 os: os.platform(),
             }
 

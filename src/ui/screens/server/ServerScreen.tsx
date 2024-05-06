@@ -1,11 +1,9 @@
-import { Button, CircularProgress, Divider, Paper, Stack, Typography, useTheme } from '@mui/material'
-import { useEffect, useState } from 'react'
-import { BehaviorSubject, Observable } from 'rxjs'
-import TopBar from '../../components/topbar'
-import { ServerScreenInitializedState, ServerScreenViewModel } from './ServerScreenViewModel'
-import ServerInformationCard from '../../components/server/serverInformation'
+import { CircularProgress, Divider, Paper, Stack, useTheme } from '@mui/material'
 import NetworkInterfacesCard from '../../components/server/networkInterfaceInformation'
+import ServerInformationCard from '../../components/server/serverInformation'
+import TopBar from '../../components/topbar'
 import { useUnwrap } from '../../utils'
+import { ServerScreenInitializedState, ServerScreenViewModel } from './ServerScreenViewModel'
 
 export default function ServerScreen(props: { vm: ServerScreenViewModel }) {
     const vm = props.vm
@@ -30,9 +28,15 @@ export default function ServerScreen(props: { vm: ServerScreenViewModel }) {
 
 function LoadingScreen() {
     return (
-        <Stack>
+        <Paper
+            sx={{
+                backgroundColor: useTheme().palette.background.default,
+                width: '100%',
+                height: '100%'
+            }}
+        >
             <CircularProgress variant='indeterminate' />
-        </Stack>
+        </Paper>
     )
 }
 
@@ -81,17 +85,13 @@ function InitializedScreen(props: { state: ServerScreenInitializedState; onToggl
                         style={{
                             flex: 1,
                             maxWidth: '50%',
-                            marginLeft: '16px'
+                            marginLeft: '16px',
                         }}
-                    > 
-                    <NetworkInterfacesCard
-                        interfaces={state.networkInterfaces}
-                    />
+                    >
+                        <NetworkInterfacesCard interfaces={state.networkInterfaces} />
                     </div>
                 </Stack>
             </Paper>
         </Stack>
     )
 }
-
-

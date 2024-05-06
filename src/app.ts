@@ -1,6 +1,6 @@
 import { Menu, Notification, Tray, app, ipcMain, screen } from 'electron'
 import path from 'path'
-import AuthenticationManager from './auth/auth'
+import AuthorizationManager from './auth/auth'
 import FirebaseIPService from './firebase/firebase'
 import { DetectionServerState } from './model/detectionServerState'
 import PreferencesManager from './preferences/PreferencesManager'
@@ -10,12 +10,12 @@ import storage from './storage'
 import { mapBehaviorSubject } from './utilities/rxUtils'
 import AppWindow from './window/appWindow'
 
-import clipboardImage from './static/icons/clipboard.png'
+import clipboardImage from './ui/static/clipboard.png'
 import { START_SERVER_COMMAND, STOP_SERVER_COMMAND } from './bridges/mainServerBridge'
 import observeNetworkInterfaces, { NetworkInterface } from './utilities/networkInterfaces'
 import { BehaviorSubject } from 'rxjs'
 import { GENERATE_PAIRING_PAYLOAD } from './bridges/authBridges'
-import generatePairingPayload from './service/pairing/pairint'
+import generatePairingPayload from './service/pairing/pairing'
 
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string
@@ -34,7 +34,7 @@ if (process.platform === 'win32') {
  * This must be only instantiated once
  */
 export default class Application {
-    authManager: AuthenticationManager
+    authManager: AuthorizationManager
 
     prefsManager: PreferencesManager
 
@@ -55,14 +55,20 @@ export default class Application {
     init = () => {
         const appDirectory = app.getPath('userData')
 
-        const authManager = new AuthenticationManager(appDirectory)
+        const authManager = new AuthorizationManager(appDirectory)
         let preferencesManager = new PreferencesManager(path.join(appDirectory, 'app_preferences'))
 
         let detectionServerConfiguration = mapBehaviorSubject(
             preferencesManager.currentPreferences,
             (v) => v.detectionServerPrefs
         )
-        let detectionServer = new DetectionServer(detectionServerConfiguration)
+
+        let serverInformation = mapBehaviorSubject(
+            preferencesManager.currentPreferences,
+            (v) => v.serverInformation
+        )
+
+        let detectionServer = new DetectionServer(detectionServerConfiguration, serverInformation)
 
         let firebaseServerConfig = mapBehaviorSubject(
             preferencesManager.currentPreferences,
@@ -170,7 +176,11 @@ export default class Application {
         ipcMain.on(STOP_SERVER_COMMAND, this.mainServer.stop)
 
         ipcMain.handle(GENERATE_PAIRING_PAYLOAD, () => {
-            const payload = generatePairingPayload(this.prefsManager, this.networkInterfacesObservable.value)
+            const payload = generatePairingPayload(
+                this.authManager,
+                this.prefsManager,
+                this.networkInterfacesObservable.value
+            )
             return JSON.stringify(payload)
         })
 

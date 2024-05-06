@@ -13,6 +13,7 @@ import {
 } from '@mui/material'
 import Devices from '@mui/icons-material/Devices'
 import PairingDialog from '../../components/pairing/pairingDialog'
+import { useState } from 'react'
 
 export type DevicesScreenProps = {
     devices: string[]
@@ -23,16 +24,22 @@ export type DevicesScreenProps = {
 export function DevicesScreen(props: DevicesScreenProps) {
     const palette = useTheme().palette
 
+    const [open, setOpenDialog] = useState(false)
+
     return (
         <Stack
             sx={{ flex: 1 }}
             direction={'column'}
             height={'100%'}
         >
-            <PairingDialog />
+            <PairingDialog
+                open={open}
+                onClose={() => setOpenDialog(false)}
+            />
             <TopBar
                 sx={{ bgcolor: palette.background.default }}
                 title='Devices'
+                onOpenPairingDialog={() => setOpenDialog(true)}
             />
             <Divider variant='fullWidth' />
             <Paper
@@ -48,7 +55,7 @@ export function DevicesScreen(props: DevicesScreenProps) {
     )
 }
 
-function TopBar(props: { title: string; sx?: SxProps<Theme> }) {
+function TopBar(props: { title: string; sx?: SxProps<Theme>; onOpenPairingDialog: () => void }) {
     return (
         <AppBar
             position='sticky'
@@ -66,7 +73,10 @@ function TopBar(props: { title: string; sx?: SxProps<Theme> }) {
                     {props.title}
                 </Typography>
                 <Tooltip title={<Typography variant='body1'>Pair a new device</Typography>}>
-                    <IconButton size='large'>
+                    <IconButton
+                        size='large'
+                        onClick={props.onOpenPairingDialog}
+                    >
                         <Devices
                             fontSize='large'
                             sx={{

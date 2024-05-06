@@ -1,152 +1,214 @@
-import bcrypt from 'bcrypt'
+import { randomBytes } from 'crypto'
 import fs from 'fs'
 import jwt from 'jsonwebtoken'
 import path from 'path'
-import { InvalidPasswordException, PasswordNotSetException } from './exceptions'
-import credentialsManager from '../credentials/CredentialsManager'
-import { PairingPayload } from './pairingPayload'
+import { BehaviorSubject } from 'rxjs'
+import { v4 as uuidv4 } from 'uuid'
+import { DevicesDB } from '../model/device'
 
-const pwdFileName = 'pwd'
+const secretFileName = 'secret'
+const devicesDBFileName = 'devices.json'
 
 /**
- * This class manages routines related to authentication
- * like updaing the password, generating access tokens, checking if a token is valid, etc...
+ * This class manages routines related to authorization like generating pairing tokens,
+ * generating access tokens, checking if a token is valid, etc...
  */
-export default class AuthenticationManager {
-    /**Directory where the password is stored */
-    passwordDirectory: string
+export default class AuthorizationManager {
+    /**Directory where the secret is stored */
+    secretDirectory: string
 
     /**
-     * Path to the file containing the hashed password.
+     * Path to the file containing the secret.
      *
      * This should be pointing in private app storage
      */
-    passwordFilePath: string
+    secretFilePath: string
 
     /**
-     * The hash of the current password set by the user
+     * The secret itself
      *
      * This is cached mainly to prevent excessive disk I/Os
      * when validating the token for each request
      */
-    private passwordHash?: string
+    private secret?: string
 
-    /**@param passwordDirectory Directory where this class fetches and saves passwords */
-    constructor(passwordDirectory: string) {
-        this.passwordDirectory = passwordDirectory
-        this.passwordFilePath = path.join(passwordDirectory, pwdFileName)
-        console.log(this.passwordFilePath)
-        this.passwordHash = this.readPasswordHash()
-    }
+    private devicesDBPath: string
 
     /**
-     * Changes the password, which will implicitly log out all
-     * registered devices.
-     *
-     * The new password must be at least 8 characters long
-     * @param newPassword The new password to set
+     * A database containing all the currently paired devices
      */
-    changePassword = (newPassword: string) => {
-        if (newPassword.length < 8) throw new InvalidPasswordException('Password must be atleast 8 charchters long')
+    devicesDatabase: BehaviorSubject<DevicesDB>
 
-        const salt = bcrypt.genSaltSync()
-        const encryptedPassword = bcrypt.hashSync(newPassword, salt)
+    /**@param secretDirectroy Directory where this class fetches and saves passwords */
+    constructor(secretDirectroy: string) {
+        this.devicesDatabase = new BehaviorSubject({})
 
-        this.savePasswordHash(encryptedPassword)
-        this.passwordHash = encryptedPassword
+        this.secretDirectory = secretDirectroy
+        this.secretFilePath = path.join(secretDirectroy, secretFileName)
+        this.devicesDBPath = path.join(secretDirectroy, devicesDBFileName)
+
+        this.secret = this.readSecret()
+        this.ensureSecretLoaded() // if the secret is not created yet
+
+        this.loadDevicesDB()
     }
 
     /**
-     * Wheteher we have set a password or not
+     * Changes the secret, which will implicitly unpair all
+     * registered devices and revoke all access tokens.
+     */
+    generateAndSaveSecret = () => {
+        const newSecret = uuidv4({ random: randomBytes(16) })
+
+        this.saveSecret(newSecret)
+        this.secret = newSecret
+    }
+
+    /**
+     * Wheteher we have set a secret or not
      *
      * This will return false when the app is started for the first time.
      *
-     * If the password is not set, then all requests should be rejected untill
-     * a password is set
+     * If the secret is not set, then all requests should be rejected untill
+     * a secret is set
      */
-    isPasswordSet = () => {
-        return this.passwordHash != undefined
+    isSecretSet = () => {
+        return this.secret != undefined
     }
 
     /**
-     * Checks the validity of the password, and creates a new
-     * jsonwebtoken if the password is correct
+     * Registers a new device as a paired device
+     * and assigns it a new token
      *
-     * @param password The password to check
-     * @returns A json web token if the password is correct
+     * @param deviceInfo The info of the device
+     * @returns a token which should be sent to the device to be
+     * used for authorization in subsequent requests
      */
-    logInAndGetAccessToken = (password: string) => {
-        let encryptedPassword = ''
+    pairWithNewDevice = (deviceInfo: { os: string; modelName: string }): string => {
+        this.ensureSecretLoaded()
 
-        try {
-            encryptedPassword = this.readPasswordHash()
-        } catch (e) {
-            if (!this.isPasswordSet()) throw new PasswordNotSetException('Password is not set')
-            else throw e
+        const newDeviceId = uuidv4({ random: randomBytes(16) })
+        const pairingDate = new Date()
+
+        const payload = {
+            id: newDeviceId,
         }
 
-        console.log('pass: ' + password)
-        console.log('ency pass: ' + encryptedPassword)
-        const isCorrect = bcrypt.compareSync(password, encryptedPassword)
+        const token = jwt.sign(payload, this.secret)
 
-        if (isCorrect) {
-            // we use the current hash password as the jwt secret,
-            // so that we can make sure that a token is legitimate and healthy
-            // if we can decrypt it using the current password
-            return jwt.sign({}, this.passwordHash, { expiresIn: '30d' })
-        } else {
-            throw new InvalidPasswordException("Passwords don't match")
+        // save the new device to the database
+        const oldDB = this.devicesDatabase.value
+        const newDB = structuredClone(oldDB)
+
+        newDB[newDeviceId] = {
+            id: newDeviceId,
+            os: deviceInfo.os,
+            modelName: deviceInfo.modelName,
+            pairingDate: pairingDate,
         }
+        this.saveDevicesDBToDisk(newDB)
+
+        // update the in-memory database
+        this.devicesDatabase.next(newDB)
+
+        return token
     }
 
     /**
-     * Checks if a token is valid to be used and not expired
+     * Generates a token to be used by device to pair with the server.
      *
-     * @returns true if the token is valid and not expired, false otherwise
+     * Valid for 5 minutes.
+     * @returns token used for pairing
      */
-    isValidToken = (token: string) => {
+    generatePairingToken = (): string => {
+        return jwt.sign({ pairing_token: true }, this.secret, { expiresIn: 5 * 60 })
+    }
+
+    /**
+     * Returns true if the token is a valid pairing token
+     * @param token the token to verify
+     */
+    isValidPairingToken = (token: string) => {
         try {
-            jwt.verify(token, this.passwordHash)
-            return true
-        } catch (e) {
+            const payload = jwt.verify(token, this.secret)
+            return payload['pairing_token'] === true
+        } catch {
             return false
         }
     }
 
     /**
-     * Generates the payload containing information
-     * for new devices to pair with this server.
-     * The payload contains the server name, certificate,
-     * ip addresses and port
+     * Checks if a token is a valid device token id
+     *
+     * @returns true if the token is valid and not expired, false otherwise
      */
-    generatePairingPaylod = (): PairingPayload => {
-        const cert = credentialsManager.getCredentials().cert
+    isValidDeviceToken = (token: string) => {
+        try {
+            const payload = jwt.verify(token, this.secret)
+            console.log(payload)
 
-        const name = 'Omar Nofal'
-        const ip = ['192.168.1.76', '192.168.1.3']
-        const port = 6543
+            if (payload.hasOwnProperty('id')) {
+                // check if it exists in the database
+                const deviceId = payload['id']
+                const db = this.devicesDatabase.value
+            
+                if (db.hasOwnProperty(deviceId)) return true
+                console.log("Returned false")
+            }
 
-        return {
-            cert,
-            name,
-            ip,
-            port,
+            return false
+        } catch (e) {
+            // invalid | expired token
+            return false
         }
     }
 
-    /**Saves the password hash to the filesystem */
-    private savePasswordHash = async (hash: string) => {
+    /**Saves the secret to the filesystem */
+    private saveSecret = async (hash: string) => {
         const buffer = Buffer.from(hash, 'utf-8')
-        fs.writeFileSync(this.passwordFilePath, buffer)
+        fs.writeFileSync(this.secretFilePath, buffer)
     }
 
-    /**Reads the password hash from the system */
-    private readPasswordHash = () => {
+    /**Reads the secret from the system */
+    private readSecret = () => {
         try {
-            const data = fs.readFileSync(this.passwordFilePath)
+            const data = fs.readFileSync(this.secretFilePath)
             return data.toString('utf-8')
         } catch (e: any) {
             return undefined
+        }
+    }
+
+    /**
+     * Saves the devices database to disk
+     * @param db The database to save
+     */
+    private saveDevicesDBToDisk(db: DevicesDB) {
+        const buffer = Buffer.from(JSON.stringify(db), 'utf-8')
+        fs.writeFileSync(this.devicesDBPath, buffer, { flag: 'w+' })
+    }
+
+    /**
+     * Loads the Devices Database from the disk into memory
+     *
+     * This generates an empty database if it does not exist
+     */
+    private loadDevicesDB = () => {
+        try {
+            const data = fs.readFileSync(this.devicesDBPath)
+            this.devicesDatabase.next(JSON.parse(data.toString('utf-8')) as DevicesDB)
+        } catch (e: any) {
+            this.devicesDatabase.next({}) // use empty database as fallback
+        }
+    }
+
+    /**
+     * If the secret is loaded, does nothing.
+     * If not, reads or creates a new secret.
+     */
+    private ensureSecretLoaded = () => {
+        if (!this.isSecretSet()) {
+            this.generateAndSaveSecret()
         }
     }
 }

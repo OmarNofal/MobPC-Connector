@@ -1,43 +1,43 @@
-import { Request, Response, Router } from "express";
-import AuthenticationManager from "../auth/auth";
-import { ErrorResponse, SuccessResponse } from "../model/response";
+import { Request, Response, Router } from 'express'
+import AuthorizationManager from '../auth/auth'
+import { ErrorResponse, SuccessResponse } from '../model/response'
 
-
-type LoginData = {
-    password?: string
+type PairingData = {
+    pairingToken?: string
+    os: string
+    modelName: string
 }
 
-function loginController(req: Request, res: Response, authManager: AuthenticationManager) {
-    const body: LoginData = req.body;
+function pairingController(req: Request, res: Response, authManager: AuthorizationManager) {
+    const body: PairingData = req.body
 
-    const password: string | undefined = body.password;
+    const pairingToken: string | undefined = body.pairingToken
 
-    if (!password) {
+    if (!pairingToken) {
         res.statusCode = 400
-        res.json(new ErrorResponse(10, "Password field not set"))
-        console.log("Password not set")
+        res.json(new ErrorResponse(10, 'Pairing token field not set'))
         return
     }
 
-    try {
-        const token = authManager.logInAndGetAccessToken(password)
+    const isValidPairingToken = authManager.isValidPairingToken(pairingToken)
+
+    if (isValidPairingToken) {
+        const token = authManager.pairWithNewDevice({modelName: body.modelName, os: body.os})
         res.json(new SuccessResponse({ token: token }))
-    } catch (e) {
-        console.log(e)
-        console.log("Wrong password")
-        res.json(new ErrorResponse(10, "Wrong Password"))
+    } else {
+        res.json(new ErrorResponse(10, 'Wrong Pairing Token'))
         return
     }
 }
 
-function verifyTokenController(req: Request, res: Response, authManager: AuthenticationManager) {
+function verifyTokenController(req: Request, res: Response, authManager: AuthorizationManager) {
     const params = req.query
     const token = params.token
 
-    if (!token || typeof token != "string") {
-        res.json(new ErrorResponse(1, "Missing TOKEN"))
+    if (!token || typeof token != 'string') {
+        res.json(new ErrorResponse(1, 'Missing TOKEN'))
     } else {
-        if (authManager.isValidToken(token)) {
+        if (authManager.isValidDeviceToken(token)) {
             res.json(new SuccessResponse({ valid: true }))
         } else {
             res.json(new SuccessResponse({ valid: false }))
@@ -45,8 +45,7 @@ function verifyTokenController(req: Request, res: Response, authManager: Authent
     }
 }
 
-
-export default function addAuthRoutes(app: Router, authManager: AuthenticationManager) {
-    app.post('/login', (req, res) => loginController(req, res, authManager))
+export default function addAuthRoutes(app: Router, authManager: AuthorizationManager) {
+    app.post('/pair', (req, res) => pairingController(req, res, authManager))
     app.get('/verifyToken', (req, res) => verifyTokenController(req, res, authManager))
 }
