@@ -1,5 +1,6 @@
 import {
     AppBar,
+    Card,
     Divider,
     IconButton,
     Paper,
@@ -13,7 +14,10 @@ import {
 } from '@mui/material'
 import Devices from '@mui/icons-material/Devices'
 import PairingDialog from '../../components/pairing/pairingDialog'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import DevicesScreenViewModel from './DevicesScreenViewModel'
+import { useUnwrap } from '../../utils'
+import DeviceList from '../../components/device/DeviceList'
 
 export type DevicesScreenProps = {
     devices: string[]
@@ -21,11 +25,37 @@ export type DevicesScreenProps = {
     onAddNewDevice: () => void
 }
 
-export function DevicesScreen(props: DevicesScreenProps) {
+export function DevicesScreen() {
+    const viewModel = useMemo(() => new DevicesScreenViewModel(), [])
+    const state = useUnwrap(viewModel.state)
+
     const palette = useTheme().palette
 
+    console.log(state)
     const [open, setOpenDialog] = useState(false)
 
+    const content =
+        state.state == 'loading' ? (
+            <></>
+        ) : (
+            <Card
+                elevation={3}
+                sx={{ padding: '24px' }}
+            >
+                <Typography
+                    variant='h5'
+                    fontWeight={'700'}
+                >
+                    Paired Devices
+                </Typography>
+                <Divider sx={{ width: 'auto' }} />
+                <DeviceList
+                    onDelete={viewModel.deleteDevice}
+                    devices={state.devices}
+                    sx={{ width: '100%', marginTop: '32px' }}
+                />
+            </Card>
+        )
     return (
         <Stack
             sx={{ flex: 1 }}
@@ -44,13 +74,15 @@ export function DevicesScreen(props: DevicesScreenProps) {
             <Divider variant='fullWidth' />
             <Paper
                 sx={{
-                    width: '100%',
                     height: '100%',
                     backgroundColor: palette.background.paper,
                     borderRadius: 0,
+                    padding: '32px',
                 }}
                 elevation={1}
-            ></Paper>
+            >
+                {content}
+            </Paper>
         </Stack>
     )
 }

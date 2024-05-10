@@ -50,6 +50,7 @@ export default class AuthorizationManager {
         this.secret = this.readSecret()
         this.ensureSecretLoaded() // if the secret is not created yet
 
+        this.devicesDatabase.subscribe(console.log)
         this.loadDevicesDB()
     }
 
@@ -114,6 +115,23 @@ export default class AuthorizationManager {
         return token
     }
 
+
+    /**
+     * Deletes a device from the database
+     * effectively logging it out from the server
+     * 
+     * @param deviceId The device ID to delete
+     */
+    deleteDevice = (deviceId: string) => {
+        
+        const oldDB = this.devicesDatabase.value
+        const newDB = structuredClone(oldDB)
+
+        delete newDB[deviceId]
+        this.devicesDatabase.next(newDB)
+        this.saveDevicesDBToDisk(newDB)
+    }
+
     /**
      * Generates a token to be used by device to pair with the server.
      *
@@ -151,9 +169,9 @@ export default class AuthorizationManager {
                 // check if it exists in the database
                 const deviceId = payload['id']
                 const db = this.devicesDatabase.value
-            
+
                 if (db.hasOwnProperty(deviceId)) return true
-                console.log("Returned false")
+                console.log('Returned false')
             }
 
             return false

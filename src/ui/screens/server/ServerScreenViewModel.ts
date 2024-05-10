@@ -1,6 +1,7 @@
 import { BehaviorSubject, Observable, Subject, combineLatest, map } from 'rxjs'
 import { MainServerState, MainServerInitialized } from '../../../model/mainServerState'
 import { NetworkInterface } from '../../../utilities/networkInterfaces'
+import { MainProcessObservableConnection, subscribeToObservableInMainProcess } from '../../utils'
 
 type Loading = 'loading'
 
@@ -90,34 +91,4 @@ export class ServerScreenViewModel {
         this.mainObservableConnection.clean()
         this.netInterfacesObservableConnetion.clean()
     }
-}
-
-class MainProcessObservableConnection<T> {
-    /**
-     * The observable that updates
-     * when a new event is received through ipc
-     */
-    observable: Observable<T>
-
-    /**
-     * A function used to unregister the listener
-     * attached to the ipcRenderer
-     */
-    listenerRemover: () => void
-
-    constructor(observable: Observable<T>, listenerRemover: () => void) {
-        this.observable = observable
-        this.listenerRemover = listenerRemover
-    }
-
-    clean = () => {
-        this.listenerRemover()
-    }
-}
-
-function subscribeToObservableInMainProcess<T>(name: string): MainProcessObservableConnection<T> {
-    let observable = new Subject<T>()
-    let removeListener = window.state.observeSubject(name, (value: T) => observable.next(value))
-
-    return new MainProcessObservableConnection(observable, removeListener)
 }

@@ -25,6 +25,8 @@ export type PairingDialogProps = {
 }
 
 export default function PairingDialog({ open, onClose }: PairingDialogProps) {
+    if (!open) return <></>
+
     const viewModel = useMemo(() => new PairingViewModel(), [])
 
     const state = useUnwrap(viewModel.state)
@@ -88,16 +90,15 @@ export default function PairingDialog({ open, onClose }: PairingDialogProps) {
                     paddingLeft={'24px'}
                     color={useTheme().palette.warning.light}
                 >
-                    ⚠  Never share this code with anyone
+                    ⚠ Never share this code with anyone
                 </Typography>
-                <Collapse in={qrImageBase64 != 'none' && open}>
-                    <div style={{ display: 'flex', justifyContent: 'center' }}>
-                        <img
-                            src={qrImageBase64}
-                            style={{ maxWidth: '80%' }}
-                        />
-                    </div>
-                </Collapse>
+
+                <div style={{ display: 'flex', justifyContent: 'center' }}>
+                    <img
+                        src={qrImageBase64}
+                        style={{ maxWidth: '80%' }}
+                    />
+                </div>
             </Stack>
             <DialogActions
                 sx={{

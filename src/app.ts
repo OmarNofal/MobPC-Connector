@@ -14,7 +14,7 @@ import clipboardImage from './ui/static/clipboard.png'
 import { START_SERVER_COMMAND, STOP_SERVER_COMMAND } from './bridges/mainServerBridge'
 import observeNetworkInterfaces, { NetworkInterface } from './utilities/networkInterfaces'
 import { BehaviorSubject } from 'rxjs'
-import { GENERATE_PAIRING_PAYLOAD } from './bridges/authBridges'
+import { DELETE_DEVICE, GENERATE_PAIRING_PAYLOAD } from './bridges/authBridges'
 import generatePairingPayload from './service/pairing/pairing'
 
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string
@@ -63,10 +63,7 @@ export default class Application {
             (v) => v.detectionServerPrefs
         )
 
-        let serverInformation = mapBehaviorSubject(
-            preferencesManager.currentPreferences,
-            (v) => v.serverInformation
-        )
+        let serverInformation = mapBehaviorSubject(preferencesManager.currentPreferences, (v) => v.serverInformation)
 
         let detectionServer = new DetectionServer(detectionServerConfiguration, serverInformation)
 
@@ -154,6 +151,10 @@ export default class Application {
                     observable: this.networkInterfacesObservable,
                     channelName: 'network-interfaces-state',
                 },
+                {
+                    observable: this.authManager.devicesDatabase,
+                    channelName: 'devices-db-state',
+                },
             ]
         )
         this.window = window
@@ -172,8 +173,14 @@ export default class Application {
     }
 
     registerIpcEvents = () => {
-        ipcMain.on(START_SERVER_COMMAND, this.mainServer.run)
-        ipcMain.on(STOP_SERVER_COMMAND, this.mainServer.stop)
+        ipcMain.on(START_SERVER_COMMAND, () => {
+            this.mainServer.run()
+            this.detectionServer.run()
+        })
+        ipcMain.on(STOP_SERVER_COMMAND, () => {
+            this.mainServer.stop()
+            this.detectionServer.close()
+        })
 
         ipcMain.handle(GENERATE_PAIRING_PAYLOAD, () => {
             const payload = generatePairingPayload(
@@ -183,6 +190,7 @@ export default class Application {
             )
             return JSON.stringify(payload)
         })
+        ipcMain.handle(DELETE_DEVICE, (_, id) => this.authManager.deleteDevice(id))
 
         ipcMain.on('send-subject-latest-value', (event, name: string) => {
             const webContents = event.sender
@@ -192,6 +200,9 @@ export default class Application {
             }
             if (name == 'network-interfaces-state') {
                 webContents.send(name, this.networkInterfacesObservable.value)
+            }
+            if (name == 'devices-db-state') {
+                webContents.send(name, this.authManager.devicesDatabase.value)
             }
         })
     }
