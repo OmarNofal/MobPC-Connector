@@ -31,6 +31,12 @@ export default function PairingDialog({ open, onClose }: PairingDialogProps) {
 
     const state = useUnwrap(viewModel.state)
 
+    // we finished pairing, close the dialog
+    if (state.state == 'done') {
+        onClose()
+        return <></>
+    }
+
     const qrImageBase64 = state.state == 'loading' ? 'none' : state.qrBase64
 
     return (

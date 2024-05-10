@@ -14,7 +14,7 @@ import clipboardImage from './ui/static/clipboard.png'
 import { START_SERVER_COMMAND, STOP_SERVER_COMMAND } from './bridges/mainServerBridge'
 import observeNetworkInterfaces, { NetworkInterface } from './utilities/networkInterfaces'
 import { BehaviorSubject } from 'rxjs'
-import { DELETE_DEVICE, GENERATE_PAIRING_PAYLOAD } from './bridges/authBridges'
+import { DELETE_DEVICE, DEVICE_CONNECTED_EVENT, GENERATE_PAIRING_PAYLOAD } from './bridges/authBridges'
 import generatePairingPayload from './service/pairing/pairing'
 
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string
@@ -87,8 +87,9 @@ export default class Application {
 
         app.whenReady().then(() => {
             this.registerIpcEvents()
+            this.registerEvents()
+
             storage.init()
-            //storage.changePassword('00000023');
 
             ipcMain.on('toggle-server', () => {
                 if (detectionServer.state.value == DetectionServerState.RUNNING) detectionServer.close()
@@ -203,6 +204,17 @@ export default class Application {
             }
             if (name == 'devices-db-state') {
                 webContents.send(name, this.authManager.devicesDatabase.value)
+            }
+        })
+    }
+
+    registerEvents = () => {
+        this.authManager.events.subscribe((event) => {
+            if (event == 'device_connected') {
+                const window = this.window
+                if (window != undefined && !window.isDestroyed()) {
+                    window.webContents.send(DEVICE_CONNECTED_EVENT)
+                }
             }
         })
     }

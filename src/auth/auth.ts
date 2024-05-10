@@ -2,9 +2,11 @@ import { randomBytes } from 'crypto'
 import fs from 'fs'
 import jwt from 'jsonwebtoken'
 import path from 'path'
-import { BehaviorSubject } from 'rxjs'
+import { BehaviorSubject, Subject } from 'rxjs'
 import { v4 as uuidv4 } from 'uuid'
 import { DevicesDB } from '../model/device'
+import { EventEmitter } from 'ws'
+import { AuthEvent } from './events'
 
 const secretFileName = 'secret'
 const devicesDBFileName = 'devices.json'
@@ -39,9 +41,12 @@ export default class AuthorizationManager {
      */
     devicesDatabase: BehaviorSubject<DevicesDB>
 
+    events: Subject<AuthEvent>
+
     /**@param secretDirectroy Directory where this class fetches and saves passwords */
     constructor(secretDirectroy: string) {
         this.devicesDatabase = new BehaviorSubject({})
+        this.events = new Subject()
 
         this.secretDirectory = secretDirectroy
         this.secretFilePath = path.join(secretDirectroy, secretFileName)
@@ -112,18 +117,18 @@ export default class AuthorizationManager {
         // update the in-memory database
         this.devicesDatabase.next(newDB)
 
+        this.events.next('device_connected')
+
         return token
     }
-
 
     /**
      * Deletes a device from the database
      * effectively logging it out from the server
-     * 
+     *
      * @param deviceId The device ID to delete
      */
     deleteDevice = (deviceId: string) => {
-        
         const oldDB = this.devicesDatabase.value
         const newDB = structuredClone(oldDB)
 
@@ -163,7 +168,6 @@ export default class AuthorizationManager {
     isValidDeviceToken = (token: string) => {
         try {
             const payload = jwt.verify(token, this.secret)
-            console.log(payload)
 
             if (payload.hasOwnProperty('id')) {
                 // check if it exists in the database
@@ -171,7 +175,6 @@ export default class AuthorizationManager {
                 const db = this.devicesDatabase.value
 
                 if (db.hasOwnProperty(deviceId)) return true
-                console.log('Returned false')
             }
 
             return false
