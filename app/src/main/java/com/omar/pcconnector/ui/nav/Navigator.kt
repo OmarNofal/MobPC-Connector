@@ -86,6 +86,17 @@ object DetectionScreen {
 
 }
 
+object PairingScreen {
+    fun navigationCommand() = object : NavigationCommand {
+        override val options: NavOptions
+            get() = navOptions { }
+        override val screen: Screen
+            get() = Screen.ServerScreen
+        override val destination: String
+            get() = "pairing"
+    }
+}
+
 
 class Navigator {
 

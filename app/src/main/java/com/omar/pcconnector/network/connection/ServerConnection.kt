@@ -26,11 +26,13 @@ import kotlinx.coroutines.withTimeout
 class ServerConnection(
     val id: String,
     private val token: String,
+    private val certificate: String,
     private val scope: CoroutineScope,
     private val networkStatusFlow: StateFlow<NetworkStatus>,
 ) {
 
-    private val  _connectionStatus = MutableStateFlow<ConnectionStatus>(ConnectionStatus.Searching)
+    private val _connectionStatus =
+        MutableStateFlow<ConnectionStatus>(ConnectionStatus.Searching)
     val connectionStatus: StateFlow<ConnectionStatus>
         get() = _connectionStatus
 
@@ -45,7 +47,7 @@ class ServerConnection(
 
         scope.launch {
             networkStatusFlow.collect {
-                when(it) {
+                when (it) {
                     NetworkStatus.NotConnected -> handleDisconnection()
                     else -> handleNewNetwork()
                 }
@@ -57,11 +59,14 @@ class ServerConnection(
      * Find the device on the local or
      * global network.
      */
-    private suspend fun findDevice(): DetectedDevice? = withContext(Dispatchers.IO) {
-        val device = Connectivity.findDevice(id, ConnectionPreference.LOCAL_NETWORK) ?: return@withContext null
-        if (!isActive) return@withContext null
-        return@withContext device
-    }
+    private suspend fun findDevice(): DetectedDevice? =
+        withContext(Dispatchers.IO) {
+            val device =
+                Connectivity.findDevice(id, ConnectionPreference.LOCAL_NETWORK)
+                    ?: return@withContext null
+            if (!isActive) return@withContext null
+            return@withContext device
+        }
 
     /**
      * Starts the search process and returns immediately
@@ -71,9 +76,12 @@ class ServerConnection(
         searchJob = scope.launch {
             onStartSearching()
             try {
-                val device = withTimeout(5000) { findDevice() } ?: return@launch if (isActive) onConnectionNotFound() else Unit
-                if (isActive)
-                    onConnectionFound(device.toConnection(token))
+                val device = withTimeout(5000) { findDevice() }
+                    ?: return@launch if (isActive) onConnectionNotFound() else Unit
+                if (isActive) {
+                    onConnectionFound(device.toConnection(token, certificate))
+                    Log.d(TAG, "Device found $device")
+                }
             } catch (e: Exception) {
                 Log.e(TAG, "Device not found ${e.stackTraceToString()}")
                 if (isActive)
@@ -103,10 +111,11 @@ class ServerConnection(
         }
     }
 
-    private suspend fun pingConnection(connection: Connection): Boolean = withContext(Dispatchers.IO) {
-        val statusApi = connection.retrofit.create(StatusAPI::class.java)
-        PingOperation(statusApi).start()
-    }
+    private suspend fun pingConnection(connection: Connection): Boolean =
+        withContext(Dispatchers.IO) {
+            val statusApi = connection.retrofit.create(StatusAPI::class.java)
+            PingOperation(statusApi).start()
+        }
 
     private fun onConnectionNotFound() {
         _connectionStatus.value = ConnectionStatus.NotFound
@@ -137,12 +146,12 @@ class ServerConnection(
 
 sealed class ConnectionStatus {
 
-    object NotFound: ConnectionStatus()
+    object NotFound : ConnectionStatus()
 
     class Connected(
         val connection: Connection
-    ): ConnectionStatus()
+    ) : ConnectionStatus()
 
-    object Searching: ConnectionStatus()
+    object Searching : ConnectionStatus()
 
 }

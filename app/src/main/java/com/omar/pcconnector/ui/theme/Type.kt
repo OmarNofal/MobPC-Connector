@@ -1,6 +1,7 @@
 package com.omar.pcconnector.ui.theme
 
 import androidx.compose.material3.Typography
+import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -19,25 +20,27 @@ val InterFontFamily = FontFamily(
 )
 
 
+val platformStyle = PlatformTextStyle(includeFontPadding = true)
+
 private val defaultTypography = Typography()
 val Typography = Typography(
-    displayLarge = defaultTypography.displayLarge.copy(fontFamily = InterFontFamily),
-    displayMedium = defaultTypography.displayMedium.copy(fontFamily = InterFontFamily),
-    displaySmall = defaultTypography.displaySmall.copy(fontFamily = InterFontFamily),
+    displayLarge = defaultTypography.displayLarge.copy(fontFamily = InterFontFamily, platformStyle = platformStyle),
+    displayMedium = defaultTypography.displayMedium.copy(fontFamily = InterFontFamily, platformStyle = platformStyle),
+    displaySmall = defaultTypography.displaySmall.copy(fontFamily = InterFontFamily, platformStyle = platformStyle),
 
-    headlineLarge = defaultTypography.headlineLarge.copy(fontFamily = InterFontFamily),
-    headlineMedium = defaultTypography.headlineMedium.copy(fontFamily = InterFontFamily),
-    headlineSmall = defaultTypography.headlineSmall.copy(fontFamily = InterFontFamily),
+    headlineLarge = defaultTypography.headlineLarge.copy(fontFamily = InterFontFamily, platformStyle = platformStyle),
+    headlineMedium = defaultTypography.headlineMedium.copy(fontFamily = InterFontFamily, platformStyle = platformStyle),
+    headlineSmall = defaultTypography.headlineSmall.copy(fontFamily = InterFontFamily, platformStyle = platformStyle),
 
-    titleLarge = defaultTypography.titleLarge.copy(fontFamily = InterFontFamily),
-    titleMedium = defaultTypography.titleMedium.copy(fontFamily = InterFontFamily),
-    titleSmall = defaultTypography.titleSmall.copy(fontFamily = InterFontFamily),
+    titleLarge = defaultTypography.titleLarge.copy(fontFamily = InterFontFamily, platformStyle = platformStyle),
+    titleMedium = defaultTypography.titleMedium.copy(fontFamily = InterFontFamily, platformStyle = platformStyle),
+    titleSmall = defaultTypography.titleSmall.copy(fontFamily = InterFontFamily, platformStyle = platformStyle),
 
-    bodyLarge = defaultTypography.bodyLarge.copy(fontFamily = InterFontFamily),
-    bodyMedium = defaultTypography.bodyMedium.copy(fontFamily = InterFontFamily),
-    bodySmall = defaultTypography.bodySmall.copy(fontFamily = InterFontFamily),
+    bodyLarge = defaultTypography.bodyLarge.copy(fontFamily = InterFontFamily, platformStyle = platformStyle),
+    bodyMedium = defaultTypography.bodyMedium.copy(fontFamily = InterFontFamily, platformStyle = platformStyle),
+    bodySmall = defaultTypography.bodySmall.copy(fontFamily = InterFontFamily, platformStyle = platformStyle),
 
-    labelLarge = defaultTypography.labelLarge.copy(fontFamily = InterFontFamily),
-    labelMedium = defaultTypography.labelMedium.copy(fontFamily = InterFontFamily),
-    labelSmall = defaultTypography.labelSmall.copy(fontFamily = InterFontFamily)
+    labelLarge = defaultTypography.labelLarge.copy(fontFamily = InterFontFamily, platformStyle = platformStyle),
+    labelMedium = defaultTypography.labelMedium.copy(fontFamily = InterFontFamily, platformStyle = platformStyle),
+    labelSmall = defaultTypography.labelSmall.copy(fontFamily = InterFontFamily, platformStyle = platformStyle)
 )

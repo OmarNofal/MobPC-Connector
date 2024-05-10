@@ -20,10 +20,10 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowForwardIos
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material.icons.rounded.ArrowDropDown
-import androidx.compose.material.icons.rounded.ArrowForwardIos
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.AssistChip
@@ -60,8 +60,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import java.nio.file.Path
 import java.nio.file.Paths
-import kotlin.io.path.Path
-import kotlin.io.path.name
 
 
 @Composable
@@ -105,7 +103,10 @@ fun LocationBar(
                         .focusRequester(focusRequester),
                     value = searchFilter,
                     onValueChange = onSearchFilterChanged,
-                    textStyle = TextStyle(color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.SemiBold),
+                    textStyle = TextStyle(
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.SemiBold
+                    ),
                     cursorBrush = SolidColor(MaterialTheme.colorScheme.onSurface),
                     maxLines = 1,
                     keyboardOptions = KeyboardOptions(
@@ -119,8 +120,7 @@ fun LocationBar(
                     singleLine = true,
                 )
                 LaunchedEffect(key1 = Unit) { focusRequester.requestFocus() }
-            }
-            else if (isPathEditable) {
+            } else if (isPathEditable) {
                 var editedPath by remember {
                     mutableStateOf(
                         TextFieldValue(
@@ -198,7 +198,8 @@ fun LocationBar(
                 .clickable { toggleSearchFilter() },
             contentAlignment = Alignment.Center
         ) {
-            val icon = if (isSearchFilterEnabled) Icons.Rounded.Close else Icons.Rounded.Search
+            val icon =
+                if (isSearchFilterEnabled) Icons.Rounded.Close else Icons.Rounded.Search
             Icon(
                 modifier = Modifier.size(18.dp),
                 imageVector = icon,
@@ -260,8 +261,20 @@ fun LocationIdleView(
                         modifier = Modifier
                             .sizeIn(32.dp)
                             .fillMaxHeight()
-                            .clickable { onSubPathClicked(path.subpath(0, it + 2)) }
-                            .padding(start = 4.dp, end = 4.dp, top = 2.dp, bottom = 2.dp),
+                            .clickable {
+                                onSubPathClicked(
+                                    path.subpath(
+                                        0,
+                                        it + 2
+                                    )
+                                )
+                            }
+                            .padding(
+                                start = 4.dp,
+                                end = 4.dp,
+                                top = 2.dp,
+                                bottom = 2.dp
+                            ),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
@@ -270,7 +283,7 @@ fun LocationIdleView(
                                 .toString(), // +1 to avoid listing the drive twice
                             maxLines = 1,
                             fontWeight = FontWeight.Medium,
-                            fontSize = 14.sp
+                            fontSize = 12.sp
                         )
                     }
                     if (it != path.nameCount - 2) {
@@ -279,7 +292,8 @@ fun LocationIdleView(
                             modifier = Modifier
                                 .padding(horizontal = 6.dp)
                                 .size(10.dp),
-                            imageVector = Icons.Rounded.ArrowForwardIos, contentDescription = null,
+                            imageVector = Icons.AutoMirrored.Rounded.ArrowForwardIos,
+                            contentDescription = null,
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
@@ -337,9 +351,15 @@ fun DrivesDropdown(
     onDriveSelected: (String) -> Unit,
 ) {
 
-    DropdownMenu(modifier = modifier, expanded = expanded, onDismissRequest = onDismissRequest) {
+    DropdownMenu(
+        modifier = modifier,
+        expanded = expanded,
+        onDismissRequest = onDismissRequest
+    ) {
         drives.forEach { drive ->
-            DropdownMenuItem(text = { Text(text = drive) }, onClick = { onDriveSelected(drive) })
+            DropdownMenuItem(
+                text = { Text(text = drive) },
+                onClick = { onDriveSelected(drive) })
         }
     }
 

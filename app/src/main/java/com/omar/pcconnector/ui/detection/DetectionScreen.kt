@@ -8,13 +8,20 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Sync
-import androidx.compose.material3.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -37,21 +44,23 @@ import com.omar.pcconnector.model.PairedDevice
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetectionScreen(
-    viewModel: DetectionViewModel = hiltViewModel()
+    viewModel: DetectionViewModel = hiltViewModel(),
+    onNavigateToPairingScreen: () -> Unit
 ) {
 
     val state by viewModel.state.collectAsState()
 
     Scaffold(
-        topBar = { TopAppBar(title = {
-            Text(text = "Available Servers")
-        },
-            actions = {
-                IconButton(onClick = viewModel::refresh) {
-                    Icon(Icons.Default.Sync, contentDescription = "Refresh")
+        topBar = {
+            TopAppBar(title = {
+                Text(text = "Available Servers")
+            },
+                actions = {
+                    IconButton(onClick = viewModel::refresh) {
+                        Icon(Icons.Default.Sync, contentDescription = "Refresh")
+                    }
                 }
-            }
-        )
+            )
         }
     ) { contentPadding ->
         Log.i("STATE TYPE", state.toString())
@@ -67,7 +76,8 @@ fun DetectionScreen(
             },
             onConnectToPairedDevice = {
                 viewModel.connectToPairedDevice(it)
-            }
+            },
+            onNavigateToPairingScreen = onNavigateToPairingScreen
         )
     }
 }
@@ -79,7 +89,8 @@ fun MainContent(
     onPasswordSubmit: (String) -> Unit,
     onVerificationCancel: () -> Unit,
     onConnectToServer: (DetectedDevice) -> Unit,
-    onConnectToPairedDevice: (PairedDevice) -> Unit
+    onConnectToPairedDevice: (PairedDevice) -> Unit,
+    onNavigateToPairingScreen: () -> Unit
 ) {
     val detectedDevices = state.detectedDevices
     val pairedDevices = state.pairedDevices
@@ -92,21 +103,20 @@ fun MainContent(
 
     Box(modifier) {
 
-        LazyColumn {
+        Column {
 
-            item {
-                Header(Modifier.padding(start = 16.dp), "Paired Devices")
-            }
+
+            Header(Modifier.padding(start = 16.dp), "Paired Devices")
+
 
             if (pairedDevices.isEmpty()) {
-                item {
-                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        Text(text = "Your paired devices will appear here")
-                    }
+
+                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    Text(text = "Your paired devices will appear here")
                 }
-            }
-            else {
-                items(pairedDevices) {
+
+            } else {
+                pairedDevices.forEach {
                     DeviceRow(
                         modifier = Modifier.fillMaxWidth(),
                         deviceInfo = it.deviceInfo
@@ -114,23 +124,26 @@ fun MainContent(
                 }
             }
 
-            item {
-                Header(Modifier.padding(start = 16.dp), "Detected Devices")
-            }
+            Header(Modifier.padding(start = 16.dp), "Detected Devices")
+
 
             if (detectedDevices.isEmpty()) {
-                item {
-                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        Text(
-                            text = "No devices were found. Make sure you are on the same local network",
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 16.dp, bottom = 16.dp),
-                            fontSize = 12.sp
-                        )
-                    }
+
+                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    Text(
+                        text = "No devices were found. Make sure you are on the same local network",
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(
+                            start = 24.dp,
+                            end = 24.dp,
+                            top = 16.dp,
+                            bottom = 16.dp
+                        ),
+                        fontSize = 12.sp
+                    )
                 }
             } else {
-                items(detectedDevices) {
+                detectedDevices.forEach {
                     DeviceRow(
                         modifier = Modifier.fillMaxWidth(),
                         deviceInfo = it.deviceInfo
@@ -138,6 +151,10 @@ fun MainContent(
                 }
             }
 
+
+            Button(onClick = onNavigateToPairingScreen) {
+                Text(text = "PAIR WITH A SERVER")
+            }
         }
 
 
@@ -178,7 +195,10 @@ fun VerificationDialog(
                     keyboardActions = KeyboardActions(
                         onDone = { onPasswordSubmit(password) }
                     ),
-                    keyboardOptions = KeyboardOptions(autoCorrect = false, imeAction = ImeAction.Done)
+                    keyboardOptions = KeyboardOptions(
+                        autoCorrect = false,
+                        imeAction = ImeAction.Done
+                    )
                 )
                 Spacer(Modifier.height(4.dp))
             }

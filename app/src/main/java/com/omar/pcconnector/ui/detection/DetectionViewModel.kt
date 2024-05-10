@@ -1,21 +1,16 @@
 package com.omar.pcconnector.ui.detection
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.omar.pcconnector.data.DevicesRepository
-import com.omar.pcconnector.getRetrofit
 import com.omar.pcconnector.model.DetectedDevice
 import com.omar.pcconnector.model.PairedDevice
-import com.omar.pcconnector.network.api.AuthAPI
 import com.omar.pcconnector.network.connection.Connectivity
-import com.omar.pcconnector.operation.LoginOperation
 import com.omar.pcconnector.ui.nav.Navigator
 import com.omar.pcconnector.ui.nav.ServerScreen
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -34,7 +29,6 @@ class DetectionViewModel @Inject constructor(
         MutableStateFlow(DetectionScreenState())
 
 
-
     init {
         viewModelScope.launch {
             val pairedDevices = devicesRepository.getAllPairedDevices()
@@ -44,7 +38,8 @@ class DetectionViewModel @Inject constructor(
                     detectedDevices = detectedHosts
                         .filter { detectedDevice -> detectedDevice.deviceInfo.id !in pairedDevices.map { it.deviceInfo.id } },
                     pairedDevices = pairedDevices,
-                    isSearching = false)
+                    isSearching = false
+                )
         }
     }
 
@@ -68,30 +63,30 @@ class DetectionViewModel @Inject constructor(
     }
 
     fun onPasswordSubmit(password: String) {
-        val detectedDevice = _state.value.currentlyVerifying ?: return
-
-        _state.value = _state.value.copy(currentlyVerifying = null)
-        stateToConnecting(detectedDevice)
-
-        viewModelScope.launch {
-
-            try {
-                val connection = getRetrofit(detectedDevice.ip, detectedDevice.port)
-                val token = LoginOperation(
-                    api = connection.create(AuthAPI::class.java),
-                    password = password
-                ).start()
-
-                Log.i("LOGIN", "Logged In $token")
-                val pairedDevice = PairedDevice(detectedDevice.deviceInfo, token, false)
-                devicesRepository.storeDevice(pairedDevice)
-
-                if (!isActive) return@launch
-                navigator.navigate(ServerScreen.navigationCommand(detectedDevice.deviceInfo.id))
-            } catch (e: Exception) {
-                Log.e("DETECTION_VIEW_MODEL", "Failed to login " + e.message + e::class.java)
-            }
-        }
+//        val detectedDevice = _state.value.currentlyVerifying ?: return
+//
+//        _state.value = _state.value.copy(currentlyVerifying = null)
+//        stateToConnecting(detectedDevice)
+//
+//        viewModelScope.launch {
+//
+//            try {
+//                val connection = getRetrofit(detectedDevice.ip, detectedDevice.port)
+//                val token = LoginOperation(
+//                    api = connection.create(AuthAPI::class.java),
+//                    password = password
+//                ).start()
+//
+//                Log.i("LOGIN", "Logged In $token")
+//                val pairedDevice = PairedDevice(detectedDevice.deviceInfo, token, false)
+//                devicesRepository.storeDevice(pairedDevice)
+//
+//                if (!isActive) return@launch
+//                navigator.navigate(ServerScreen.navigationCommand(detectedDevice.deviceInfo.id))
+//            } catch (e: Exception) {
+//                Log.e("DETECTION_VIEW_MODEL", "Failed to login " + e.message + e::class.java)
+//            }
+//        }
     }
 
     fun refresh() {
@@ -103,7 +98,8 @@ class DetectionViewModel @Inject constructor(
     }
 
     private fun stateToConnecting(detectedDevice: DetectedDevice) {
-        _state.value = _state.value.copy(connectingToDeviceId = detectedDevice.deviceInfo.id)
+        _state.value =
+            _state.value.copy(connectingToDeviceId = detectedDevice.deviceInfo.id)
     }
 
     private fun refreshAvailableServers() {
@@ -118,7 +114,8 @@ class DetectionViewModel @Inject constructor(
                     detectedDevices = detectedHosts
                         .filter { detectedDevice -> detectedDevice.deviceInfo.id !in pairedDevices.map { it.deviceInfo.id } },
                     pairedDevices = pairedDevices,
-                    isSearching = false)
+                    isSearching = false
+                )
         }
 
     }

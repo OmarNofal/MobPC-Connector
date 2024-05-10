@@ -16,12 +16,13 @@ import kotlinx.coroutines.flow.StateFlow
 class ServerConnectionViewModel @AssistedInject constructor(
     networkMonitor: NetworkMonitor,
     @Assisted private val pairedDevice: PairedDevice
-): ViewModel() {
+) : ViewModel() {
 
     private val serverConnection =
         ServerConnection(
             pairedDevice.deviceInfo.id,
             pairedDevice.token,
+            pairedDevice.certificate,
             viewModelScope,
             networkMonitor.networkStatus
         )

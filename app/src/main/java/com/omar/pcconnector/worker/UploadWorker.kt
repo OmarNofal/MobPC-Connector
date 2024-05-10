@@ -39,7 +39,7 @@ class UploadWorker @AssistedInject constructor(
     @Assisted params: WorkerParameters,
     workerDao: WorkerDao,
     private val devicesRepository: DevicesRepository
-): TransferWorker(appContext, params, workerDao) {
+) : TransferWorker(appContext, params, workerDao) {
 
 
     private var state: UploadOperationState = UploadOperationState.Initializing
@@ -55,7 +55,8 @@ class UploadWorker @AssistedInject constructor(
     override val notificationIcon: Int
         get() = R.drawable.baseline_cloud_upload_24
 
-    override fun isInitializing(): Boolean = state is UploadOperationState.Initializing
+    override fun isInitializing(): Boolean =
+        state is UploadOperationState.Initializing
 
     override fun notificationTitle(): String {
         return when (state) {
@@ -88,22 +89,32 @@ class UploadWorker @AssistedInject constructor(
 
         Log.i(TAG, "Worker started")
 
-        val directoryFlags = inputData.getBooleanArray("directory_flags") ?:
-            return setToFailureAndReturn(WorkerException.UNKNOWN_EXCEPTION)
+        val directoryFlags = inputData.getBooleanArray("directory_flags")
+            ?: return setToFailureAndReturn(WorkerException.UNKNOWN_EXCEPTION)
 
-        val documentFiles = inputData.getStringArray("uris")?.toDocumentFiles(directoryFlags.toTypedArray()) ?:
-            return setToFailureAndReturn(WorkerException.UNKNOWN_EXCEPTION)
+        val documentFiles = inputData.getStringArray("uris")
+            ?.toDocumentFiles(directoryFlags.toTypedArray())
+            ?: return setToFailureAndReturn(WorkerException.UNKNOWN_EXCEPTION)
 
-        val uploadPath = inputData.getString("path") ?:
-            return setToFailureAndReturn(WorkerException.UNKNOWN_EXCEPTION)
+        val uploadPath =
+            inputData.getString("path") ?: return setToFailureAndReturn(
+                WorkerException.UNKNOWN_EXCEPTION
+            )
 
-        val deviceId = inputData.getString("device_id") ?: return setToFailureAndReturn(WorkerException.UNKNOWN_EXCEPTION)
+        val deviceId =
+            inputData.getString("device_id") ?: return setToFailureAndReturn(
+                WorkerException.UNKNOWN_EXCEPTION
+            )
 
 
         val deviceEntity = devicesRepository.getPairedDevice(deviceId)
-        val device = Connectivity.findDevice(deviceId) ?: return setToFailureAndReturn(WorkerException.IO_EXCEPTION)
+        val device =
+            Connectivity.findDevice(deviceId) ?: return setToFailureAndReturn(
+                WorkerException.IO_EXCEPTION
+            )
 
-        val connection = device.toConnection(deviceEntity.token)
+        val connection =
+            device.toConnection(deviceEntity.token, deviceEntity.certificate)
 
         val api = connection.retrofit.fileSystemApi()
 
@@ -124,7 +135,9 @@ class UploadWorker @AssistedInject constructor(
                 }
                 try {
                     setForeground(getForegroundInfo())
-                } catch (e: Exception) { return@collect }
+                } catch (e: Exception) {
+                    return@collect
+                }
             }
         }
 
@@ -136,17 +149,14 @@ class UploadWorker @AssistedInject constructor(
             withContext(NonCancellable) {
                 setToCancelled()
             }
-        }
-        catch (e: IOException) {
+        } catch (e: IOException) {
             Log.e(TAG, e.stackTraceToString())
             Log.e(TAG, "Upload failed ${e.message}")
             return setToFailureAndReturn(WorkerException.IO_EXCEPTION)
-        }
-        catch (e: FileNotFoundException) {
+        } catch (e: FileNotFoundException) {
             Log.e(TAG, "Upload failed ${e.message}")
             return setToFailureAndReturn(WorkerException.CREATE_FILE_EXCEPTION)
-        }
-        catch (e: Exception) {
+        } catch (e: Exception) {
             Log.e(TAG, "Upload failed ${e.message}")
             return setToFailureAndReturn(WorkerException.UNKNOWN_EXCEPTION)
         } finally {
@@ -169,10 +179,17 @@ class UploadWorker @AssistedInject constructor(
         )
     }
 
-    private fun Array<String>.toDocumentFiles(directoryFlags: Array<Boolean>) = zip(directoryFlags) { uri, flag ->
-        if (flag) return@zip DocumentFile.fromTreeUri(applicationContext, uri.toUri()) !!
-        else return@zip DocumentFile.fromSingleUri(applicationContext, uri.toUri()) !!
-    }
+    private fun Array<String>.toDocumentFiles(directoryFlags: Array<Boolean>) =
+        zip(directoryFlags) { uri, flag ->
+            if (flag) return@zip DocumentFile.fromTreeUri(
+                applicationContext,
+                uri.toUri()
+            )!!
+            else return@zip DocumentFile.fromSingleUri(
+                applicationContext,
+                uri.toUri()
+            )!!
+        }
 
     companion object {
         const val TAG = "Upload Worker"

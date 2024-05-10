@@ -19,6 +19,7 @@ data class DeviceInfo(
 data class PairedDevice(
     val deviceInfo: DeviceInfo,
     val token: String,
+    val certificate: String,
     val autoConnect: Boolean
 )
 
@@ -31,10 +32,11 @@ data class DetectedDevice(
     val port: Int
 ) {
 
-    fun toConnection(token: String): Connection = Connection(
-        deviceInfo.name,
-        ip,
-        port,
-        getRetrofit(ip, port, token)
-    )
+    fun toConnection(token: String, certificate: String): Connection =
+        Connection(
+            deviceInfo.name,
+            ip,
+            port,
+            getRetrofit(ip, port, token, certificate)
+        )
 }

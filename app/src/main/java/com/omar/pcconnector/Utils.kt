@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.unit.Dp
+import com.omar.pcconnector.network.api.clientForSSLCertificate
 import com.omar.pcconnector.network.api.secureClient
 import com.omar.pcconnector.network.connection.TokenInterceptor
 import kotlinx.coroutines.Dispatchers
@@ -86,11 +87,21 @@ fun getRetrofit(ip: String, port: Int): Retrofit {
         .build()
 }
 
-fun getRetrofit(ip: String, port: Int, token: String) =
-    Retrofit.Builder().client(secureClient.addInterceptor(TokenInterceptor(token)).build()).baseUrl("https://$ip:$port")
+fun getRetrofit(
+    ip: String,
+    port: Int,
+    token: String,
+    certificate: String
+): Retrofit =
+    Retrofit.Builder()
+        .client(
+            clientForSSLCertificate(certificate, ip)
+                .newBuilder()
+                .addInterceptor(TokenInterceptor(token)).build()
+        )
+        .baseUrl("https://$ip:$port")
         .addConverterFactory(GsonConverterFactory.create())
         .build()
-
 
 
 /**
@@ -130,7 +141,8 @@ fun Modifier.drawAnimatedBorder(
         .drawWithCache {
             val strokeWidthPx = strokeWidth.toPx()
 
-            val outline: Outline = shape.createOutline(size, layoutDirection, this)
+            val outline: Outline =
+                shape.createOutline(size, layoutDirection, this)
 
             onDrawWithContent {
                 // This is actual content of the Composable that this modifier is assigned to

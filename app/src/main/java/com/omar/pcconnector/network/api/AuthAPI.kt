@@ -11,9 +11,13 @@ typealias Token = String
 
 interface AuthAPI {
 
-    @POST("/login")
+    @POST("/pair")
     @FormUrlEncoded
-    suspend fun login(@Field("password") password: String): GeneralResponse<LoginResponse>
+    suspend fun pair(
+        @Field("pairingToken") pairingToken: String,
+        @Field("os") os: String,
+        @Field("modelName") modelName: String
+    ): GeneralResponse<LoginResponse>
 
     @GET("/verifyToken")
     suspend fun verifyToken(@Query("token") token: String): GeneralResponse<VerifyTokenResponse>

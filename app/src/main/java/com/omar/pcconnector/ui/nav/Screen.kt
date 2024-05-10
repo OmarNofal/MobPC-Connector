@@ -21,6 +21,7 @@ sealed class Screen {
         const val DETECTION_SCREEN = "detection"
         const val SERVER_SCREEN = "server/{id}"
         const val IMAGE_SCREEN = "image/{path}/{ip}/{port}/{token}"
+        const val PAIRING_SCREEN = "pairing"
     }
 
 }

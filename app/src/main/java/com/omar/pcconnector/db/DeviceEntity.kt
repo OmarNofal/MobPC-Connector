@@ -13,6 +13,8 @@ data class DeviceEntity(
 
     val token: String,
 
+    val certificate: String,
+
     val os: String,
 
     val autoConnect: Boolean

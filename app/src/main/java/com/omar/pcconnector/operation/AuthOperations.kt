@@ -7,26 +7,27 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 
-class LoginOperation(
-    private val api: AuthAPI,
-    private val password: String
-): Operation<Token>() {
-
-    override val name: String
-        get() = "Login operation"
-    override val operationDescription: String
-        get() = "Logging in"
-
-    override suspend fun start(): Token = withContext(Dispatchers.IO) {
-        api.login(password).getDataOrThrow()?.token ?: throw IllegalArgumentException("Empty token")
-    }
-
-}
+//class LoginOperation(
+//    private val api: AuthAPI,
+//    private val password: String
+//) : Operation<Token>() {
+//
+//    override val name: String
+//        get() = "Login operation"
+//    override val operationDescription: String
+//        get() = "Logging in"
+//
+//    override suspend fun start(): Token = withContext(Dispatchers.IO) {
+//        api.pair(password).getDataOrThrow()?.token
+//            ?: throw IllegalArgumentException("Empty token")
+//    }
+//
+//}
 
 class VerifyToken(
     private val api: AuthAPI,
     private val token: Token
-): Operation<Boolean>() {
+) : Operation<Boolean>() {
 
     override val name: String
         get() = "Login operation"

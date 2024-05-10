@@ -194,7 +194,11 @@ fun FileSystemTree(
         Column {
 
 
-            var isSearchFilterEnabled by remember(currentDirectory) { mutableStateOf(false) }
+            var isSearchFilterEnabled by remember(currentDirectory) {
+                mutableStateOf(
+                    false
+                )
+            }
             var searchFilter by remember(currentDirectory) { mutableStateOf("") }
 
             LocationBar(
@@ -204,7 +208,9 @@ fun FileSystemTree(
                 path = currentDirectory,
                 drives = drives,
                 onPathSelected = onPathChanged,
-                toggleSearchFilter = { isSearchFilterEnabled = !isSearchFilterEnabled },
+                toggleSearchFilter = {
+                    isSearchFilterEnabled = !isSearchFilterEnabled
+                },
                 isSearchFilterEnabled,
                 searchFilter,
                 { searchFilter = it }
@@ -212,21 +218,25 @@ fun FileSystemTree(
             Divider(Modifier.fillMaxWidth())
 
 
-            val fsState = remember(currentDirectory, directoryStructure, isLoading) {
-                FileSystemTreeState(
-                    currentDirectory,
-                    directoryStructure,
-                    isLoading
-                )
-            }
+            val fsState =
+                remember(currentDirectory, directoryStructure, isLoading) {
+                    FileSystemTreeState(
+                        currentDirectory,
+                        directoryStructure,
+                        isLoading
+                    )
+                }
             AnimatedContent(
                 targetState = fsState, label = "",
-                transitionSpec = { createTransition() }
+                //transitionSpec = { createTransition() }
             ) { fsState ->
 
                 val directory = fsState.content
 
-                val directoryItems = remember(key1 = searchFilter, key2 = isSearchFilterEnabled) {
+                val directoryItems = remember(
+                    key1 = searchFilter,
+                    key2 = isSearchFilterEnabled
+                ) {
                     if (isSearchFilterEnabled) directory.filter {
                         it.name.contains(
                             searchFilter,
@@ -241,7 +251,9 @@ fun FileSystemTree(
                 else
                     LazyColumn(Modifier.fillMaxSize(), state = listState) {
 
-                        items(directoryItems, key = { it.name + it.creationDateMs }) {
+                        items(
+                            directoryItems,
+                            key = { it.name + it.creationDateMs }) {
                             ResourceRow(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -256,7 +268,12 @@ fun FileSystemTree(
                                     )
                                 },
                                 onDelete = { onDelete(it) },
-                                onDownload = { file -> onResourceDownload(it, file) },
+                                onDownload = { file ->
+                                    onResourceDownload(
+                                        it,
+                                        file
+                                    )
+                                },
                                 onCopied = { onResourceCopied(it) }
                             )
 
@@ -393,11 +410,18 @@ fun ResourceRow(
                 onClick = { isMenuOpen = !isMenuOpen },
                 modifier = Modifier.fillMaxHeight()
             ) {
-                Icon(imageVector = Icons.Rounded.MoreVert, contentDescription = "More Options")
+                Icon(
+                    imageVector = Icons.Rounded.MoreVert,
+                    contentDescription = "More Options"
+                )
             }
             ActionsDropdownMenu(
                 actions = listOf(
-                    Actions.downloadAction { downloadDirPickerContract.launch(null) },
+                    Actions.downloadAction {
+                        downloadDirPickerContract.launch(
+                            null
+                        )
+                    },
                     Actions.copyAction(onCopied),
                     Actions.renameAction { showRenameDialog = true },
                     Actions.deleteAction { showDeleteDialog = true },
@@ -437,7 +461,11 @@ fun ResourceIcon(
             tint = MaterialTheme.colorScheme.onSurface
         )
     } else if (resource.path.extension.lowercase() in supportedImageExtension) {
-        ImagePreviewIcon(modifier = modifier.clip(RoundedCornerShape(4.dp)), resource = resource)
+        ImagePreviewIcon(
+            modifier = modifier
+                .clip(RoundedCornerShape(4.dp)),
+            resource = resource
+        )
     } else {
         Icon(
             painter = painterResource(id = iconForExtension(resource.path.extension)),

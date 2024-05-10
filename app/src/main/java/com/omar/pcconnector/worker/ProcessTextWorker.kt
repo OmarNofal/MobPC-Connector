@@ -5,7 +5,6 @@ import android.util.Log
 import android.widget.Toast
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
-import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
 import com.omar.pcconnector.data.DevicesRepository
 import com.omar.pcconnector.network.connection.Connection
@@ -23,7 +22,7 @@ class ProcessTextWorker @AssistedInject constructor(
     @Assisted appContext: Context,
     @Assisted params: WorkerParameters,
     private val devicesRepository: DevicesRepository,
-): CoroutineWorker(appContext, params) {
+) : CoroutineWorker(appContext, params) {
 
     override suspend fun doWork(): Result {
 
@@ -37,10 +36,14 @@ class ProcessTextWorker @AssistedInject constructor(
             data == null
             ||
             deviceId == null
-            ) {
+        ) {
             Log.e("PROCESS WORKER", "Invalid Params bruv")
             withContext(Dispatchers.Main) {
-                Toast.makeText(applicationContext, "Invalid arguments", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    applicationContext,
+                    "Invalid arguments",
+                    Toast.LENGTH_SHORT
+                ).show()
             }
             return Result.failure()
         }
@@ -52,6 +55,7 @@ class ProcessTextWorker @AssistedInject constructor(
                 ACTION_BROWSER -> {
                     OpenLinkOperation(api, data, false).start()
                 }
+
                 ACTION_COPY -> {
                     CopyToClipboardOperation(api, data).start()
                 }
@@ -59,7 +63,11 @@ class ProcessTextWorker @AssistedInject constructor(
         } catch (e: Exception) {
             Log.e("PROCESS WORKER", e.stackTraceToString())
             withContext(Dispatchers.Main) {
-                Toast.makeText(applicationContext, "Device offline", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    applicationContext,
+                    "Device offline",
+                    Toast.LENGTH_SHORT
+                ).show()
             }
             return Result.failure()
         }
@@ -72,7 +80,8 @@ class ProcessTextWorker @AssistedInject constructor(
         }
 
         withContext(Dispatchers.Main) {
-            Toast.makeText(applicationContext, successText, Toast.LENGTH_SHORT).show()
+            Toast.makeText(applicationContext, successText, Toast.LENGTH_SHORT)
+                .show()
         }
         return Result.success()
     }
@@ -82,7 +91,7 @@ class ProcessTextWorker @AssistedInject constructor(
         val device = devicesRepository.getPairedDevice(deviceId)
         val connection = Connectivity.findDevice(deviceId)
 
-        return connection!!.toConnection(device.token)
+        return connection!!.toConnection(device.token, device.certificate)
     }
 
 

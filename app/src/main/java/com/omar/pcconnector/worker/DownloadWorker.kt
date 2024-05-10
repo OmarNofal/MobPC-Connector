@@ -35,9 +35,10 @@ class DownloadWorker @AssistedInject constructor(
     @Assisted appContext: Context, @Assisted params: WorkerParameters,
     workerDao: WorkerDao,
     private val devicesRepository: DevicesRepository,
-): TransferWorker(appContext, params, workerDao) {
+) : TransferWorker(appContext, params, workerDao) {
 
-    private var state: DownloadOperationState = DownloadOperationState.Initializing
+    private var state: DownloadOperationState =
+        DownloadOperationState.Initializing
     override val workerType: WorkerType
         get() = WorkerType.DOWNLOAD
 
@@ -51,7 +52,8 @@ class DownloadWorker @AssistedInject constructor(
 
     override val notificationIcon: Int = R.drawable.baseline_cloud_download_24
 
-    override fun isInitializing(): Boolean = state is DownloadOperationState.Initializing
+    override fun isInitializing(): Boolean =
+        state is DownloadOperationState.Initializing
 
     override fun notificationTitle(): String {
         return when (state) {
@@ -63,34 +65,44 @@ class DownloadWorker @AssistedInject constructor(
     override fun totalSize(): Long {
         return when (state) {
             is DownloadOperationState.Initializing -> 1L
-            is DownloadOperationState.Downloading -> (state as? DownloadOperationState.Downloading)?.totalBytes ?: 0
+            is DownloadOperationState.Downloading -> (state as? DownloadOperationState.Downloading)?.totalBytes
+                ?: 0
         }
     }
 
     override fun transferredSize(): Long {
         return when (state) {
             is DownloadOperationState.Initializing -> 1L
-            is DownloadOperationState.Downloading -> (state as? DownloadOperationState.Downloading)?.downloadedBytes ?: 0
+            is DownloadOperationState.Downloading -> (state as? DownloadOperationState.Downloading)?.downloadedBytes
+                ?: 0
         }
     }
 
 
     override suspend fun doWork(): Result {
 
-        val pathOnServer = inputData.getString("pathOnServer") ?:
-            return setToFailureAndReturn(WorkerException.UNKNOWN_EXCEPTION)
+        val pathOnServer =
+            inputData.getString("pathOnServer") ?: return setToFailureAndReturn(
+                WorkerException.UNKNOWN_EXCEPTION
+            )
 
-        val downloadPathUri = inputData.getString("downloadUri")?.toUri() ?:
-            return setToFailureAndReturn(WorkerException.UNKNOWN_EXCEPTION)
+        val downloadPathUri = inputData.getString("downloadUri")?.toUri()
+            ?: return setToFailureAndReturn(WorkerException.UNKNOWN_EXCEPTION)
 
-        val deviceId = inputData.getString("device_id") ?:
-            return setToFailureAndReturn(WorkerException.UNKNOWN_EXCEPTION)
+        val deviceId =
+            inputData.getString("device_id") ?: return setToFailureAndReturn(
+                WorkerException.UNKNOWN_EXCEPTION
+            )
 
 
         val deviceEntity = devicesRepository.getPairedDevice(deviceId)
-        val device = Connectivity.findDevice(deviceId) ?: return setToFailureAndReturn(WorkerException.IO_EXCEPTION)
+        val device =
+            Connectivity.findDevice(deviceId) ?: return setToFailureAndReturn(
+                WorkerException.IO_EXCEPTION
+            )
 
-        val connection = device.toConnection(deviceEntity.token)
+        val connection =
+            device.toConnection(deviceEntity.token, deviceEntity.certificate)
 
         val api = connection.retrofit.fileSystemApi()
 
@@ -106,12 +118,19 @@ class DownloadWorker @AssistedInject constructor(
             downloadOperation.progress.collect {
                 state = it
                 when (it) {
-                    is DownloadOperationState.Initializing -> { setToLoading() }
-                    is DownloadOperationState.Downloading -> { updateProgressDownloading(it) }
+                    is DownloadOperationState.Initializing -> {
+                        setToLoading()
+                    }
+
+                    is DownloadOperationState.Downloading -> {
+                        updateProgressDownloading(it)
+                    }
                 }
                 try {
                     setForeground(getForegroundInfo())
-                } catch (e: Exception) { return@collect }
+                } catch (e: Exception) {
+                    return@collect
+                }
             }
         }
 
@@ -119,26 +138,21 @@ class DownloadWorker @AssistedInject constructor(
         try {
             downloadOperation.start()
             setToFinished()
-        }
-        catch(e: CancellationException) {
+        } catch (e: CancellationException) {
             Log.e(TAG, "Download was cancelled")
             withContext(NonCancellable) {
                 setToCancelled()
             }
-        }
-        catch (e: IOException) {
+        } catch (e: IOException) {
             Log.e(TAG, e.stackTraceToString())
             return setToFailureAndReturn(WorkerException.IO_EXCEPTION)
-        }
-        catch (e: FileNotFoundException) {
+        } catch (e: FileNotFoundException) {
             Log.e(TAG, e.stackTraceToString())
             return setToFailureAndReturn(WorkerException.CREATE_FILE_EXCEPTION)
-        }
-        catch (e: Exception) {
+        } catch (e: Exception) {
             Log.e(TAG, e.stackTraceToString())
             return setToFailureAndReturn(WorkerException.UNKNOWN_EXCEPTION)
-        }
-        finally {
+        } finally {
             collectionJob.cancel()
         }
 

@@ -43,15 +43,17 @@ class DevicesRepository @Inject constructor(
             this.deviceInfo.id,
             this.deviceInfo.name,
             this.token,
+            this.certificate,
             this.deviceInfo.os,
             this.autoConnect
         )
 
 
     private fun DeviceEntity.toPairedDevice() =
-         PairedDevice(
-             deviceInfo = DeviceInfo(id, name, os),
-             token = token,
-             autoConnect = autoConnect
-         )
+        PairedDevice(
+            deviceInfo = DeviceInfo(id, name, os),
+            token = token,
+            autoConnect = autoConnect,
+            certificate = certificate
+        )
 }
