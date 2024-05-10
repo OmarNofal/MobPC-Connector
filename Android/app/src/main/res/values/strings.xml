@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">PC Connector</string>
+    <string name="title_activity_base_process_text">BaseProcessTextActivity</string>
+</resources>

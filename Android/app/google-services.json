@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "518476452024",
+    "firebase_url": "https://pc-connector-2557a-default-rtdb.europe-west1.firebasedatabase.app",
+    "project_id": "pc-connector-2557a",
+    "storage_bucket": "pc-connector-2557a.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:518476452024:android:e305117fc42fbe21bf644d",
+        "android_client_info": {
+          "package_name": "com.omar.pcconnector"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "518476452024-rmu3bojjcsk0db4r7tip48boh0gmbhrt.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBQsIt7VjX3Ug5kAk9Fmt7tGhJpnisZNPg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "518476452024-rmu3bojjcsk0db4r7tip48boh0gmbhrt.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
