@@ -184,6 +184,26 @@ export default class AuthorizationManager {
         }
     }
 
+    createFileAccessToken = (path: string) => {
+        const tokenPayload = {
+            path: path,
+        }
+
+        return jwt.sign(tokenPayload, this.secret, { expiresIn: '1d' })
+    }
+
+    getPathFromFileAccessToken = (token: string): undefined | string => {
+
+        let payload: any
+        try {
+            payload = jwt.verify(token, this.secret)
+        } catch (e) {
+            return undefined
+        }
+
+        return payload.path
+    }
+
     /**Saves the secret to the filesystem */
     private saveSecret = async (hash: string) => {
         const buffer = Buffer.from(hash, 'utf-8')

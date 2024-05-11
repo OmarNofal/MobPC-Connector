@@ -2,7 +2,6 @@ import dgram from 'node:dgram'
 import os from 'os'
 import { BehaviorSubject, Subscription, distinctUntilKeyChanged } from 'rxjs'
 import pkg from '../../package.json'
-import { getUUID } from '../storage'
 import { DetectionServerConfiguration, ServerInformation } from '../model/preferences'
 import { DetectionServerState } from '../model/detectionServerState'
 

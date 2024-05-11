@@ -1,5 +1,4 @@
-import InfoOutlined from '@mui/icons-material/InfoOutlined'
-import { Button, Card, Divider, PaletteMode, Stack, SxProps, Theme, Tooltip, Typography, useTheme } from '@mui/material'
+import { Button, Card, Divider, SxProps, Theme, Typography, useTheme } from '@mui/material'
 import { ServerScreenInitializedState } from '../../screens/server/ServerScreenViewModel'
 import InformationRow from './informationRow'
 
@@ -10,7 +9,6 @@ type ServerInformationProps = {
 }
 
 export default function ServerInformationCard(props: ServerInformationProps) {
-    
     const name = props.serverState.name
     const isDarkTheme = useTheme().palette.mode == 'dark'
 
@@ -39,8 +37,8 @@ export default function ServerInformationCard(props: ServerInformationProps) {
             <Divider variant='fullWidth' />
 
             <InformationRow
-                title='HTTPS Port'
-                value={props.serverState.httpsPort.toString()}
+                title='Port'
+                value={props.serverState.port.toString()}
                 sx={{
                     width: '100%',
                     marginTop: '24px',
@@ -48,19 +46,6 @@ export default function ServerInformationCard(props: ServerInformationProps) {
                 }}
             />
 
-            <Divider variant='fullWidth' />
-
-            <InformationRow
-                title='HTTP Port'
-                value={props.serverState.httpPort.toString()}
-                sx={{
-                    width: '100%',
-                    marginTop: '24px',
-                }}
-                info='Beacuse the HTTPS port uses a self-signed SSL certificate, some external apps (like VLC Media Player) will refuse to open any URL through this port.
-                This HTTP port is used to allow you to open files on external apps on your device, such as streaming 
-                movies, viewing PDF documents, etc..'
-            />
             <Divider variant='fullWidth' />
 
             <InformationRow

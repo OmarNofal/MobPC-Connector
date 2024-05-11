@@ -4,8 +4,7 @@ export type ServerState = 'running' | 'closed'
 
 export type MainServerInitialized = {
     state: ServerState,
-    httpsPort: number,
-    httpPort: number,
+    port: number,
     serverName: string
 }
 

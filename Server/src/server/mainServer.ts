@@ -1,11 +1,13 @@
 import express from 'express'
 import http from 'http'
 import https from 'https'
+import net from 'net'
 import path from 'path'
 import { BehaviorSubject, fromEvent, map, merge } from 'rxjs'
 import AuthorizationManager from '../auth/auth'
-import CredentialsManager from '../credentials/CredentialsManager'
+import credentialsManager from '../credentials/CredentialsManager'
 import { MainServerState } from '../model/mainServerState'
+import { ServerInformation } from '../model/preferences'
 import createAuthMiddlewareFunction from '../routes/authMiddleware'
 import addAuthRoutes from '../routes/authRoutes'
 import addBrowserRoutes from '../routes/browserRoutes'
@@ -17,8 +19,7 @@ import FileSystemWatcherService from '../routes/fsWatcher'
 import addOSRoutes from '../routes/osRoutes'
 import addStatusRoutes from '../routes/statusRoutes'
 import addUploadRoutes from '../routes/uploadRoutes'
-import { getUUID } from '../storage'
-import credentialsManager from '../credentials/CredentialsManager'
+import createProxyServer from './proxy'
 
 /**
  * This is the class which manages the server
@@ -33,17 +34,25 @@ import credentialsManager from '../credentials/CredentialsManager'
  */
 export default class MainServer {
     /**
-     * The http server that serves unencrypted content
-     * to external apps. These apps normally reject
-     * loading content over self-signed certificate,
-     * and so this http server mitigates this issue
+     * This is the proxy server which forwards
+     * the request to the http or https server depending on the request.
+     *
+     * This server is used so that we need to listen only on one port instead of two
      */
-    private httpsServer: https.Server
+    private proxyServer: net.Server
 
     /**
      * The main `https` server which the client devices
      * mainly interact with. It uses a self-signed certificate
      * to secure communication.
+     */
+    private httpsServer: https.Server
+
+    /**
+     * The http server that serves unencrypted content
+     * to external apps. These apps normally reject
+     * loading content over self-signed certificate,
+     * and so this http server mitigates this issue
      */
     private httpServer: http.Server
 
@@ -61,12 +70,22 @@ export default class MainServer {
     state: BehaviorSubject<MainServerState>
 
     /**
+     * The current information of the server
+     */
+    serverInformation: BehaviorSubject<ServerInformation>
+
+    /**
      *
      * @param appDirectory The directory of the app configuration files. This is used
      * to create a folder to store temporarily uploaded files
      * @param authManager An authentication manager to check for authentication and authorization
      */
-    constructor(appDirectory: string, authManager: AuthorizationManager) {
+    constructor(
+        appDirectory: string,
+        authManager: AuthorizationManager,
+        serverInformation: BehaviorSubject<ServerInformation>
+    ) {
+        this.serverInformation = serverInformation
         this.setupServers(appDirectory, authManager)
         this.setupObservables()
     }
@@ -77,8 +96,7 @@ export default class MainServer {
      * Note: The `fsWatcherServer` is always running and waiting to upgrade connections
      */
     run = () => {
-        this.httpsServer.listen(6543)
-        this.httpServer.listen(6544)
+        this.proxyServer.listen(6543)
     }
 
     /**
@@ -87,43 +105,40 @@ export default class MainServer {
      */
     stop = () => {
         this.httpServer.closeAllConnections()
-        this.httpServer.close()
-
         this.httpsServer.closeAllConnections()
-        this.httpsServer.close()
+
+        this.proxyServer.close()
     }
 
     /**
      * @returns true if the server is listening for connections
      */
     isRunning = () => {
-        return this.httpsServer.listening
+        return this.proxyServer.listening
     }
 
     setupObservables = () => {
-        const closeEvent = fromEvent(this.httpsServer, 'close').pipe(map(() => 'closed'))
-        const openEvent = fromEvent(this.httpsServer, 'listening').pipe(map(() => 'listening'))
-        const errorEvent = fromEvent(this.httpsServer, 'error').pipe(map(() => 'error'))
+        const closeEvent = fromEvent(this.proxyServer, 'close').pipe(map(() => 'closed'))
+        const openEvent = fromEvent(this.proxyServer, 'listening').pipe(map(() => 'listening'))
+        const errorEvent = fromEvent(this.proxyServer, 'error').pipe(map(() => 'error'))
 
         // holds the current state of the express server (opened or closed or error)
-        const httpsServerObservable = merge(closeEvent, openEvent, errorEvent)
+        const proxyServerObservable = merge(closeEvent, openEvent, errorEvent)
 
         this.state = new BehaviorSubject<MainServerState>('init')
-        httpsServerObservable
+        proxyServerObservable
             .pipe(
                 map((val): MainServerState => {
                     if (val == 'listening') {
                         return {
                             state: 'running',
-                            httpPort: 6544,
-                            httpsPort: 6543,
+                            port: 6543,
                             serverName: 'Omar Walid',
                         }
                     } else {
                         return {
                             state: 'closed',
-                            httpPort: 6544,
-                            httpsPort: 6543,
+                            port: 6543,
                             serverName: 'Omar Walid',
                         }
                     }
@@ -133,16 +148,30 @@ export default class MainServer {
     }
 
     private setupServers = (appDirectory: string, authManager: AuthorizationManager) => {
+        this.httpsServer = this.createHTTPSServer(appDirectory, authManager)
+        this.httpServer = this.createHTTPServer(authManager)
+
+        this.fsWatcherServer = new FileSystemWatcherService()
+
+        this.httpsServer.on('upgrade', (request, socket, head) => {
+            console.log('Client wants to watch -___-')
+            this.fsWatcherServer.handleIncomingConnection(request, socket, head)
+        })
+
+        this.proxyServer = createProxyServer(this.httpServer, this.httpsServer)
+    }
+
+    private createHTTPSServer = (appDirectory: string, authManager: AuthorizationManager) => {
         const authMiddleware = createAuthMiddlewareFunction(authManager.isValidDeviceToken)
 
         const app = express()
         app.use(express.urlencoded({ extended: true }))
 
-        addDownloadRoutes(app, authMiddleware)
+        addDownloadRoutes(app, authMiddleware, authManager.createFileAccessToken, authManager.getPathFromFileAccessToken)
         addDirectoryRoutes(app, authMiddleware)
         addClipboardRoutes(app, authMiddleware)
         addBrowserRoutes(app, authMiddleware)
-        addStatusRoutes(app, getUUID)
+        addStatusRoutes(app, () => this.serverInformation.value.uuid)
         addOSRoutes(app, authMiddleware)
         addFileOperationsRoutes(app, authMiddleware)
         addAuthRoutes(app, authManager)
@@ -151,15 +180,22 @@ export default class MainServer {
         addUploadRoutes(app, uploadTemporaryPath, authMiddleware)
 
         const credentials = this.getServerCredentials()
-        this.httpServer = http.createServer(app)
-        this.httpsServer = https.createServer({ key: credentials.privateKey, cert: credentials.cert }, app)
-        this.fsWatcherServer = new FileSystemWatcherService()
+        const httpsServer = https.createServer({ key: credentials.privateKey, cert: credentials.cert }, app)
 
-        //this.registerCallbacks()
-        this.httpServer.on('upgrade', (request, socket, head) => {
-            console.log('Client wants to watch -___-')
-            this.fsWatcherServer.handleIncomingConnection(request, socket, head)
-        })
+        return httpsServer
+    }
+
+    private createHTTPServer = (authManager: AuthorizationManager) => {
+        const authMiddleware = createAuthMiddlewareFunction(authManager.isValidDeviceToken)
+
+        const app = express()
+
+        app.use(express.urlencoded({ extended: true }))
+        addDownloadRoutes(app, authMiddleware, authManager.createFileAccessToken, authManager.getPathFromFileAccessToken)
+
+        const httpServer = http.createServer(app)
+
+        return httpServer
     }
 
     private getServerCredentials = credentialsManager.getCredentials

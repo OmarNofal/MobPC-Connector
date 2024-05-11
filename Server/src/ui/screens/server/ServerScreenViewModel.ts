@@ -8,9 +8,7 @@ type Loading = 'loading'
 export type ServerScreenInitializedState = {
     isRunning: boolean
     name: string
-    httpsPort: number
-    httpPort: number
-
+    port: number
     networkInterfaces: NetworkInterface[]
 }
 
@@ -42,16 +40,14 @@ export class ServerScreenViewModel {
                 if (value.state == 'closed')
                     return {
                         isRunning: false,
-                        httpPort: value.httpPort,
-                        httpsPort: value.httpsPort,
+                        port: value.port,
                         networkInterfaces: [],
                         name: value.serverName,
                     }
                 else {
                     return {
                         isRunning: true,
-                        httpPort: value.httpPort,
-                        httpsPort: value.httpsPort,
+                        port: value.port,
                         networkInterfaces: [],
                         name: value.serverName,
                     }
@@ -74,7 +70,7 @@ export class ServerScreenViewModel {
             .subscribe(this.state)
 
         this.mainObservableConnection = connection
-    } 
+    }
 
     toggleServer = () => {
         const isRunning = this.state.value != 'loading' && this.state.value.isRunning

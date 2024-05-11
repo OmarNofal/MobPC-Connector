@@ -6,7 +6,6 @@ import { DetectionServerState } from './model/detectionServerState'
 import PreferencesManager from './preferences/PreferencesManager'
 import DetectionServer from './server/detectionServer'
 import MainServer from './server/mainServer'
-import storage from './storage'
 import { mapBehaviorSubject } from './utilities/rxUtils'
 import AppWindow from './window/appWindow'
 
@@ -73,7 +72,7 @@ export default class Application {
         )
         let firebaseService = new FirebaseIPService(firebaseServerConfig)
 
-        const mainServer = new MainServer(appDirectory, authManager)
+        const mainServer = new MainServer(appDirectory, authManager, serverInformation)
 
         this.authManager = authManager
         this.prefsManager = preferencesManager
@@ -88,8 +87,6 @@ export default class Application {
         app.whenReady().then(() => {
             this.registerIpcEvents()
             this.registerEvents()
-
-            storage.init()
 
             ipcMain.on('toggle-server', () => {
                 if (detectionServer.state.value == DetectionServerState.RUNNING) detectionServer.close()
