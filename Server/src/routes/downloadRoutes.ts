@@ -13,7 +13,7 @@ require('dotenv').config()
 
 function handleDownloadFile(file_path: string, res: Response) {
     
-    console.log("Somebody downloads " + file_path)
+    console.log("Downloading: " + file_path)
 
     const fileName = path.basename(file_path)
     res.set('Content-Disposition', `inline; filename="${fileName}"`);
@@ -122,8 +122,6 @@ function getFileAccessTokenController(req: Request, res: Response) {
 }
 
 function getFileExternalController(req: Request, res: Response) {
-
-    console.log(req)
 
     const token = req.query.token;
     const userPath = req.query.path;
