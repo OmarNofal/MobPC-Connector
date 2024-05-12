@@ -9,12 +9,12 @@ import MainServer from './server/mainServer'
 import { mapBehaviorSubject } from './utilities/rxUtils'
 import AppWindow from './window/appWindow'
 
-import clipboardImage from './ui/static/clipboard.png'
-import { START_SERVER_COMMAND, STOP_SERVER_COMMAND } from './bridges/mainServerBridge'
-import observeNetworkInterfaces, { NetworkInterface } from './utilities/networkInterfaces'
 import { BehaviorSubject } from 'rxjs'
+import trayIcon from '../logo/logo_small.png'
 import { DELETE_DEVICE, DEVICE_CONNECTED_EVENT, GENERATE_PAIRING_PAYLOAD } from './bridges/authBridges'
+import { START_SERVER_COMMAND, STOP_SERVER_COMMAND } from './bridges/mainServerBridge'
 import generatePairingPayload from './service/pairing/pairing'
+import observeNetworkInterfaces, { NetworkInterface } from './utilities/networkInterfaces'
 
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string
@@ -70,7 +70,7 @@ export default class Application {
             preferencesManager.currentPreferences,
             (v) => v.firebaseServicePrefs
         )
-        let firebaseService = new FirebaseIPService(firebaseServerConfig)
+        let firebaseService = new FirebaseIPService(firebaseServerConfig, serverInformation)
 
         const mainServer = new MainServer(appDirectory, authManager, serverInformation)
 
@@ -101,9 +101,9 @@ export default class Application {
     }
 
     setupTray = () => {
-        this.tray = new Tray(path.resolve(clipboardImage))
+        this.tray = new Tray(path.resolve(trayIcon))
         const contextMenu = Menu.buildFromTemplate([])
-        this.tray.setToolTip('PC Connector')
+        this.tray.setToolTip('MobPC Connector')
         this.tray.setContextMenu(contextMenu)
 
         this.tray.on('click', () => this.showWindow())

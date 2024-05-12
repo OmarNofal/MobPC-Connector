@@ -22,7 +22,7 @@ class CompositeTrustManager(
         chain: Array<out X509Certificate>?,
         authType: String?
     ) {
-        defaultTrustManager.checkClientTrusted(chain, authType);
+        defaultTrustManager.checkClientTrusted(chain, authType)
     }
 
     override fun checkServerTrusted(

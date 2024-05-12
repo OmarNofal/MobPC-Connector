@@ -62,7 +62,7 @@ class ServerConnection(
     private suspend fun findDevice(): DetectedDevice? =
         withContext(Dispatchers.IO) {
             val device =
-                Connectivity.findDevice(id, ConnectionPreference.LOCAL_NETWORK)
+                Connectivity.findDevice(id, ConnectionPreference.ANY)
                     ?: return@withContext null
             if (!isActive) return@withContext null
             return@withContext device

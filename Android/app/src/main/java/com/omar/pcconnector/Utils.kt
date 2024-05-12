@@ -79,14 +79,6 @@ fun String.isGlobalIp(): Boolean {
     }
 }
 
-fun getRetrofit(ip: String, port: Int): Retrofit {
-    return Retrofit.Builder()
-        .baseUrl("https://$ip:$port")
-        .client(secureClient.build())
-        .addConverterFactory(GsonConverterFactory.create())
-        .build()
-}
-
 fun getRetrofit(
     ip: String,
     port: Int,

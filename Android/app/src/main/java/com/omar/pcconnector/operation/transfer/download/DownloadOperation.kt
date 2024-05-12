@@ -67,8 +67,8 @@ class DownloadOperation(
 
         response = api.download(pathOnServer.absolutePath)
 
-        val contentDisposition = response.headers().get("Content-Disposition")
-        val contentType = response.headers().get("Content-Type")
+        val contentDisposition = response.headers()["Content-Disposition"]
+        val contentType = response.headers()["Content-Type"]
 
         // If there is content disposition in the header then we are downloading a file
         // else we are downloading a folder
@@ -85,13 +85,12 @@ class DownloadOperation(
         val body = response.body()!!
         val fileName =
             response
-                .headers()
-                .get("Content-Disposition")!!
+                .headers()["Content-Disposition"]!!
                 .substringAfter("filename=")
                 .removeSuffix("\"")
                 .removePrefix("\"")
 
-        val fileSize = response.headers().get("Content-Length")!!.toLong()
+        val fileSize = response.headers()["Content-Length"]!!.toLong()
 
         publishProgress(fileSize, 0L, fileName)
 

@@ -170,7 +170,7 @@ data class FileSystemTreeState(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class, ExperimentalAnimationApi::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 fun FileSystemTree(

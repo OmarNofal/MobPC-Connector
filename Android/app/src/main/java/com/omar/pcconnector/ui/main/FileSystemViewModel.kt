@@ -323,6 +323,7 @@ class FileSystemViewModel @AssistedInject constructor(
 
     override fun onCleared() {
         super.onCleared()
+        watcher.close()
     }
 
 }

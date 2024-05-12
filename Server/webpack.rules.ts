@@ -34,7 +34,7 @@ export const rules: Required<ModuleOptions>['rules'] = [
         type: 'asset/resource',
     },
     {
-        test: /\.(jpe?g|png|gif|svg)$/,
+        test: /\.(jpe?g|png|gif|svg|webp)$/,
         loader: 'file-loader',
         options: {
             name: '[path][name].[ext]',

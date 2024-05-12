@@ -8,7 +8,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.omar.pcconnector.fileSystemApi
-import com.omar.pcconnector.network.connection.Connection
 import com.omar.pcconnector.operation.transfer.TransfersManager
 import com.omar.pcconnector.ui.nav.Navigator
 import dagger.assisted.Assisted
