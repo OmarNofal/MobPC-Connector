@@ -20,11 +20,15 @@ class DevicesRepository @Inject constructor(
 
     private val scope = CoroutineScope(Dispatchers.IO)
 
-    suspend fun getAllPairedDevices() =
+    suspend fun getAllPairedDevices() = withContext(Dispatchers.IO) {
         deviceDao.getAllDevices().map { it.toPairedDevice() }
+    }
 
     fun getPairedDeviceFlow(id: String) =
         deviceDao.getDeviceFlow(id).map { it.toPairedDevice() }
+
+    fun getPairedDevicesFlow() = deviceDao.getDevicesFlow()
+        .map { it.map { deviceEntity -> deviceEntity.toPairedDevice() } }
 
     suspend fun getPairedDevice(id: String) = withContext(Dispatchers.IO) {
         deviceDao.getDevice(id).toPairedDevice()

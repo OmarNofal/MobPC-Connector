@@ -22,9 +22,9 @@ import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.text.toLowerCase
 import androidx.compose.ui.unit.Dp
 import com.omar.pcconnector.network.api.clientForSSLCertificate
-import com.omar.pcconnector.network.api.secureClient
 import com.omar.pcconnector.network.connection.TokenInterceptor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -67,7 +67,7 @@ fun Long.bytesToSizeString(): String {
 
 // The image formats coil-kt can view
 val supportedImageExtension = listOf("jpg", "jpeg", "png", "bmp", "webp")
-fun String.isSupportedImageExtension() = this in supportedImageExtension
+fun String.isSupportedImageExtension() = this.lowercase() in supportedImageExtension
 
 
 fun String.isGlobalIp(): Boolean {

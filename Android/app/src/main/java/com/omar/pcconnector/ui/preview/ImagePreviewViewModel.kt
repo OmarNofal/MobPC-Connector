@@ -9,7 +9,6 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.omar.pcconnector.fileSystemApi
 import com.omar.pcconnector.operation.transfer.TransfersManager
-import com.omar.pcconnector.ui.nav.Navigator
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
@@ -25,7 +24,6 @@ import java.nio.file.Path
 
 class ImagePreviewViewModel @AssistedInject constructor(
     private val transfersManager: TransfersManager,
-    private val navigator: Navigator,
     @Assisted private val retrofit: Retrofit,
     @Assisted private val imagePath: Path,
 ) : ViewModel() {
@@ -112,10 +110,6 @@ class ImagePreviewViewModel @AssistedInject constructor(
     fun onRenderError() {
         val state = (_state.value as? ImagePreviewState.Downloaded) ?: return
         setErrorState(state.uri, ImagePreviewErrors.RENDER_ERROR)
-    }
-
-    fun closeScreen() {
-        navigator.goBack()
     }
 
     @AssistedFactory

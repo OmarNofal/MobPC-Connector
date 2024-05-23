@@ -49,5 +49,5 @@ fun iconForExtension(extension: String) = when(extension) {
 
     "epub" -> R.drawable.epub
 
-    else -> R.drawable.text
+    else -> R.drawable.file
 }

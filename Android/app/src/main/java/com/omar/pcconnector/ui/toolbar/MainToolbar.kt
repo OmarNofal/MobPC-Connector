@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Menu
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.SwapVert
 import androidx.compose.material.icons.rounded.Wifi
@@ -51,22 +52,27 @@ import com.omar.pcconnector.ui.theme.darkYellow
 fun MainToolbar(
     viewModel: ToolbarViewModel,
     onShowTransfers: () -> Unit,
-    isTransferOngoing: Boolean
+    isTransferOngoing: Boolean,
+    onOpenDrawer: () -> Unit,
 ) {
 
     var menuShown by remember { mutableStateOf(false) }
     val connectionStatus by viewModel.connectionStatusFlow.collectAsState()
 
-    TopAppBar(title = {
-        Text(text = viewModel.serverName, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Medium)
-    },
+    TopAppBar(
+        title = {
+            Text(
+                text = viewModel.serverName,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Medium
+            )
+        },
         colors = TopAppBarDefaults.topAppBarColors(MaterialTheme.colorScheme.surfaceVariant),
         actions = {
 
 
             val statusBackgroundColor = when (val s = connectionStatus) {
-                is ConnectionStatus.Connected ->
-                    if (s.connection.ip.isGlobalIp()) darkYellow else darkGreen
+                is ConnectionStatus.Connected -> if (s.connection.ip.isGlobalIp()) darkYellow else darkGreen
 
                 else -> Color.Red
             }
@@ -74,7 +80,9 @@ fun MainToolbar(
                 mutableStateOf(false)
             }
 
-            IconButton(onClick = { connectionInfoShown = !connectionInfoShown }) {
+            IconButton(onClick = {
+                connectionInfoShown = !connectionInfoShown
+            }) {
                 BadgedBox(badge = { }) {
                     Icon(
                         imageVector = Icons.Rounded.Wifi,
@@ -95,24 +103,27 @@ fun MainToolbar(
 
             IconButton(onClick = onShowTransfers) {
 
-                val colors = listOf(Color(0xFFED4264), Color(0xFFFFEDBC), Color(0xFFED4264))
+                val colors = listOf(
+                    Color(0xFFED4264),
+                    Color(0xFFFFEDBC),
+                    Color(0xFFED4264)
+                )
 
                 Icon(
                     imageVector = Icons.Rounded.SwapVert,
                     contentDescription = "Actions",
-                    if (isTransferOngoing)
-                        Modifier.drawAnimatedBorder(
-                            2.dp,
-                            CircleShape,
-                            colors,
-                            durationMillis = 1000
-                        )
+                    if (isTransferOngoing) Modifier.drawAnimatedBorder(
+                        2.dp, CircleShape, colors, durationMillis = 1000
+                    )
                     else Modifier
                 )
             }
 
             IconButton(onClick = { menuShown = !menuShown }) {
-                Icon(imageVector = Icons.Rounded.MoreVert, contentDescription = "Actions")
+                Icon(
+                    imageVector = Icons.Rounded.MoreVert,
+                    contentDescription = "Actions"
+                )
             }
 
             val onMenuDismiss = { menuShown = false }
@@ -124,8 +135,15 @@ fun MainToolbar(
                 showMenu = menuShown,
                 onMenuDismiss = onMenuDismiss,
             )
-        }
-    )
+        },
+        navigationIcon = {
+            IconButton(onClick = onOpenDrawer) {
+                Icon(
+                    imageVector = Icons.Rounded.Menu,
+                    contentDescription = "Drawer"
+                )
+            }
+        })
 
 
 }
@@ -150,26 +168,23 @@ fun MainToolbarOverflow(
         ActionsDropdownMenu(
             actions = listOf(
                 Actions.openLinkAction { showURLDialog = true },
-                Actions.copyToClipboardAction { showClipboardDialog = true },
+                Actions.copyToClipboardAction {
+                    showClipboardDialog = true
+                },
                 Actions.lockPCAction(onLockPC),
                 Actions.shutdownPCAction(onShutdownPC)
-            ),
-            show = showMenu,
-            onDismissRequest = onMenuDismiss
+            ), show = showMenu, onDismissRequest = onMenuDismiss
         )
 
         if (showURLDialog) {
-            URLDialog(
-                onDismiss = { showURLDialog = false },
-                onConfirm = { url, incognito ->
-                    onOpenBrowser(url, incognito)
-                    onMenuDismiss()
-                }
-            )
+            URLDialog(onDismiss = { showURLDialog = false },
+                      onConfirm = { url, incognito ->
+                          onOpenBrowser(url, incognito)
+                          onMenuDismiss()
+                      })
         } else if (showClipboardDialog) {
-            ClipboardDialog(
-                onDismiss = { showClipboardDialog = false },
-                onConfirm = { text -> onCopyClipboard(text); onMenuDismiss() })
+            ClipboardDialog(onDismiss = { showClipboardDialog = false },
+                            onConfirm = { text -> onCopyClipboard(text); onMenuDismiss() })
         }
 
 
@@ -179,16 +194,16 @@ fun MainToolbarOverflow(
 
 @Composable
 fun ConnectionInformationDialog(
-    isShown: Boolean,
-    connectionStatus: ConnectionStatus,
-    onDismiss: () -> Unit
+    isShown: Boolean, connectionStatus: ConnectionStatus, onDismiss: () -> Unit
 ) {
 
 
     DropdownMenu(
         modifier = Modifier
             .fillMaxWidth(0.7f)
-            .padding(16.dp), expanded = isShown, onDismissRequest = onDismiss
+            .padding(16.dp),
+        expanded = isShown,
+        onDismissRequest = onDismiss
     ) {
 
         when (connectionStatus) {
@@ -199,7 +214,10 @@ fun ConnectionInformationDialog(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(text = "IP")
-                    Text(text = connectionStatus.connection.ip, fontWeight = FontWeight.Medium)
+                    Text(
+                        text = connectionStatus.connection.ip,
+                        fontWeight = FontWeight.Medium
+                    )
                 }
 
                 Row(

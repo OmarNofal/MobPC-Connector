@@ -42,6 +42,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun PairingScreen(
     viewModel: PairingScreenViewModel = hiltViewModel(),
+    onPairedWithDevice: (id: String) -> Unit,
     onNavigateBack: () -> Unit
 ) {
 
@@ -62,7 +63,10 @@ fun PairingScreen(
 
             scope.launch {
                 val pairingResult = viewModel.onQrCodeDetected(it)
-                
+                if (pairingResult is PairingScreenViewModel.PairingResult.Success) {
+                    Log.d("Pairing", "ASKRRRR")
+                    onPairedWithDevice(pairingResult.serverId)
+                }
             }
         }
     } else {
@@ -72,21 +76,9 @@ fun PairingScreen(
 }
 
 
-@Composable
-fun PermissionDialog(
-    onRequestPermission: () -> Unit
-) {
-    LaunchedEffect(key1 = Unit) {
-        onRequestPermission()
-    }
-    Scaffold(Modifier.fillMaxSize()) { padding ->
-
-    }
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PairingScreen(
+private fun PairingScreen(
     state: PairingScreenState,
     onQrCodeDetected: (String) -> Unit,
 ) {
@@ -98,8 +90,8 @@ fun PairingScreen(
     if (state is PairingScreenState.Connecting) {
 
         AlertDialog(
-            onDismissRequest = { /*TODO*/ },
-            confirmButton = { /*TODO*/ },
+            onDismissRequest = {},
+            confirmButton = {},
             icon = {
                 Icon(
                     imageVector = Icons.Rounded.Devices,
@@ -153,5 +145,17 @@ fun PairingScreen(
 
         }
     }
+}
 
+
+@Composable
+fun PermissionDialog(
+    onRequestPermission: () -> Unit
+) {
+    LaunchedEffect(key1 = Unit) {
+        onRequestPermission()
+    }
+    Scaffold(Modifier.fillMaxSize()) { padding ->
+
+    }
 }

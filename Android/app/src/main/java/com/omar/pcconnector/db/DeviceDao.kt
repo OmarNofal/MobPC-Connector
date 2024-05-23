@@ -23,6 +23,9 @@ interface DeviceDao {
     @Query("SELECT * FROM DeviceEntity")
     suspend fun getAllDevices(): List<DeviceEntity>
 
+    @Query("SELECT * FROM DeviceEntity")
+    fun getDevicesFlow(): Flow<List<DeviceEntity>>
+
     @Query("SELECT COUNT(*) > 1 FROM DeviceEntity WHERE id = :id LIMIT 1")
     suspend fun exists(id: String): Boolean
 

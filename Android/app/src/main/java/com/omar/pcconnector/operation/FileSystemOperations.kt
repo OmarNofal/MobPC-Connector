@@ -1,6 +1,7 @@
 package com.omar.pcconnector.operation
 
 import com.omar.pcconnector.absolutePath
+import com.omar.pcconnector.model.DirectoryResource
 import com.omar.pcconnector.model.Resource
 import com.omar.pcconnector.network.api.FileSystemOperations
 import com.omar.pcconnector.network.api.getDataOrThrow
@@ -25,8 +26,9 @@ class ListDirectoryOperation(
         var result = listOf<Resource>()
         withContext(Dispatchers.IO) {
             result = api.getDirectoryStructure(path.absolutePath).execute().body().getDataOrThrow()!!.map { it.toDomainResource(path) }
+
         }
-        return result
+        return result.sortedBy { f -> f !is DirectoryResource }
     }
 
 

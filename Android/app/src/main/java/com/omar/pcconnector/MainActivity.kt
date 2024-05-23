@@ -4,36 +4,28 @@ import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.core.view.WindowCompat
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import com.omar.pcconnector.data.DevicesRepository
 import com.omar.pcconnector.model.PairedDevice
 import com.omar.pcconnector.pairing.PairingScreen
-import com.omar.pcconnector.ui.detection.DetectionScreen
+import com.omar.pcconnector.ui.empty.EmptyDevicesScreen
 import com.omar.pcconnector.ui.event.ApplicationEvent
-import com.omar.pcconnector.ui.nav.BackCommand
-import com.omar.pcconnector.ui.nav.ImageScreen
-import com.omar.pcconnector.ui.nav.Navigator
+import com.omar.pcconnector.ui.main.MainApp
+import com.omar.pcconnector.ui.nav.EmptyScreen
+import com.omar.pcconnector.ui.nav.MainScreen
 import com.omar.pcconnector.ui.nav.PairingScreen
 import com.omar.pcconnector.ui.nav.Screen
-import com.omar.pcconnector.ui.nav.ServerScreen
-import com.omar.pcconnector.ui.session.ServerSession
 import com.omar.pcconnector.ui.theme.AppTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 
 
@@ -45,9 +37,6 @@ class MainActivity : ComponentActivity() {
     lateinit var eventsFlow: MutableSharedFlow<ApplicationEvent>
 
     @Inject
-    lateinit var navigator: Navigator
-
-    @Inject
     lateinit var devicesRepository: DevicesRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -55,115 +44,63 @@ class MainActivity : ComponentActivity() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
 
+        val initialDevices =
+            runBlocking { devicesRepository.getAllPairedDevices() }
+
+        Log.d("Initial Devices: ", initialDevices.toString())
+
         setContent {
 
             val navController = rememberNavController()
 
-            LaunchedEffect(key1 = Unit) {
-                navigator.navigationEvents.collect { command ->
-                    if (command == BackCommand) navController.popBackStack()
-                    else navController.navigate(command.destination)
-                }
-            }
 
             AppTheme {
 
+                val currentDevices: List<PairedDevice> by
+                devicesRepository.getPairedDevicesFlow()
+                    .collectAsState(initial = initialDevices)
+
                 NavHost(
                     navController = navController,
-                    startDestination = Screen.DETECTION_SCREEN
+                    startDestination = if (initialDevices.isEmpty()) EmptyScreen else MainScreen(null)
                 ) {
 
-                    composable(Screen.DETECTION_SCREEN) {
-                        DetectionScreen(
-                            onNavigateToPairingScreen = {
-                                navigator.navigate(PairingScreen.navigationCommand())
-                            }
-                        )
+                    composable<EmptyScreen> {
+
+                        EmptyDevicesScreen(modifier = Modifier.fillMaxSize()) {
+                            navController.navigate(PairingScreen)
+                        }
+
                     }
 
+                    composable<MainScreen> {
 
-                    composable(Screen.PAIRING_SCREEN) {
+                        MainApp(
+                            modifier = Modifier.fillMaxSize(),
+                            pairedDevices = currentDevices,
+                            devicesRepository = devicesRepository,
+                            eventsFlow = eventsFlow
+                        )
+
+                    }
+
+                    composable<PairingScreen> {
 
                         PairingScreen(
-                            onNavigateBack = { navigator.goBack() }
+                            onPairedWithDevice = { id ->
+                                navController.navigate(MainScreen(id))
+                            },
+                            onNavigateBack = navController::popBackStack
                         )
 
                     }
-
-                    navigation(
-                        startDestination = "server",
-                        route = Screen.SERVER_SCREEN,
-                        arguments = ServerScreen.arguments
-                    ) {
-
-
-                        composable("server") {
-                            val deviceId: String =
-                                it.arguments?.getString(ServerScreen.ID_ARG)
-                                    ?: ""
-                            val deviceState by remember {
-                                devicesRepository.getPairedDeviceFlow(deviceId)
-                                    .map { device ->
-                                        DeviceLoadingState.Loaded(device)
-                                    }
-                            }.collectAsState(initial = DeviceLoadingState.Loading)
-
-                            val device =
-                                (deviceState as? DeviceLoadingState.Loaded)?.pairedDevice
-                            if (device == null) {
-                                Box(
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    CircularProgressIndicator()
-                                }
-                            } else {
-                                ServerSession(
-                                    modifier = Modifier.fillMaxSize(),
-                                    device,
-                                    eventsFlow
-                                )
-                            }
-                        }
-
-
-                        composable(
-                            Screen.IMAGE_SCREEN,
-                            arguments = ImageScreen.arguments,
-                        ) {
-                            val resourcePath =
-                                it.arguments?.getString(ImageScreen.PATH_ARG)
-                            val ip = it.arguments?.getString(ImageScreen.IP_ARG)
-                            val port =
-                                it.arguments?.getInt(ImageScreen.PORT_ARG)
-                            val token =
-                                it.arguments?.getString(ImageScreen.TOKEN_ARG)
-
-                            if (listOf(ip, port, token).any { it == null }) {
-                                navigator.goBack()
-                            } else {
-//                                ImagePreview(
-//                                    getRetrofit(ip!!, port!!, token!!),
-//                                    Paths.get(resourcePath)
-//                                )
-                                Log.i("Resource", resourcePath.toString())
-                            }
-
-                        }
-
-                    }
-
 
                 }
 
 
             }
+
+
         }
     }
-
-    sealed class DeviceLoadingState {
-        object Loading : DeviceLoadingState()
-        class Loaded(val pairedDevice: PairedDevice) : DeviceLoadingState()
-    }
-
 }

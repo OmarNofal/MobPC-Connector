@@ -7,7 +7,6 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.omar.pcconnector.absolutePath
 import com.omar.pcconnector.fileSystemApi
-import com.omar.pcconnector.isSupportedImageExtension
 import com.omar.pcconnector.model.DirectoryResource
 import com.omar.pcconnector.model.Resource
 import com.omar.pcconnector.network.api.getExternalDownloadURL
@@ -24,8 +23,6 @@ import com.omar.pcconnector.operation.RenameOperation
 import com.omar.pcconnector.operation.transfer.TransfersManager
 import com.omar.pcconnector.ui.event.ApplicationEvent
 import com.omar.pcconnector.ui.event.ApplicationOperation
-import com.omar.pcconnector.ui.nav.ImageScreen
-import com.omar.pcconnector.ui.nav.Navigator
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
@@ -40,15 +37,12 @@ import kotlinx.coroutines.flow.transformWhile
 import kotlinx.coroutines.launch
 import java.nio.file.Path
 import java.nio.file.Paths
-import kotlin.io.path.absolutePathString
-import kotlin.io.path.extension
 
 
 @Suppress("UNCHECKED_CAST")
 class FileSystemViewModel @AssistedInject constructor(
     private val transfersManager: TransfersManager,
     private val eventsFlow: MutableSharedFlow<ApplicationEvent>,
-    private val navigator: Navigator,
     @Assisted private val connectionStatusFlow: StateFlow<ConnectionStatus>,
     @Assisted private val serverId: String,
     @Assisted("token") private val token: String,
@@ -99,7 +93,11 @@ class FileSystemViewModel @AssistedInject constructor(
                 val drives = GetDrivesOperation(api).start()
                 val directoryToLoad = Paths.get(drives.first(), "/")
                 _state.value =
-                    FileSystemState.Initialized.Loading(directoryToLoad, drives, emptyList())
+                    FileSystemState.Initialized.Loading(
+                        directoryToLoad,
+                        drives,
+                        emptyList()
+                    )
                 loadDirectory(directoryToLoad)
             }
         }
@@ -108,9 +106,19 @@ class FileSystemViewModel @AssistedInject constructor(
             var previousState = connectionStatusFlow.value
             connectionStatusFlow.collect {
                 if (it is ConnectionStatus.Connected) {
-                    eventsFlow.emit(ApplicationEvent(ApplicationOperation.PING_SERVER, true))
+                    eventsFlow.emit(
+                        ApplicationEvent(
+                            ApplicationOperation.PING_SERVER,
+                            true
+                        )
+                    )
                 } else if ((it is ConnectionStatus.NotFound) && (previousState is ConnectionStatus.Connected)) {
-                    eventsFlow.emit(ApplicationEvent(ApplicationOperation.PING_SERVER, false))
+                    eventsFlow.emit(
+                        ApplicationEvent(
+                            ApplicationOperation.PING_SERVER,
+                            false
+                        )
+                    )
                 }
                 previousState = it
             }
@@ -121,10 +129,15 @@ class FileSystemViewModel @AssistedInject constructor(
     private fun loadDirectory(path: Path) {
         assert(_state.value !is FileSystemState.Loading)
         viewModelScope.launch {
-            getConnectionOrShowError()?.retrofit?.fileSystemApi() ?: return@launch
+            getConnectionOrShowError()?.retrofit?.fileSystemApi()
+                ?: return@launch
             val state = _state.value as FileSystemState.Initialized
             _state.value =
-                FileSystemState.Initialized.Loading(path, state.drives, state.directoryStructure)
+                FileSystemState.Initialized.Loading(
+                    path,
+                    state.drives,
+                    state.directoryStructure
+                )
             refresh()
             watchCurrentDirectory()
         }
@@ -136,11 +149,17 @@ class FileSystemViewModel @AssistedInject constructor(
             val state = _state.value as FileSystemState.Initialized
             val currentPath = state.currentDirectory
             try {
-                val api = getConnectionOrShowError()?.retrofit?.fileSystemApi() ?: return@launch
-                val directoryContents = ListDirectoryOperation(api, currentPath).start()
-                    .filter { !it.name.startsWith(".") }
+                val api = getConnectionOrShowError()?.retrofit?.fileSystemApi()
+                    ?: return@launch
+                val directoryContents =
+                    ListDirectoryOperation(api, currentPath).start()
+                        .filter { !it.name.startsWith(".") }
                 _state.value =
-                    FileSystemState.Initialized.Loaded(currentPath, state.drives, directoryContents)
+                    FileSystemState.Initialized.Loaded(
+                        currentPath,
+                        state.drives,
+                        directoryContents
+                    )
             } catch (e: Exception) { // if for any reason we can't access the folder, just go to its parent
                 loadDirectory(currentPath.parent)
             }
@@ -154,27 +173,23 @@ class FileSystemViewModel @AssistedInject constructor(
     fun onResourceClicked(resource: Resource) {
         if (resource is DirectoryResource) {
             loadDirectory(resource.path)
-        } else if (resource.path.extension.isSupportedImageExtension()) {
-            val connection =
-                (connectionStatusFlow.value as? ConnectionStatus.Connected)?.connection ?: return
-            navigator.navigate(
-                ImageScreen.navigationCommand(
-                    resource.path.absolutePathString(),
-                    connection.ip,
-                    connection.port,
-                    token
-                )
-            )
         } else {
             viewModelScope.launch {
                 val connection = getConnectionOrShowError() ?: return@launch
                 val accessToken = try {
-                    GetFileAccessToken(connection.retrofit.fileSystemApi(), resource.path).start()
+                    GetFileAccessToken(
+                        connection.retrofit.fileSystemApi(),
+                        resource.path
+                    ).start()
                 } catch (e: Exception) {
                     ""
                 }
                 val fileDownloadURL =
-                    getExternalDownloadURL(connection, resource.path.absolutePath, accessToken)
+                    getExternalDownloadURL(
+                        connection,
+                        resource.path.absolutePath,
+                        accessToken
+                    )
                 Log.i("OPEN_FILE", fileDownloadURL)
                 viewModelScope.launch {
                     _openFileEvents.emit(fileDownloadURL to resource.name)
@@ -200,20 +215,30 @@ class FileSystemViewModel @AssistedInject constructor(
         val state = _state.value as FileSystemState.Initialized
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val api = getConnectionOrShowError()?.retrofit?.fileSystemApi() ?: return@launch
-                MakeDirectoriesOperation(api, state.currentDirectory, name).start()
+                val api = getConnectionOrShowError()?.retrofit?.fileSystemApi()
+                    ?: return@launch
+                MakeDirectoriesOperation(
+                    api,
+                    state.currentDirectory,
+                    name
+                ).start()
             } catch (e: NoSuchElementException) {
                 Log.e("MKDIR", "COULD NOT MAKE DIRECTORY")
             }
         }
     }
 
-    fun renameResource(resource: Resource, newName: String, overwrite: Boolean = false) {
+    fun renameResource(
+        resource: Resource,
+        newName: String,
+        overwrite: Boolean = false
+    ) {
         assert(_state.value !is FileSystemState.Loading)
         val state = _state.value as FileSystemState.Initialized
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val api = getConnectionOrShowError()?.retrofit?.fileSystemApi() ?: return@launch
+                val api = getConnectionOrShowError()?.retrofit?.fileSystemApi()
+                    ?: return@launch
                 val filePath = resource.path
                 RenameOperation(api, filePath, newName, overwrite).start()
                 loadDirectory(state.currentDirectory)
@@ -228,7 +253,8 @@ class FileSystemViewModel @AssistedInject constructor(
         val state = _state.value as FileSystemState.Initialized
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val api = getConnectionOrShowError()?.retrofit?.fileSystemApi() ?: return@launch
+                val api = getConnectionOrShowError()?.retrofit?.fileSystemApi()
+                    ?: return@launch
                 val filePath = resource.path
                 DeleteOperation(api, filePath, false).start()
                 loadDirectory(state.currentDirectory)
@@ -245,7 +271,8 @@ class FileSystemViewModel @AssistedInject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 if (_copiedResource.value == null) throw NoSuchElementException()
-                val api = getConnectionOrShowError()?.retrofit?.fileSystemApi() ?: return@launch
+                val api = getConnectionOrShowError()?.retrofit?.fileSystemApi()
+                    ?: return@launch
                 val destPath = state.currentDirectory
                 val srcPath = _copiedResource.value!!
                 CopyResourcesOperation(api, srcPath, destPath, false).start()
@@ -316,7 +343,11 @@ class FileSystemViewModel @AssistedInject constructor(
             token: String
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return factory.create(connectionStatusFlow, serverId, token) as T
+                return factory.create(
+                    connectionStatusFlow,
+                    serverId,
+                    token
+                ) as T
             }
         }
     }

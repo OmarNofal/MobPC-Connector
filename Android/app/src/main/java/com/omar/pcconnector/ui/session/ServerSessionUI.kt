@@ -48,6 +48,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -63,6 +64,7 @@ import com.omar.pcconnector.model.TransferState
 import com.omar.pcconnector.network.connection.Connection
 import com.omar.pcconnector.network.connection.ConnectionStatus
 import com.omar.pcconnector.ui.MakeDirDialog
+import com.omar.pcconnector.ui.drawer.AppDrawer
 import com.omar.pcconnector.ui.event.ApplicationEvent
 import com.omar.pcconnector.ui.event.ApplicationOperation
 import com.omar.pcconnector.ui.fab.FileSystemFAB
@@ -82,6 +84,10 @@ import kotlinx.coroutines.flow.collectLatest
 val LocalConnectionProvider =
     compositionLocalOf<Connection>(defaultFactory = { throw IllegalArgumentException() })
 
+
+
+
+
 /**
  * Corresponds to the whole UI which encompasses all states and actions
  * of a particular server
@@ -90,18 +96,22 @@ val LocalConnectionProvider =
 fun ServerSession(
     modifier: Modifier,
     pairedDevice: PairedDevice,
-    eventsFlow: SharedFlow<ApplicationEvent>
+    eventsFlow: SharedFlow<ApplicationEvent>,
+    onOpenDrawer: () -> Unit,
+    onImageClicked: (connection: Connection, path: String) -> Unit
 ) {
 
     val serverConnectionViewModel = serverConnectionViewModel(pairedDevice = pairedDevice)
 
     val toolbarViewModel =
         toolbarViewModel(serverConnectionViewModel.connectionStatus, pairedDevice.deviceInfo.name)
+
     val fileSystemViewModel = fileSystemViewModel(
         serverConnectionViewModel.connectionStatus,
         pairedDevice.deviceInfo.id,
         pairedDevice.token
     )
+
     val transfersViewModel = hiltViewModel<TransferViewModel>()
 
 
@@ -181,7 +191,8 @@ fun ServerSession(
                 isTransferOngoing = transfers.any {
                     (it.transferState is TransferState.Running) or (it.transferState is TransferState.Initializing)
                 },
-                viewModel = toolbarViewModel
+                viewModel = toolbarViewModel,
+                onOpenDrawer = onOpenDrawer
             )
         }
     ) { innerPadding ->
@@ -199,6 +210,7 @@ fun ServerSession(
                     Modifier.fillMaxSize(),
                     pairedDevice,
                     s.connection,
+                    onImageClicked = { onImageClicked(s.connection, it) },
                     PaddingValues(top = innerPadding.calculateTopPadding()),
                     fileSystemViewModel,
                     transfersViewModel,
@@ -213,6 +225,13 @@ fun ServerSession(
 }
 
 
+
+@Composable
+fun ServerUiScaffold(
+    modifier: Modifier
+) {
+
+}
 
 @Composable
 fun SearchingForServer(
@@ -266,6 +285,7 @@ fun ConnectedScreen(
     modifier: Modifier,
     pairedDevice: PairedDevice,
     connection: Connection,
+    onImageClicked: (path: String) -> Unit,
     paddingValues: PaddingValues,
     fileSystemViewModel: FileSystemViewModel,
     transfersViewModel: TransferViewModel,
@@ -276,7 +296,8 @@ fun ConnectedScreen(
 
     CompositionLocalProvider(
         LocalConnectionProvider provides connection,
-        LocalImageLoader provides imageLoader(LocalContext.current, pairedDevice.token)
+        LocalImageLoader provides imageLoader(LocalContext.current, pairedDevice.token, pairedDevice.certificate, connection.ip),
+        LocalImageCallbacks provides onImageClicked
     ) {
 
         Box(modifier = modifier) {
@@ -324,6 +345,12 @@ fun SnackBarEventNotifier(
         }
     }
 }
+
+
+
+val LocalImageCallbacks = staticCompositionLocalOf<(String) -> Unit> { throw IllegalArgumentException("Not implemented") }
+
+
 
 
 data class ApplicationSnackBarVisuals(

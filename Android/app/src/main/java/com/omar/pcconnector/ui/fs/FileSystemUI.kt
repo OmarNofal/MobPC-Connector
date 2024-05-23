@@ -13,7 +13,6 @@ import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -66,9 +65,10 @@ import coil.request.ImageRequest
 import com.omar.pcconnector.R
 import com.omar.pcconnector.absolutePath
 import com.omar.pcconnector.bytesToSizeString
+import com.omar.pcconnector.isSupportedImageExtension
 import com.omar.pcconnector.model.DirectoryResource
 import com.omar.pcconnector.model.Resource
-import com.omar.pcconnector.network.api.secureClient
+import com.omar.pcconnector.network.api.clientForSSLCertificate
 import com.omar.pcconnector.network.connection.TokenInterceptor
 import com.omar.pcconnector.supportedImageExtension
 import com.omar.pcconnector.ui.DeleteDialog
@@ -78,6 +78,7 @@ import com.omar.pcconnector.ui.action.ActionsDropdownMenu
 import com.omar.pcconnector.ui.main.FileSystemState
 import com.omar.pcconnector.ui.main.FileSystemViewModel
 import com.omar.pcconnector.ui.session.LocalConnectionProvider
+import com.omar.pcconnector.ui.session.LocalImageCallbacks
 import com.omar.pcconnector.ui.theme.iconForExtension
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -246,6 +247,7 @@ fun FileSystemTree(
                     else directory
                 }
 
+                val imageClickedCallback = LocalImageCallbacks.current
                 if (directoryItems.isEmpty())
                     EmptyDirectoryMessage(modifier = Modifier.fillMaxSize())
                 else
@@ -259,7 +261,13 @@ fun FileSystemTree(
                                     .fillMaxWidth()
                                     .animateItemPlacement(),
                                 resource = it,
-                                onClick = { onResourceClicked(it) },
+                                onClick = {
+                                    if (it.path.extension.isSupportedImageExtension()) {
+                                        imageClickedCallback.invoke(it.path.toString())
+                                    } else
+                                        onResourceClicked(it)
+
+                                },
                                 onRename = { newName, overwrite ->
                                     onRename(
                                         it,
@@ -391,7 +399,7 @@ fun ResourceRow(
             }
 
             val subText =
-                if (resource is DirectoryResource) "${resource.numResources} items" else resource.size.bytesToSizeString() + ",  ${
+                if (resource is DirectoryResource) "${resource.numResources} items" else resource.size.bytesToSizeString() + "  •  ${
                     dateFormat.format(
                         resource.creationDateMs
                     )
@@ -477,8 +485,14 @@ fun ResourceIcon(
 }
 
 
-fun imageLoader(context: Context, token: String): ImageLoader {
-    val client = secureClient.addInterceptor(TokenInterceptor(token))
+fun imageLoader(
+    context: Context,
+    token: String,
+    certificate: String,
+    hostname: String
+): ImageLoader {
+    val client = clientForSSLCertificate(certificate, hostname).newBuilder()
+        .addInterceptor(TokenInterceptor(token))
         .build()
     return ImageLoader.Builder(context)
         .okHttpClient(client)

@@ -66,7 +66,7 @@ class FileSystemWatcher(
      */
     private fun initConnection() {
         if (socket != null && !isSocketClosed) return
-        val requestURL = "ws://${connection.ip}:6544/"
+        val requestURL = "ws://${connection.ip}:${connection.port}/"
         val request = Request.Builder().url(requestURL).build()
         socket = okHttpClient.newWebSocket(request, this)
     }

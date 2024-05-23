@@ -153,7 +153,7 @@ export default class MainServer {
 
         this.fsWatcherServer = new FileSystemWatcherService()
 
-        this.httpsServer.on('upgrade', (request, socket, head) => {
+        this.httpServer.on('upgrade', (request, socket, head) => {
             console.log('Client wants to watch -___-')
             this.fsWatcherServer.handleIncomingConnection(request, socket, head)
         })
@@ -192,6 +192,7 @@ export default class MainServer {
 
         app.use(express.urlencoded({ extended: true }))
         addDownloadRoutes(app, authMiddleware, authManager.createFileAccessToken, authManager.getPathFromFileAccessToken)
+        addStatusRoutes(app, () => this.serverInformation.value.uuid)
 
         const httpServer = http.createServer(app)
 

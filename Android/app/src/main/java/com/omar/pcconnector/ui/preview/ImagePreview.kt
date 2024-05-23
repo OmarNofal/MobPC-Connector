@@ -46,6 +46,7 @@ import androidx.core.net.toFile
 import androidx.documentfile.provider.DocumentFile
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.omar.pcconnector.BuildConfig
 import com.omar.pcconnector.ui.imagePreviewViewModel
 import retrofit2.Retrofit
 import java.nio.file.Path
@@ -54,17 +55,15 @@ import java.nio.file.Path
 @Composable
 fun ImagePreview(
     retrofit: Retrofit,
-    imagePath: Path
+    imagePath: Path,
+    onCloseScreen: () -> Unit
 ) {
-    ImagePreviewViewModel(imagePreviewViewModel(retrofit, imagePath))
-}
 
-@Composable
-fun ImagePreviewViewModel(
-    viewModel: ImagePreviewViewModel
-) {
+    val viewModel =
+        imagePreviewViewModel(retrofit = retrofit, imagePath = imagePath)
 
     val state by viewModel.state.collectAsState(initial = ImagePreviewState.Downloading)
+
 
 
     val context = LocalContext.current
@@ -75,11 +74,15 @@ fun ImagePreviewViewModel(
                     is ImagePreviewEvents.ShareEvent -> {
                         shareImage(it.uri, context)
                     }
+
                     is ImagePreviewEvents.DownloadingEvent -> {
-                        Toast.makeText(context, "Saving...", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Saving...", Toast.LENGTH_SHORT)
+                            .show()
                     }
+
                     is ImagePreviewEvents.DownloadedEvent -> {
-                        Toast.makeText(context, "Saved", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Saved", Toast.LENGTH_SHORT)
+                            .show()
                     }
                 }
             }
@@ -88,12 +91,13 @@ fun ImagePreviewViewModel(
     ImagePreview(
         imageName = viewModel.imageName,
         state = state,
+        onCloseScreen = onCloseScreen,
         onShare = viewModel::onShare,
         onRetry = viewModel::onRetry,
         onDownload = viewModel::onDownloadFile,
-        onCloseScreen = viewModel::closeScreen,
         onRenderError = viewModel::onRenderError
     )
+
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -128,7 +132,10 @@ private fun ImagePreview(
                 },
                 navigationIcon = {
                     IconButton(onClick = onCloseScreen) {
-                        Icon(imageVector = Icons.Rounded.Close, contentDescription = "Close")
+                        Icon(
+                            imageVector = Icons.Rounded.Close,
+                            contentDescription = "Close"
+                        )
                     }
                 },
                 actions = {
@@ -185,13 +192,13 @@ private fun ImagePreview(
     }
 }
 
-
 @Composable
 private fun LoadingView(modifier: Modifier) {
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
         CircularProgressIndicator()
     }
 }
+
 
 @Composable
 private fun ImageView(
@@ -222,7 +229,8 @@ private fun ImageView(
                     val minY = -maxY
                     offsetY = maxOf(minY, minOf(maxY, offsetY + pan.y))
                 }
-            }.graphicsLayer(
+            }
+            .graphicsLayer(
                 scaleX = scale,
                 scaleY = scale,
                 translationX = offsetX,
@@ -238,6 +246,7 @@ private fun ImageView(
     )
 }
 
+
 @Composable
 private fun ErrorView(
     modifier: Modifier,
@@ -249,7 +258,10 @@ private fun ErrorView(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Icon(imageVector = Icons.Rounded.ErrorOutline, contentDescription = "Error")
+        Icon(
+            imageVector = Icons.Rounded.ErrorOutline,
+            contentDescription = "Error"
+        )
         Text(text = errorToString(error))
         Button(onClick = onRefresh) {
             Text(text = "Retry")
@@ -268,7 +280,7 @@ private fun shareImage(uri: Uri, context: Context) {
     val file = uri.toFile()
     val shareableUri = FileProvider.getUriForFile(
         context,
-        "com.omar.pcconnector.provider",
+        BuildConfig.APPLICATION_ID + ".provider",
         file,
     )
     val intent = Intent(Intent.ACTION_SEND).apply {

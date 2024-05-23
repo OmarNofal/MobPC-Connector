@@ -5,7 +5,7 @@ import com.omar.pcconnector.model.DetectedDevice
 import com.omar.pcconnector.model.DeviceInfo
 import com.omar.pcconnector.network.detection.DetectedHost
 import com.omar.pcconnector.network.detection.DetectionLocalNetworkStrategy
-import com.omar.pcconnector.network.detection.FirebaseDetectionStrategy
+import com.omar.pcconnector.network.detection.FirebaseDeviceFinder
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 
@@ -26,14 +26,14 @@ object Connectivity {
         preference: ConnectionPreference = ConnectionPreference.ANY
     ): DetectedDevice? {
         return when (preference) {
-            ConnectionPreference.WIDE_NETWORK -> FirebaseDetectionStrategy.findDevice(uuid)?.toDetectedDevice()
+            ConnectionPreference.WIDE_NETWORK -> FirebaseDeviceFinder.findDevice(uuid)?.toDetectedDevice()
             ConnectionPreference.LOCAL_NETWORK -> DetectionLocalNetworkStrategy.findDevice(uuid)?.toDetectedDevice()
             ConnectionPreference.ANY -> {
                 coroutineScope {
                     val localDeviceTask =
                         async { DetectionLocalNetworkStrategy.findDevice(uuid)?.toDetectedDevice() }
                     val globalDeviceTask =
-                        async { FirebaseDetectionStrategy.findDevice(uuid)?.toDetectedDevice() }
+                        async { FirebaseDeviceFinder.findDevice(uuid)?.toDetectedDevice() }
                     try {
                         localDeviceTask.await() ?: globalDeviceTask.await()
                     } catch (e: Exception) {

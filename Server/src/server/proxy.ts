@@ -15,8 +15,8 @@ export default function createProxyServer(httpServer, httpsServer) {
             let protocol;
             if (byte === 22) {
                 protocol = 'https';
-            } else if (32 < byte && byte < 127) {
-                protocol = 'http';
+            } else {
+                protocol = 'http'
             }
 
             let proxy = server[protocol];

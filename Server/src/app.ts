@@ -163,9 +163,10 @@ export default class Application {
                 title: 'Server running',
                 body: 'The app is running in the background',
                 silent: true,
-                subtitle: 'Pc Connector',
+                subtitle: 'MobPC Connector',
             })
-            notification.show()
+            if (this.mainServer.isRunning())
+                notification.show()
         })
         if (!app.isPackaged) window.webContents.openDevTools()
     }
