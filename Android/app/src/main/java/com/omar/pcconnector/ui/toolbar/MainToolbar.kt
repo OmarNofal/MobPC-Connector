@@ -39,6 +39,7 @@ import com.omar.pcconnector.drawAnimatedBorder
 import com.omar.pcconnector.isGlobalIp
 import com.omar.pcconnector.network.connection.ConnectionStatus
 import com.omar.pcconnector.ui.ClipboardDialog
+import com.omar.pcconnector.ui.ShutdownDialog
 import com.omar.pcconnector.ui.URLDialog
 import com.omar.pcconnector.ui.action.Actions
 import com.omar.pcconnector.ui.action.ActionsDropdownMenu
@@ -58,6 +59,19 @@ fun MainToolbar(
 
     var menuShown by remember { mutableStateOf(false) }
     val connectionStatus by viewModel.connectionStatusFlow.collectAsState()
+
+
+    var isShutdownDialogShown by remember {
+        mutableStateOf(false)
+    }
+
+    if (isShutdownDialogShown) {
+        ShutdownDialog(
+            serverName = viewModel.serverName,
+            onShutdown = viewModel::shutdownPC,
+            onCancel = { isShutdownDialogShown = false }
+        )
+    }
 
     TopAppBar(
         title = {
@@ -131,7 +145,7 @@ fun MainToolbar(
                 onOpenBrowser = viewModel::openLinkInBrowser,
                 onCopyClipboard = viewModel::copyToPCClipboard,
                 onLockPC = { viewModel.lockPC(); onMenuDismiss() },
-                onShutdownPC = { viewModel.shutdownPC(); onMenuDismiss() },
+                onShutdownPC = { isShutdownDialogShown = true; onMenuDismiss() },
                 showMenu = menuShown,
                 onMenuDismiss = onMenuDismiss,
             )

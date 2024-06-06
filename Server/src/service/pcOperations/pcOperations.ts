@@ -1,9 +1,7 @@
 import { exec } from 'child_process'
-import lockYourWindows from 'lock-your-windows'
 import notifier from 'node-notifier'
 import os from 'os'
 import { UnsupportedOperationException } from './exceptions'
-
 
 
 /**Represents a notification object to be displayed to the user */
@@ -31,12 +29,13 @@ type PCOperations = {
 }
 
 
+// windows-only
 function lockPc() {
     if (os.platform() != 'win32') {
         throw new UnsupportedOperationException("Locking is only available on Windows currently")
     }
 
-    lockYourWindows.lock()
+    exec('rundll32.exe user32.dll,LockWorkStation')
 }
 
 

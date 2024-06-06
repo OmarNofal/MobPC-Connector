@@ -9,6 +9,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.Language
+import androidx.compose.material.icons.rounded.PowerSettingsNew
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
@@ -138,12 +139,19 @@ fun RenameDialog(
                 Spacer(Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(text = "Overwrite?")
-                    Checkbox(checked = overwrite, onCheckedChange = { overwrite = it })
+                    Checkbox(
+                        checked = overwrite,
+                        onCheckedChange = { overwrite = it })
                 }
             }
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(newName, overwrite); onCancel() }) {
+            TextButton(onClick = {
+                onConfirm(
+                    newName,
+                    overwrite
+                ); onCancel()
+            }) {
                 Text(text = "Rename")
             }
         },
@@ -166,8 +174,13 @@ fun URLDialog(
     // check first if the clipboard content is a url and then paste if so
     val initialText = remember {
         val clipboardText = clipboardManager.getText()?.text
-        val textUriScheme = clipboardText?.toUri()?.scheme ?: return@remember "https://"
-        return@remember if (textUriScheme in listOf("http", "https")) clipboardText else "https://"
+        val textUriScheme =
+            clipboardText?.toUri()?.scheme ?: return@remember "https://"
+        return@remember if (textUriScheme in listOf(
+                "http",
+                "https"
+            )
+        ) clipboardText else "https://"
     }
     var inputText by remember { mutableStateOf(initialText) }
     var isIncognito by remember { mutableStateOf(false) }
@@ -182,7 +195,12 @@ fun URLDialog(
                 TextField(
                     value = inputText, onValueChange = { inputText = it },
                     keyboardActions = KeyboardActions(
-                        onDone = { onConfirm(inputText, isIncognito); onDismiss() }
+                        onDone = {
+                            onConfirm(
+                                inputText,
+                                isIncognito
+                            ); onDismiss()
+                        }
                     ),
                     keyboardOptions = KeyboardOptions(
                         autoCorrect = false,
@@ -193,12 +211,19 @@ fun URLDialog(
                 Spacer(Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(text = "Incognito?")
-                    Checkbox(checked = isIncognito, onCheckedChange = { isIncognito = it })
+                    Checkbox(
+                        checked = isIncognito,
+                        onCheckedChange = { isIncognito = it })
                 }
             }
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(inputText, isIncognito); onDismiss() }) {
+            TextButton(onClick = {
+                onConfirm(
+                    inputText,
+                    isIncognito
+                ); onDismiss()
+            }) {
                 Text(text = "Open")
             }
         },
@@ -216,10 +241,19 @@ fun ClipboardDialog(
     onConfirm: (String) -> Unit,
 ) {
     val clipboardManager = LocalClipboardManager.current
-    var inputText by remember { mutableStateOf(clipboardManager.getText()?.text ?: "") }
+    var inputText by remember {
+        mutableStateOf(
+            clipboardManager.getText()?.text ?: ""
+        )
+    }
 
     AlertDialog(
-        icon = { Icon(imageVector = Icons.Rounded.ContentCopy, contentDescription = null) },
+        icon = {
+            Icon(
+                imageVector = Icons.Rounded.ContentCopy,
+                contentDescription = null
+            )
+        },
         onDismissRequest = onDismiss,
         title = { Text(text = "Send to clipboard") },
         text = {
@@ -242,4 +276,37 @@ fun ClipboardDialog(
             }
         }
     )
+}
+
+@Composable
+fun ShutdownDialog(
+    serverName: String,
+    onShutdown: () -> Unit,
+    onCancel: () -> Unit
+) {
+
+    AlertDialog(
+        onDismissRequest = onCancel,
+        confirmButton = {
+            TextButton(
+                onClick = onShutdown
+            ) {
+                Text(text = "Confirm")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onCancel) {
+                Text(text = "Cancel")
+            }
+        },
+        icon = {
+            Icon(
+                imageVector = Icons.Rounded.PowerSettingsNew,
+                contentDescription = null
+            )
+        },
+        title = { Text(text = "Shutdown $serverName?") },
+        text = { Text(text = "All unsaved changes will be lost") }
+    )
+
 }
