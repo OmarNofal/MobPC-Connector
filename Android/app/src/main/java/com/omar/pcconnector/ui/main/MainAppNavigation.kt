@@ -50,7 +50,7 @@ fun NavGraphBuilder.serverNavGraph(
          */
         composable(FS_ROUTE) { backStackEntry ->
 
-            val id = backStackEntry.arguments?.getString("id")!!
+            val id = backStackEntry.arguments?.getString("id") ?: defaultDeviceId
 
             Log.d("Device ID: ", id)
 

@@ -55,7 +55,6 @@ export default class AuthorizationManager {
         this.secret = this.readSecret()
         this.ensureSecretLoaded() // if the secret is not created yet
 
-        this.devicesDatabase.subscribe(console.log)
         this.loadDevicesDB()
     }
 
