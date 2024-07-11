@@ -108,7 +108,7 @@
 
 
     <provider
-        android:authorities="com.omar.pcconnector.provider.documents"
+        android:authorities="${applicationId}.provider.documents"
         android:name="com.omar.pcconnector.provider.PCDocumentProvider"
         android:label="PC Documents Provider"
         android:grantUriPermissions="true"

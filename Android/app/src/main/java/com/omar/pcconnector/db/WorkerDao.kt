@@ -20,7 +20,7 @@ interface WorkerDao {
     suspend fun deleteWork(id: String)
 
     @Query("SELECT * FROM WorkerEntity WHERE workerId = :id")
-    suspend fun getById(id: String): WorkerEntity
+    suspend fun getById(id: String): WorkerEntity?
 
     @Update
     suspend fun updateWorker(worker: WorkerEntity)

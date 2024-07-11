@@ -30,6 +30,12 @@ interface FileSystemOperations {
     ): Call<GeneralResponse<Unit>>
 
     @FormUrlEncoded
+    @POST("/resourceInfo")
+    fun getResourceInfo(
+        @Field("path") path: String
+    ): Call<GeneralResponse<NetworkResource>>
+
+    @FormUrlEncoded
     @POST("/deleteResources")
     fun deleteResource(
         @Field("src") resourcePath: String,

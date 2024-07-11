@@ -4,7 +4,7 @@
  * Base class for Directory and File resources containing common
  * properties between them
  */
-class Resource {
+export class Resource {
 
     /**Name of this resource */
     name: string

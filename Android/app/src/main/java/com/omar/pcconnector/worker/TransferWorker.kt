@@ -31,7 +31,7 @@ abstract class TransferWorker(
 
     private val resourceName =
         runBlocking {
-            workerDao.getById(this@TransferWorker.id.toString()).resourceName
+            workerDao.getById(this@TransferWorker.id.toString())?.resourceName ?: ""
         }
 
     private val deviceId =

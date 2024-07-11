@@ -8,6 +8,7 @@ import com.omar.pcconnector.network.api.getDataOrThrow
 import com.omar.pcconnector.network.api.toDomainResource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.lang.IllegalStateException
 import java.nio.file.Path
 
 
@@ -150,5 +151,22 @@ class GetFileAccessToken(
     override suspend fun start() = withContext(Dispatchers.IO){
         api.getFileAccessToken(src.absolutePath).getDataOrThrow()?.token
             ?: throw IllegalArgumentException("Empty token")
+    }
+}
+
+
+class GetResourceInfoOperation(
+    private val api: FileSystemOperations,
+    private val path: Path
+): Operation<Resource>() {
+
+    override val name: String
+        get() = "Get Resource Information"
+    override val operationDescription: String
+        get() = "Get Resource Information for file: $path"
+
+    override suspend fun start() = withContext(Dispatchers.IO){
+        api.getResourceInfo(path.absolutePath).execute()
+            .body().getDataOrThrow()?.toDomainResource(path) ?: throw IllegalStateException()
     }
 }

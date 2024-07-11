@@ -146,8 +146,6 @@ class TransfersManager @Inject constructor(
                     )
                 ).build()
 
-        workManager.enqueue(uploadWorkerRequest)
-
         val resourceName = if (files.size == 1) files[0].name ?: "Unknown"
         else "${files[0]} and ${files.size - 1} others"
         scope.launch {
@@ -161,6 +159,8 @@ class TransfersManager @Inject constructor(
                 )
             )
         }
+
+        workManager.enqueue(uploadWorkerRequest)
     }
 
     private suspend fun deleteUnavailableWorkers() {

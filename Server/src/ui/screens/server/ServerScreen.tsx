@@ -12,8 +12,6 @@ export default function ServerScreen(props: { vm: ServerScreenViewModel }) {
 
     const isLoading = state == 'loading'
 
-    const palette = useTheme().palette
-
     if (isLoading) {
         return <LoadingScreen />
     } else {

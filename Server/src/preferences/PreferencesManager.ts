@@ -31,7 +31,7 @@ export default class PreferencesManager {
      */
     constructor(prefsDirectory: string) {
         this.prefsFilePath = path.join(prefsDirectory, prefsFileName)
-        const initalPrefs = PreferencesManager.readAppPreferencesFromDisk(this.prefsFilePath) // should we async this?
+        const initalPrefs = PreferencesManager.readAppPreferencesFromDisk(this.prefsFilePath)
 
         this.currentPreferences = new BehaviorSubject<model.AppPreferences>(initalPrefs)
 
