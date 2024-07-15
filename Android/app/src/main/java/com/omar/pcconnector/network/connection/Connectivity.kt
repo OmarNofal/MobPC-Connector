@@ -8,6 +8,7 @@ import com.omar.pcconnector.network.detection.DetectionLocalNetworkStrategy
 import com.omar.pcconnector.network.detection.FirebaseDeviceFinder
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.supervisorScope
 
 
 object Connectivity {
@@ -16,7 +17,8 @@ object Connectivity {
      * Find all available servers on the phone's local network
      */
     suspend fun getDetectedServersOnLocalNetwork(): List<DetectedDevice> =
-        DetectionLocalNetworkStrategy.getAvailableHosts().map { it.toDetectedDevice() }
+        DetectionLocalNetworkStrategy.getAvailableHosts()
+            .map { it.toDetectedDevice() }
 
     /**
      * Find a device with the given id on local networks on global network using Firebase
@@ -26,21 +28,41 @@ object Connectivity {
         preference: ConnectionPreference = ConnectionPreference.ANY
     ): DetectedDevice? {
         return when (preference) {
-            ConnectionPreference.WIDE_NETWORK -> FirebaseDeviceFinder.findDevice(uuid)?.toDetectedDevice()
-            ConnectionPreference.LOCAL_NETWORK -> DetectionLocalNetworkStrategy.findDevice(uuid)?.toDetectedDevice()
+            ConnectionPreference.WIDE_NETWORK -> FirebaseDeviceFinder.findDevice(
+                uuid
+            )?.toDetectedDevice()
+
+            ConnectionPreference.LOCAL_NETWORK -> DetectionLocalNetworkStrategy.findDevice(
+                uuid
+            )?.toDetectedDevice()
+
             ConnectionPreference.ANY -> {
-                coroutineScope {
-                    val localDeviceTask =
-                        async { DetectionLocalNetworkStrategy.findDevice(uuid)?.toDetectedDevice() }
-                    val globalDeviceTask =
-                        async { FirebaseDeviceFinder.findDevice(uuid)?.toDetectedDevice() }
+                val device = supervisorScope {
+                    val localDeviceTask = async {
+                        DetectionLocalNetworkStrategy.findDevice(uuid)?.toDetectedDevice()
+                    }
+                    val globalDeviceTask = async {
+                        FirebaseDeviceFinder.findDevice(uuid)?.toDetectedDevice()
+                    }
                     try {
-                        localDeviceTask.await() ?: globalDeviceTask.await()
+                        val localResult = localDeviceTask.await()
+                        localResult?.let {
+                            Log.d("LOCAL RESULT", it.toString())
+                            globalDeviceTask.cancel()
+                            return@supervisorScope it
+                        }
+                        val globalResult = globalDeviceTask.await()
+                        globalResult?.let {
+                            Log.d("GLOBAL RESULT", it.toString())
+                            return@supervisorScope it
+                        }
+                        null
                     } catch (e: Exception) {
                         Log.e("CONNECTIVITY", e.stackTraceToString())
                         null
                     }
                 }
+                device
             }
         }
     }
