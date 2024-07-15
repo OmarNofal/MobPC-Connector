@@ -15,6 +15,7 @@ import { DELETE_DEVICE, DEVICE_CONNECTED_EVENT, GENERATE_PAIRING_PAYLOAD } from 
 import { START_SERVER_COMMAND, STOP_SERVER_COMMAND } from './bridges/mainServerBridge'
 import generatePairingPayload from './service/pairing/pairing'
 import observeNetworkInterfaces, { NetworkInterface } from './utilities/networkInterfaces'
+import { setupIPCMainPrefsHandler } from './ipc/ipcHandlers'
 
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string
@@ -55,7 +56,7 @@ export default class Application {
         const appDirectory = app.getPath('userData')
 
         const authManager = new AuthorizationManager(appDirectory)
-        let preferencesManager = new PreferencesManager(path.join(appDirectory, 'app_preferences'))
+        const preferencesManager = new PreferencesManager(path.join(appDirectory, 'app_preferences'))
 
         let detectionServerConfiguration = mapBehaviorSubject(
             preferencesManager.currentPreferences,
@@ -122,8 +123,8 @@ export default class Application {
         }
 
         const primaryDisplay = screen.getPrimaryDisplay()
-        const width = primaryDisplay.size.width
-        const height = primaryDisplay.size.height
+        const width = primaryDisplay.size.width / 2
+        const height = primaryDisplay.size.height / 2
 
         const window = new AppWindow(
             {
@@ -153,6 +154,10 @@ export default class Application {
                     observable: this.authManager.devicesDatabase,
                     channelName: 'devices-db-state',
                 },
+                {
+                    observable: this.prefsManager.currentPreferences,
+                    channelName: 'prefs-state',
+                },
             ]
         )
         this.window = window
@@ -165,8 +170,7 @@ export default class Application {
                 silent: true,
                 subtitle: 'MobPC Connector',
             })
-            if (this.mainServer.isRunning())
-                notification.show()
+            if (this.mainServer.isRunning()) notification.show()
         })
         if (!app.isPackaged) window.webContents.openDevTools()
     }
@@ -203,7 +207,12 @@ export default class Application {
             if (name == 'devices-db-state') {
                 webContents.send(name, this.authManager.devicesDatabase.value)
             }
+            if (name == 'prefs-state') {
+                webContents.send(name, this.prefsManager.currentPreferences.value)
+            }
         })
+
+        setupIPCMainPrefsHandler(this.prefsManager)
     }
 
     registerEvents = () => {

@@ -1,10 +1,13 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { mainServerBridge } from '../bridges/mainServerBridge'
 import { authBridge } from '../bridges/authBridges'
+import { preferencesBridge } from '../bridges/preferencesBridge'
 
 contextBridge.exposeInMainWorld('authManager', authBridge)
 
 contextBridge.exposeInMainWorld('mainServer', mainServerBridge)
+
+contextBridge.exposeInMainWorld('prefs', preferencesBridge)
 
 const stateBridge = {
     /**
@@ -39,5 +42,6 @@ declare global {
         state: typeof stateBridge
         mainServer: typeof mainServerBridge
         authManager: typeof authBridge
+        prefs: typeof preferencesBridge
     }
 }

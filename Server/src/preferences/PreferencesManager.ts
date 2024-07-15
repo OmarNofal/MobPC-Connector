@@ -64,50 +64,86 @@ export default class PreferencesManager {
      */
     static writeAppDataPreferencesToDisk(prefs: model.AppPreferences, prefsFilePath: string) {
         const directory = path.dirname(prefsFilePath)
-        console.log(directory)
 
         mkdir(directory, { recursive: true }, () => {
-            const json = JSON.stringify(prefs)
+            const json = JSON.stringify(prefs, null, 4)
             writeFileSync(prefsFilePath, json, { encoding: 'utf-8', flag: 'w' })
         })
     }
 
+    // ---------------------------- Parsing ----------------------------//
+
     private static parseAppPrefsFromJson(json: any): model.AppPreferences {
-        const firebaseServiceData = this.parseFirbaseServiceConfigFromJson(json.globalIp ?? {})
-        const detectionServerData = this.parseDetectionServiceConfigFromJson(json.detectionService ?? {})
-        const serverInformationData = this.parseServerInformation(json.serverInformation ?? {})
-        const serverConifgData = this.parseServerConfigFromJson(json.serverConfiguration ?? {})
+        const firebaseServiceData = this.parseFirbaseServiceConfigFromJson(
+            json[model.FIREBASE_IP_SERVICE_CONFIGURATION] ?? {}
+        )
+        const detectionServerData = this.parseDetectionServiceConfigFromJson(
+            json[model.DETECTION_SERVER_CONFIGURATION] ?? {}
+        )
+        const serverInformationData = this.parseServerInformation(json[model.SERVER_INFORMATION] ?? {})
+        const serverConifgData = this.parseServerConfigFromJson(json[model.SERVER_CONFIGURATION] ?? {})
+        const appBehaviorPrefs = this.parseAppBehvaiorPrefs(json[model.APP_BEHAVIOR_PREFS] ?? {})
+        const uiPrefs = this.parseUiPrefsFromJson(json[model.UI_PREFS] ?? {})
 
         return {
-            firebaseServicePrefs: firebaseServiceData,
-            detectionServerPrefs: detectionServerData,
-            serverInformation: serverInformationData,
-            serverPrefs: serverConifgData,
+            [model.FIREBASE_IP_SERVICE_CONFIGURATION]: firebaseServiceData,
+            [model.DETECTION_SERVER_CONFIGURATION]: detectionServerData,
+            [model.SERVER_INFORMATION]: serverInformationData,
+            [model.SERVER_CONFIGURATION]: serverConifgData,
+            [model.UI_PREFS]: uiPrefs,
+            [model.APP_BEHAVIOR_PREFS]: appBehaviorPrefs,
         }
     }
 
-    private static parseFirbaseServiceConfigFromJson(json: any): model.FirebaseIPServiceConfiguration {
-        const globalPort: number = json.globalPort ?? 1919
+    private static parseUiPrefsFromJson(json: any): model.UiPreferences {
+        const theme = json[model.THEME] ?? 'system'
 
-        return { globalPort: globalPort }
+        return { theme }
+    }
+
+    private static parseAppBehvaiorPrefs(json: any): model.AppBehaviorPrefs {
+        const startOnLogin = json[model.START_ON_LOGIN] ?? true
+        const runServerOnStartup = json[model.RUN_SERVER_ON_STARTUP] ?? true
+
+        return { startOnLogin, runServerOnStartup }
+    }
+
+    private static parseFirbaseServiceConfigFromJson(json: any): model.FirebaseIPServiceConfiguration {
+        const globalPort: number = json[model.GLOBAL_PORT] ?? 1919
+
+        return { globalPort, syncIpWithFirebase: true }
     }
 
     private static parseDetectionServiceConfigFromJson(json: any): model.DetectionServerConfiguration {
-        const port: number = json.port ?? 4285
+        const port: number = json[model.PORT] ?? 4285
 
-        return { port: port }
+        return { port }
     }
 
     private static parseServerInformation(json: any): model.ServerInformation {
-        const uuid: string = json.uuid ?? randomUUID()
-        const name: string = json.name ?? os.hostname()
+        const uuid: string = json[model.UUID] ?? randomUUID()
+        const name: string = json[model.NAME] ?? os.hostname()
 
-        return { name: name, uuid: uuid }
+        return { name, uuid }
     }
 
     private static parseServerConfigFromJson(json: any): model.ServerConfiguration {
-        const port: string = json.port ?? 6543
+        const port: number = json[model.PORT] ?? 6543
 
-        return { port: port }
+        return { port }
+    }
+
+    updateKey = (group: string, key: string, value: any) => {
+        const appPrefs = structuredClone(this.currentPreferences.value)
+
+        const groupObject = appPrefs[group]
+        if (groupObject != undefined) {
+            groupObject[key] = value
+            this.currentPreferences.next(appPrefs)
+            PreferencesManager.writeAppDataPreferencesToDisk(appPrefs, this.prefsFilePath)
+            return
+        }
+
+        console.error(`Invalid Group Or Key ${group} : ${key} `)
     }
 }

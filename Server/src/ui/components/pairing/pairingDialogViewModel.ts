@@ -26,7 +26,7 @@ export default class PairingViewModel {
         window.authManager.onDeviceConnected(this.onDeviceConnected)
 
         this.generateQRCode().then(async (payload) => {
-            const qrImage = await QrCode.toDataURL(payload)
+            const qrImage = await QrCode.toDataURL(payload.toString())
             console.log(qrImage)
             const newState: PairingState = {
                 state: 'scanning',

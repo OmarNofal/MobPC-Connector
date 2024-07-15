@@ -6,26 +6,25 @@ import { Screen } from '../model/screens'
 import ServerScreen from './server/ServerScreen'
 import { ServerScreenViewModel } from './server/ServerScreenViewModel'
 import { DevicesScreen } from './devices/devicesScreen'
-
-const theme = createTheme({
-    palette: {
-        background: {},
-    },
-    typography: { fontFamily: ['Inter Variable', 'Sans-serif'].join(',') },
-})
+import { PreferencesScreen } from './preferences/preferencesScreen'
+import ThemeViewModel from '../theme/ThemeViewModel'
+import { useUnwrap } from '../utils'
 
 export default function App() {
-    const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)')
+    const themeViewModel = useMemo(() => new ThemeViewModel(), [])
+
+    const preferredTheme = useUnwrap(themeViewModel.currentTheme)
+    const isSystemInDarkMode = useMediaQuery('(prefers-color-scheme: dark)')
 
     const theme = useMemo(
         () =>
             createTheme({
                 palette: {
-                    mode: prefersDarkMode ? 'dark' : 'light',
+                    mode: preferredTheme == 'system' ? (isSystemInDarkMode ? 'dark' : 'light') : preferredTheme,
                 },
                 typography: { fontFamily: ['Inter Variable', 'Sans-serif'].join(',') },
             }),
-        [prefersDarkMode]
+        [isSystemInDarkMode, preferredTheme]
     )
 
     const location = useLocation().pathname
@@ -63,8 +62,8 @@ export default function App() {
                         element={<DevicesScreen />}
                     />
                     <Route
-                        path='/settings'
-                        element={<Typography>Settings</Typography>}
+                        path='/preferences'
+                        element={<PreferencesScreen></PreferencesScreen>}
                     />
                 </Routes>
             </Stack>
@@ -78,7 +77,7 @@ function getScreenFromRoute(route: string): Screen {
             return Screen.SERVER_SCREEN
         case '/devices':
             return Screen.DEVICES_SCREEN
-        case '/settings':
-            return Screen.SETTINGS_SCREEN
+        case '/preferences':
+            return Screen.PREFERENCES_SCREEN
     }
 }

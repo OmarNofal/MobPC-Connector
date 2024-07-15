@@ -37,8 +37,8 @@ export default function AppDrawer(props: AppDrawerProps) {
             case Screen.DEVICES_SCREEN:
                 navigate('/devices')
                 break
-            case Screen.SETTINGS_SCREEN:
-                navigate('/settings')
+            case Screen.PREFERENCES_SCREEN:
+                navigate('/preferences')
                 break
         }
     }
@@ -90,12 +90,11 @@ export default function AppDrawer(props: AppDrawerProps) {
                 <Divider />
 
                 <DrawerNavigationRow
-                    sx={}
-                    onClick={() => navigateToScreen(Screen.SETTINGS_SCREEN)}
-                    title='Settings'
+                    onClick={() => navigateToScreen(Screen.PREFERENCES_SCREEN)}
+                    title='Preferences'
                     outlinedIcon={SettingsIconOutlined}
                     filledIcon={SettingsIconFilled}
-                    isSelected={selected == Screen.SETTINGS_SCREEN}
+                    isSelected={selected == Screen.PREFERENCES_SCREEN}
                 />
             </List>
         </Drawer>
@@ -103,7 +102,7 @@ export default function AppDrawer(props: AppDrawerProps) {
 }
 
 type DrawerNavigationRowProps = {
-    sx: SxProps<Theme>
+    sx?: SxProps<Theme>
     title: string
     onClick: () => void
     isSelected: boolean

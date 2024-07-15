@@ -29,12 +29,15 @@ export default class DetectionServer {
     /**
      * @param config A behavior subject containing the current configuration of the server
      */
-    constructor(config: BehaviorSubject<DetectionServerConfiguration>, serverInformation: BehaviorSubject<ServerInformation>) {
+    constructor(
+        config: BehaviorSubject<DetectionServerConfiguration>,
+        serverInformation: BehaviorSubject<ServerInformation>
+    ) {
         this.state = new BehaviorSubject<DetectionServerState>(DetectionServerState.STOPPED)
         this.socket = dgram.createSocket('udp4')
 
         this.serverInformation = serverInformation
-        
+
         this.currentConfiguration = config.value
         this.subscription = config
             .asObservable()
@@ -83,9 +86,9 @@ export default class DetectionServer {
                 id: this.serverInformation.value.uuid,
                 os: os.platform(),
             }
-
+            
             this.socket.send(JSON.stringify(data), remoteInfo.port, remoteInfo.address, (error, _) => {
-                if (error != null) {
+                if (!error) {
                     console.log(`Device ${remoteInfo.address} discovered`)
                 }
             })
