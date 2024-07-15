@@ -1,10 +1,8 @@
 import CombinedStream from 'combined-stream'
 import { Request, Response, Router } from 'express'
 import fs from 'fs'
-import jwt from 'jsonwebtoken'
 import mime from 'mime'
 import path from 'path'
-import { env } from 'process'
 import { parsePath } from '../fs/operations'
 import { ErrorResponse, SuccessResponse } from '../model/response'
 import { AuthMiddlewareFunction } from './authMiddleware'
@@ -46,7 +44,7 @@ function handleDownloadFolder(src: string, res: Response) {
                     name: file.name,
                     size: fileStats.size,
                     path: path.relative(src, currentDirectory),
-                    mimeType: mime.lookup(file.name),
+                    mimeType: mime.getType(file.name),
                 })
 
                 responseStream.append(fs.createReadStream(filePath))
@@ -102,7 +100,11 @@ function getFileAccessTokenController(req: Request, res: Response, generateFileA
     }
 }
 
-function getFileExternalController(req: Request, res: Response, getPathFromFileAccessToken: (token) => string | undefined) {
+function getFileExternalController(
+    req: Request,
+    res: Response,
+    getPathFromFileAccessToken: (token) => string | undefined
+) {
     const token = req.query.token
     const userPath = req.query.path
 
@@ -110,7 +112,6 @@ function getFileExternalController(req: Request, res: Response, getPathFromFileA
         return res.json(new ErrorResponse(2, 'Missing token or file path'))
     }
 
-    
     const tokenPath = getPathFromFileAccessToken(token)
 
     if (tokenPath != undefined && path.resolve(tokenPath) == path.resolve(userPath)) {
@@ -131,6 +132,8 @@ export default function addDownloadRoutes(
     getPathFromFileAccessToken: (token: string) => string
 ) {
     app.get('/downloadFiles', authMiddleware, downloadFilesController)
-    app.get('/getFileAccessToken', authMiddleware, (req, res) => getFileAccessTokenController(req, res, generateFileAccessTokenFn))
+    app.get('/getFileAccessToken', authMiddleware, (req, res) =>
+        getFileAccessTokenController(req, res, generateFileAccessTokenFn)
+    )
     app.get('/download/*', (req, res) => getFileExternalController(req, res, getPathFromFileAccessToken))
 }
