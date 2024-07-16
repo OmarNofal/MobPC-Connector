@@ -1,5 +1,13 @@
 import { BehaviorSubject } from 'rxjs'
-import { AppPreferences, THEME, Theme, UI_PREFS } from '../../../model/preferences'
+import {
+    APP_BEHAVIOR_PREFS,
+    AppPreferences,
+    RUN_SERVER_ON_STARTUP,
+    START_ON_LOGIN,
+    THEME,
+    Theme,
+    UI_PREFS,
+} from '../../../model/preferences'
 import { MainProcessObservableConnection, subscribeToObservableInMainProcess } from '../../utils'
 
 export type PrefsScreenState =
@@ -25,6 +33,25 @@ export default class PreferencesScreenViewModel {
             console.log('New prefs: ' + appPreferences)
             this.state.next({ preferences: appPreferences })
         })
+    }
+
+    toggleStartAppOnLogin = () => {
+        if (this.state.value == 'loading') return
+        console.log('toggling')
+        window.prefs.updatePreferencesKey(
+            APP_BEHAVIOR_PREFS,
+            START_ON_LOGIN,
+            !this.state.value.preferences[APP_BEHAVIOR_PREFS][START_ON_LOGIN]
+        )
+    }
+
+    toggleRunServerOnStartup = () => {
+        if (this.state.value == 'loading') return
+        window.prefs.updatePreferencesKey(
+            APP_BEHAVIOR_PREFS,
+            RUN_SERVER_ON_STARTUP,
+            !this.state.value.preferences[APP_BEHAVIOR_PREFS][RUN_SERVER_ON_STARTUP]
+        )
     }
 
     changeTheme = (theme: Theme) => {

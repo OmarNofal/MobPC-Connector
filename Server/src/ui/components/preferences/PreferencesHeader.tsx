@@ -9,7 +9,8 @@ export default function PreferencesHeader({ title }: PreferencesHeaderProps) {
 
     return (
         <Typography
-            variant='h6'
+            variant='body1'
+            fontWeight={'400'}
             color={palette.primary.main}
             sx={{ userSelect: 'none' }}
         >

@@ -1,4 +1,4 @@
-import { Menu, Notification, Tray, app, ipcMain, screen } from 'electron'
+import { Menu, Notification, Tray, app, clipboard, ipcMain, screen } from 'electron'
 import path from 'path'
 import AuthorizationManager from './auth/auth'
 import FirebaseIPService from './firebase/firebase'
@@ -8,14 +8,17 @@ import DetectionServer from './server/detectionServer'
 import MainServer from './server/mainServer'
 import { mapBehaviorSubject } from './utilities/rxUtils'
 import AppWindow from './window/appWindow'
+import os from 'os'
 
-import { BehaviorSubject } from 'rxjs'
+import { BehaviorSubject, distinct, map } from 'rxjs'
 import trayIcon from '../logo/logo_small.png'
 import { DELETE_DEVICE, DEVICE_CONNECTED_EVENT, GENERATE_PAIRING_PAYLOAD } from './bridges/authBridges'
 import { START_SERVER_COMMAND, STOP_SERVER_COMMAND } from './bridges/mainServerBridge'
 import generatePairingPayload from './service/pairing/pairing'
 import observeNetworkInterfaces, { NetworkInterface } from './utilities/networkInterfaces'
 import { setupIPCMainPrefsHandler } from './ipc/ipcHandlers'
+import { APP_BEHAVIOR_PREFS, RUN_SERVER_ON_STARTUP, START_ON_LOGIN } from './model/preferences'
+import { setAppStartOnLogin } from './appStartup'
 
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string
@@ -23,6 +26,7 @@ declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string
 if (process.platform === 'win32') {
     app.setAppUserModelId(app.name)
 }
+if (require('electron-squirrel-startup')) app.quit()
 
 /**
  * This is the main application class.
@@ -94,15 +98,26 @@ export default class Application {
                 else this.detectionServer.run()
             })
 
-            this.showWindow()
+            clipboard.writeText(MAIN_WINDOW_WEBPACK_ENTRY + ' ' + MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY)
+
+            if (!process.argv.includes('--login')) this.showWindow()
             this.setupTray()
+
+            // run server if user set it in the preferences
+            if (preferencesManager.currentPreferences.value[APP_BEHAVIOR_PREFS][RUN_SERVER_ON_STARTUP])
+                this.runServers()
+
+            const shouldStartOnLogin = preferencesManager.currentPreferences.value[APP_BEHAVIOR_PREFS][START_ON_LOGIN]
+            setAppStartOnLogin(shouldStartOnLogin)
         })
 
         app.on('window-all-closed', (e) => e.preventDefault())
+
+        this.firebaseService.startService()
     }
 
     setupTray = () => {
-        this.tray = new Tray(path.resolve(trayIcon))
+        this.tray = new Tray(path.resolve(path.resolve(__dirname, trayIcon)))
         const contextMenu = Menu.buildFromTemplate([])
         this.tray.setToolTip('MobPC Connector')
         this.tray.setContextMenu(contextMenu)
@@ -113,7 +128,6 @@ export default class Application {
     runServers = () => {
         this.mainServer.run()
         this.detectionServer.run()
-        this.firebaseService.startService()
     }
 
     showWindow = () => {
@@ -123,8 +137,8 @@ export default class Application {
         }
 
         const primaryDisplay = screen.getPrimaryDisplay()
-        const width = primaryDisplay.size.width / 2
-        const height = primaryDisplay.size.height / 2
+        const width = primaryDisplay.size.width * 0.75
+        const height = primaryDisplay.size.height * 0.75
 
         const window = new AppWindow(
             {
@@ -134,7 +148,6 @@ export default class Application {
                     preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
                 },
                 show: true,
-                hasShadow: true,
             },
             [
                 // the observables that are pushed through IPC to the browser window to be rendered by the UI
@@ -224,5 +237,9 @@ export default class Application {
                 }
             }
         })
+
+        this.prefsManager.currentPreferences
+            .pipe(map((v) => v[APP_BEHAVIOR_PREFS][START_ON_LOGIN]))
+            .subscribe(setAppStartOnLogin)
     }
 }

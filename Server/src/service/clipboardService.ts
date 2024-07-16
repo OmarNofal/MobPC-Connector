@@ -1,17 +1,15 @@
-import clipboardy from 'clipboardy';
-import { notifyOfNewClipboardItem } from '../utilities/notificationSystem';
-
+import { notifyOfNewClipboardItem } from '../utilities/notificationSystem'
+import { clipboard } from 'electron'
 
 interface ClipboardService {
-
     writeTextToClipboard(text: string)
 }
 
 function writeTextToClipboard(text: string) {
-    clipboardy.write(text);
-    notifyOfNewClipboardItem(text);
+    clipboard.writeText(text)
+    notifyOfNewClipboardItem(text)
 }
 
 export const clipboardService: ClipboardService = {
-    writeTextToClipboard: writeTextToClipboard
+    writeTextToClipboard: writeTextToClipboard,
 }

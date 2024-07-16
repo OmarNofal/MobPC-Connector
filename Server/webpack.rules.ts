@@ -38,7 +38,7 @@ export const rules: Required<ModuleOptions>['rules'] = [
         loader: 'file-loader',
         options: {
             name: '[path][name].[ext]',
-        },
+        }
     },
     {
         test: /\.tsx?/,

@@ -21,8 +21,18 @@ export default function PreferencesMultiselect(props: PreferencesMultiselectProp
                 display={'flex'}
                 flexDirection={'column'}
             >
-                <Typography variant='h5'>{props.title}</Typography>
-                <Typography variant='caption'>{props.subtitle}</Typography>
+                <Typography
+                    variant='h6'
+                    sx={{ userSelect: 'none' }}
+                >
+                    {props.title}
+                </Typography>
+                <Typography
+                    variant='caption'
+                    sx={{ userSelect: 'none' }}
+                >
+                    {props.subtitle}
+                </Typography>
             </Stack>
 
             <div style={{ flex: '1' }}></div>

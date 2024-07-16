@@ -125,7 +125,11 @@ export default class MainServer {
         // holds the current state of the express server (opened or closed or error)
         const proxyServerObservable = merge(closeEvent, openEvent, errorEvent)
 
-        this.state = new BehaviorSubject<MainServerState>('init')
+        this.state = new BehaviorSubject<MainServerState>({
+            state: 'closed',
+            port: 6543,
+            serverName: 'Omar Walid',
+        })
         proxyServerObservable
             .pipe(
                 map((val): MainServerState => {
@@ -167,7 +171,12 @@ export default class MainServer {
         const app = express()
         app.use(express.urlencoded({ extended: true }))
 
-        addDownloadRoutes(app, authMiddleware, authManager.createFileAccessToken, authManager.getPathFromFileAccessToken)
+        addDownloadRoutes(
+            app,
+            authMiddleware,
+            authManager.createFileAccessToken,
+            authManager.getPathFromFileAccessToken
+        )
         addDirectoryRoutes(app, authMiddleware)
         addClipboardRoutes(app, authMiddleware)
         addBrowserRoutes(app, authMiddleware)
@@ -191,7 +200,12 @@ export default class MainServer {
         const app = express()
 
         app.use(express.urlencoded({ extended: true }))
-        addDownloadRoutes(app, authMiddleware, authManager.createFileAccessToken, authManager.getPathFromFileAccessToken)
+        addDownloadRoutes(
+            app,
+            authMiddleware,
+            authManager.createFileAccessToken,
+            authManager.getPathFromFileAccessToken
+        )
         addStatusRoutes(app, () => this.serverInformation.value.uuid)
 
         const httpServer = http.createServer(app)

@@ -3,7 +3,7 @@
     "displayName": "MobPC Connector",
     "version": "1.0.0",
     "description": "This application enables you to control you PC from a mobile device (Android currently)",
-    "main": ".webpack/main/index.js",
+    "main": ".webpack/main",
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
         "build": "tsc",
@@ -68,6 +68,7 @@
         "@electron-forge/plugin-auto-unpack-natives": "^7.4.0",
         "@electron-forge/plugin-fuses": "^7.4.0",
         "@electron/fuses": "^1.8.0",
+        "@electron/packager": "^18.3.3",
         "@types/bcrypt": "^5.0.2",
         "@types/drivelist": "^6.4.4",
         "@types/express": "^4.17.21",
