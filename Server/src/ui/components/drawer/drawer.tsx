@@ -55,6 +55,7 @@ export default function AppDrawer(props: AppDrawerProps) {
                 <Typography
                     variant='h6'
                     fontWeight={'800'}
+                    sx={{ userSelect: 'none' }}
                 >
                     MobPC Connector
                 </Typography>

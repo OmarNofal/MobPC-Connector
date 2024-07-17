@@ -117,8 +117,14 @@ export default class Application {
     }
 
     setupTray = () => {
-        this.tray = new Tray(path.resolve(path.resolve(__dirname, trayIcon)))
-        const contextMenu = Menu.buildFromTemplate([])
+        this.tray = new Tray(path.resolve(__dirname, trayIcon))
+        const contextMenu = Menu.buildFromTemplate([
+            {
+                label: 'Exit',
+                type: 'normal',
+                click: this.quitApp,
+            },
+        ])
         this.tray.setToolTip('MobPC Connector')
         this.tray.setContextMenu(contextMenu)
 
@@ -241,5 +247,13 @@ export default class Application {
         this.prefsManager.currentPreferences
             .pipe(map((v) => v[APP_BEHAVIOR_PREFS][START_ON_LOGIN]))
             .subscribe(setAppStartOnLogin)
+    }
+
+    quitApp = () => {
+        this.mainServer.stop()
+        this.detectionServer.close()
+        this.firebaseService.stopService()
+        this.window.destroy()
+        app.quit()
     }
 }

@@ -64,7 +64,7 @@ function InitializedScreen(props: { state: ServerScreenInitializedState; onToggl
                 elevation={1}
             >
                 <Stack
-                    direction={'row'}
+                    direction={'column'}
                     paddingTop={'24px'}
                     paddingRight={'24px'}
                     paddingLeft={'24px'}
@@ -74,7 +74,6 @@ function InitializedScreen(props: { state: ServerScreenInitializedState; onToggl
                     <ServerInformationCard
                         sx={{
                             flex: 1,
-                            maxWidth: '50%',
                         }}
                         serverState={state}
                         onToggleServer={props.onToggle}
@@ -82,8 +81,6 @@ function InitializedScreen(props: { state: ServerScreenInitializedState; onToggl
                     <div
                         style={{
                             flex: 1,
-                            maxWidth: '50%',
-                            marginLeft: '16px',
                         }}
                     >
                         <NetworkInterfacesCard interfaces={state.networkInterfaces} />

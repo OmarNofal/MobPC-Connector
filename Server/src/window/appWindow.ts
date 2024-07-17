@@ -2,6 +2,7 @@ import { BrowserWindow, Menu, Notification } from 'electron'
 import { Observable, Subscription } from 'rxjs'
 import { pipeObservableToIPC } from '../utilities/rxIPC'
 import icon from '../../logo/logo_large.png'
+import xSmallIcon from '../../logo/logo_xsmall.png'
 import path from 'path'
 
 type IPCObservable = {
@@ -31,18 +32,13 @@ export default class AppWindow extends BrowserWindow {
      */
     constructor(options: Electron.BrowserWindowConstructorOptions, observables: IPCObservable[]) {
         super(options)
-        let notification = new Notification({
-            title: icon,
-            body: icon,
-            silent: false,
-        }).show()
-        console.log(process.cwd())
-        console.log(icon)
-        this.setIcon(path.resolve(__dirname, icon))
+
+        //this.setIcon(path.resolve(__dirname, xSmallIcon))
         this.setTitle('MobPC Connector')
         this.setMenu(new Menu())
         this.setupObservables(observables)
         this.on('close', () => this.cleanUpObservables())
+
     }
 
     setupObservables = (observables: IPCObservable[]) => {
