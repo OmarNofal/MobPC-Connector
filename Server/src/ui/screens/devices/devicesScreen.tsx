@@ -71,7 +71,6 @@ export function DevicesScreen() {
                 title='Devices'
                 onOpenPairingDialog={() => setOpenDialog(true)}
             />
-            <Divider variant='fullWidth' />
             <Paper
                 sx={{
                     height: '100%',
@@ -118,6 +117,7 @@ function TopBar(props: { title: string; sx?: SxProps<Theme>; onOpenPairingDialog
                     </IconButton>
                 </Tooltip>
             </Toolbar>
+            <Divider variant='fullWidth' />
         </AppBar>
     )
 }

@@ -30,7 +30,7 @@ function LoadingScreen() {
             sx={{
                 backgroundColor: useTheme().palette.background.default,
                 width: '100%',
-                height: '100%'
+                height: '100%',
             }}
         >
             <CircularProgress variant='indeterminate' />
@@ -51,6 +51,7 @@ function InitializedScreen(props: { state: ServerScreenInitializedState; onToggl
             <TopBar
                 sx={{ bgcolor: palette.background.default }}
                 title='Server'
+                divider
             />
 
             <Divider />

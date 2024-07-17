@@ -5,9 +5,17 @@ import PreferencesScreenViewModel from './PreferencesScreenViewModel'
 import { useUnwrap } from '../../utils'
 import PreferencesHeader from '../../components/preferences/PreferencesHeader'
 import PreferencesMultiselect from '../../components/preferences/PreferencesMultiselect'
-import { APP_BEHAVIOR_PREFS, THEME, Theme, UI_PREFS } from '../../../model/preferences'
+import {
+    APP_BEHAVIOR_PREFS,
+    SERVER_CONFIGURATION,
+    SERVER_INFORMATION,
+    THEME,
+    Theme,
+    UI_PREFS,
+} from '../../../model/preferences'
 import { DisplayPreferences } from './displayPreferences'
 import { AppBehaviorPreferences } from './appBehaviorPreferences'
+import { ServerConfigPreferences } from './serverConfigPreferences'
 
 export function PreferencesScreen() {
     const vm = useMemo(() => new PreferencesScreenViewModel(), [])
@@ -27,8 +35,8 @@ export function PreferencesScreen() {
             <TopBar
                 title='Preferences'
                 sx={{ bgcolor: palette.background.default }}
+                divider
             />
-            <Divider variant='fullWidth' />
 
             <Paper
                 sx={{
@@ -57,6 +65,13 @@ export function PreferencesScreen() {
 
                 <Divider
                     sx={{ marginTop: '32px', width: 'auto', marginLeft: -32, marginRight: -4, marginBottom: '32px' }}
+                />
+
+                <ServerConfigPreferences
+                    serverInformation={prefs[SERVER_INFORMATION]}
+                    serverConfiguration={prefs[SERVER_CONFIGURATION]}
+                    onServerNameChange={vm.changeServerName}
+                    onServerPortChange={vm.changeServerPort}
                 />
             </Paper>
         </Stack>

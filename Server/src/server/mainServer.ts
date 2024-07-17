@@ -7,7 +7,7 @@ import { BehaviorSubject, fromEvent, map, merge } from 'rxjs'
 import AuthorizationManager from '../auth/auth'
 import credentialsManager from '../credentials/CredentialsManager'
 import { MainServerState } from '../model/mainServerState'
-import { ServerInformation } from '../model/preferences'
+import { NAME, PORT, ServerConfiguration, ServerInformation } from '../model/preferences'
 import createAuthMiddlewareFunction from '../routes/authMiddleware'
 import addAuthRoutes from '../routes/authRoutes'
 import addBrowserRoutes from '../routes/browserRoutes'
@@ -75,6 +75,11 @@ export default class MainServer {
     serverInformation: BehaviorSubject<ServerInformation>
 
     /**
+     * The configuration of the server containing the port
+     */
+    serverConfiguration: BehaviorSubject<ServerConfiguration>
+
+    /**
      *
      * @param appDirectory The directory of the app configuration files. This is used
      * to create a folder to store temporarily uploaded files
@@ -83,9 +88,11 @@ export default class MainServer {
     constructor(
         appDirectory: string,
         authManager: AuthorizationManager,
-        serverInformation: BehaviorSubject<ServerInformation>
+        serverInformation: BehaviorSubject<ServerInformation>,
+        serverConfiguration: BehaviorSubject<ServerConfiguration>
     ) {
         this.serverInformation = serverInformation
+        this.serverConfiguration = serverConfiguration
         this.setupServers(appDirectory, authManager)
         this.setupObservables()
     }
@@ -96,7 +103,7 @@ export default class MainServer {
      * Note: The `fsWatcherServer` is always running and waiting to upgrade connections
      */
     run = () => {
-        this.proxyServer.listen(6543)
+        this.proxyServer.listen(this.serverConfiguration.value[PORT])
     }
 
     /**
@@ -136,19 +143,29 @@ export default class MainServer {
                     if (val == 'listening') {
                         return {
                             state: 'running',
-                            port: 6543,
-                            serverName: 'Omar Walid',
+                            port: this.serverConfiguration.value[PORT],
+                            serverName: this.serverInformation.value[NAME],
                         }
                     } else {
                         return {
                             state: 'closed',
-                            port: 6543,
-                            serverName: 'Omar Walid',
+                            port: this.serverConfiguration.value[PORT],
+                            serverName: this.serverInformation.value[NAME],
                         }
                     }
                 })
             )
             .subscribe(this.state)
+
+        // when the port changes restart the server
+        this.serverConfiguration.pipe(map((v) => v[PORT])).subscribe(() => {
+            if (this.isRunning()) {
+                this.stop()
+                this.run()
+            } else {
+                this.stop() // stop again to trigger refresh of the server state
+            }
+        })
     }
 
     private setupServers = (appDirectory: string, authManager: AuthorizationManager) => {

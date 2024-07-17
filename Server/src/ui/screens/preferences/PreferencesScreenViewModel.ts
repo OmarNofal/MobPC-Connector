@@ -2,7 +2,11 @@ import { BehaviorSubject } from 'rxjs'
 import {
     APP_BEHAVIOR_PREFS,
     AppPreferences,
+    NAME,
+    PORT,
     RUN_SERVER_ON_STARTUP,
+    SERVER_CONFIGURATION,
+    SERVER_INFORMATION,
     START_ON_LOGIN,
     THEME,
     Theme,
@@ -56,5 +60,13 @@ export default class PreferencesScreenViewModel {
 
     changeTheme = (theme: Theme) => {
         window.prefs.updatePreferencesKey(UI_PREFS, THEME, theme)
+    }
+
+    changeServerName = (name: string) => {
+        window.prefs.updatePreferencesKey(SERVER_INFORMATION, NAME, name)
+    }
+
+    changeServerPort = (port: number) => {
+        window.prefs.updatePreferencesKey(SERVER_CONFIGURATION, PORT, port)
     }
 }

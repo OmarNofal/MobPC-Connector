@@ -22,7 +22,7 @@ export default function NetworkInterfacesCard(props: NetworkInterfacesCardProps)
 
             {props.interfaces.map((iface, i) => {
                 return (
-                    <>
+                    <div key={iface.ipv4}>
                         <InformationRow
                             title={iface.name}
                             value={iface.ipv4}
@@ -33,10 +33,9 @@ export default function NetworkInterfacesCard(props: NetworkInterfacesCardProps)
                             }}
                         />
                         <Divider variant='fullWidth' />
-                    </>
+                    </div>
                 )
             })}
-
         </Card>
     )
 }

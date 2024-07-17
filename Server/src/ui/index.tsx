@@ -8,9 +8,9 @@ import { HashRouter } from 'react-router-dom'
 
 
 
-const body = document.body
+const container = document.getElementById('container')
 
-const root = createRoot(body)
+const root = createRoot(container)
 
 
 

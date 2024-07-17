@@ -1,17 +1,17 @@
-import { AppBar, SxProps, Theme, Toolbar, Typography } from '@mui/material'
+import { AppBar, Divider, SxProps, Theme, Toolbar, Typography } from '@mui/material'
 
 type TopBarProps = {
     sx?: SxProps<Theme>
     title: string
+    divider?: boolean
 }
 
 export default function TopBar(props: TopBarProps) {
     return (
         <AppBar
             position='sticky'
-            sx={{...props.sx, boxShadow: 'none'}}
+            sx={{ ...props.sx, boxShadow: 'none' }}
             elevation={1}
-            
         >
             <Toolbar sx={{ padding: '12' }}>
                 <Typography
@@ -23,6 +23,7 @@ export default function TopBar(props: TopBarProps) {
                     {props.title}
                 </Typography>
             </Toolbar>
+            {props.divider && <Divider variant='fullWidth' />}
         </AppBar>
     )
 }

@@ -2,7 +2,14 @@ import dgram from 'node:dgram'
 import os from 'os'
 import { BehaviorSubject, Subscription, distinctUntilKeyChanged } from 'rxjs'
 import pkg from '../../package.json'
-import { DetectionServerConfiguration, ServerInformation } from '../model/preferences'
+import {
+    DetectionServerConfiguration,
+    NAME,
+    PORT,
+    ServerConfiguration,
+    ServerInformation,
+    UUID,
+} from '../model/preferences'
 import { DetectionServerState } from '../model/detectionServerState'
 
 /**
@@ -26,17 +33,21 @@ export default class DetectionServer {
 
     serverInformation: BehaviorSubject<ServerInformation>
 
+    serverConfiguration: BehaviorSubject<ServerConfiguration>
+
     /**
      * @param config A behavior subject containing the current configuration of the server
      */
     constructor(
         config: BehaviorSubject<DetectionServerConfiguration>,
-        serverInformation: BehaviorSubject<ServerInformation>
+        serverInformation: BehaviorSubject<ServerInformation>,
+        serverConfiguration: BehaviorSubject<ServerConfiguration>
     ) {
         this.state = new BehaviorSubject<DetectionServerState>(DetectionServerState.STOPPED)
         this.socket = dgram.createSocket('udp4')
 
         this.serverInformation = serverInformation
+        this.serverConfiguration = serverConfiguration
 
         this.currentConfiguration = config.value
         this.subscription = config
@@ -61,7 +72,11 @@ export default class DetectionServer {
 
     /**Close the ongoing running socket if any */
     close = () => {
-        this.socket.close(this.emitServerClosed)
+        try {
+            this.socket.close(this.emitServerClosed)
+        } catch (e) {
+            console.log('Failed to close Detection Server ' + e)
+        }
     }
 
     private emitServerClosed = () => {
@@ -79,14 +94,14 @@ export default class DetectionServer {
         if (msg.toString() === 'PC Connector Discovery') {
             // respond with server info
             const data = {
-                name: this.serverInformation.value.name,
+                name: this.serverInformation.value[NAME],
                 version: pkg.version,
-                port: 6543,
+                port: this.serverConfiguration.value[PORT],
                 ip: this.socket.address().address,
-                id: this.serverInformation.value.uuid,
+                id: this.serverInformation.value[UUID],
                 os: os.platform(),
             }
-            
+
             this.socket.send(JSON.stringify(data), remoteInfo.port, remoteInfo.address, (error, _) => {
                 if (!error) {
                     console.log(`Device ${remoteInfo.address} discovered`)

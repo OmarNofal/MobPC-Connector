@@ -17,7 +17,13 @@ import { START_SERVER_COMMAND, STOP_SERVER_COMMAND } from './bridges/mainServerB
 import generatePairingPayload from './service/pairing/pairing'
 import observeNetworkInterfaces, { NetworkInterface } from './utilities/networkInterfaces'
 import { setupIPCMainPrefsHandler } from './ipc/ipcHandlers'
-import { APP_BEHAVIOR_PREFS, RUN_SERVER_ON_STARTUP, START_ON_LOGIN } from './model/preferences'
+import {
+    APP_BEHAVIOR_PREFS,
+    RUN_SERVER_ON_STARTUP,
+    SERVER_CONFIGURATION,
+    SERVER_INFORMATION,
+    START_ON_LOGIN,
+} from './model/preferences'
 import { setAppStartOnLogin } from './appStartup'
 
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string
@@ -67,9 +73,13 @@ export default class Application {
             (v) => v.detectionServerPrefs
         )
 
-        let serverInformation = mapBehaviorSubject(preferencesManager.currentPreferences, (v) => v.serverInformation)
+        let serverInformation = mapBehaviorSubject(preferencesManager.currentPreferences, (v) => v[SERVER_INFORMATION])
+        let serverConfiguration = mapBehaviorSubject(
+            preferencesManager.currentPreferences,
+            (v) => v[SERVER_CONFIGURATION]
+        )
 
-        let detectionServer = new DetectionServer(detectionServerConfiguration, serverInformation)
+        let detectionServer = new DetectionServer(detectionServerConfiguration, serverInformation, serverConfiguration)
 
         let firebaseServerConfig = mapBehaviorSubject(
             preferencesManager.currentPreferences,
@@ -77,7 +87,7 @@ export default class Application {
         )
         let firebaseService = new FirebaseIPService(firebaseServerConfig, serverInformation)
 
-        const mainServer = new MainServer(appDirectory, authManager, serverInformation)
+        const mainServer = new MainServer(appDirectory, authManager, serverInformation, serverConfiguration)
 
         this.authManager = authManager
         this.prefsManager = preferencesManager
@@ -250,10 +260,15 @@ export default class Application {
     }
 
     quitApp = () => {
-        this.mainServer.stop()
-        this.detectionServer.close()
-        this.firebaseService.stopService()
-        this.window.destroy()
-        app.quit()
+        try {
+            this.mainServer.stop()
+            this.detectionServer.close()
+            this.firebaseService.stopService()
+            this.window.destroy()
+        } catch (e) {
+            console.error('Error while cleaning up: ' + e)
+        } finally {
+            app.quit()
+        }
     }
 }
