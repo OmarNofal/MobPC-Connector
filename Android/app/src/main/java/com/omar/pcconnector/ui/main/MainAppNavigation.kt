@@ -13,6 +13,9 @@ import androidx.navigation.navArgument
 import com.omar.pcconnector.data.DevicesRepository
 import com.omar.pcconnector.getRetrofit
 import com.omar.pcconnector.ui.event.ApplicationEvent
+import com.omar.pcconnector.ui.nav.Screen
+import com.omar.pcconnector.ui.preferences.PreferencesScreen
+import com.omar.pcconnector.ui.preferences.server.ServerPreferencesScreen
 import com.omar.pcconnector.ui.preview.ImagePreview
 import com.omar.pcconnector.ui.session.ServerSession
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -50,7 +53,8 @@ fun NavGraphBuilder.serverNavGraph(
          */
         composable(FS_ROUTE) { backStackEntry ->
 
-            val id = backStackEntry.arguments?.getString("id") ?: defaultDeviceId
+            val id =
+                backStackEntry.arguments?.getString("id") ?: defaultDeviceId
 
             Log.d("Device ID: ", id)
 
@@ -119,10 +123,19 @@ fun NavGraphBuilder.serverNavGraph(
 }
 
 
-fun NavGraphBuilder.settingsScreen() {
+fun NavGraphBuilder.settingsScreen(
+    navController: NavController,
+    onOpenDrawer: () -> Unit
+) {
 
-    composable(SETTINGS_ROUTE) {
+    composable<Screen.SettingsScreen> {
+        PreferencesScreen(openDrawer = onOpenDrawer, onDeviceClicked = {
+            navController.navigate(Screen.ServerSettingsScreen(it.deviceInfo.id))
+        })
+    }
 
+    composable<Screen.ServerSettingsScreen> {
+        ServerPreferencesScreen(onDeviceDeleted = { navController.popBackStack() })
     }
 
 }

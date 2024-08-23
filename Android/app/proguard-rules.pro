@@ -28,3 +28,7 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+-keepclassmembers class com.omar.pcconnector.preferences.UserPreferences
+-keep class com.omar.pcconnector.preferences.UserPreferences
+-keepclassmembers class com.omar.pcconnector.preferences.ServerPreferences
+-keep class com.omar.pcconnector.preferences.ServerPreferences

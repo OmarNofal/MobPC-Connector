@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
+import com.omar.pcconnector.preferences.UserPreferences.AppTheme
 
 
 private val LightColors = lightColorScheme(
@@ -103,4 +104,11 @@ fun AppTheme(
         colorScheme = colors,
         content = content
     )
+}
+
+@Composable
+fun AppTheme.isDarkTheme(): Boolean = when(this) {
+    AppTheme.SYSTEM -> isSystemInDarkTheme()
+    AppTheme.DARK -> true
+    else -> false
 }

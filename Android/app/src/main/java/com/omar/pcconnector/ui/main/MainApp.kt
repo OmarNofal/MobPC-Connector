@@ -16,6 +16,7 @@ import com.omar.pcconnector.data.DevicesRepository
 import com.omar.pcconnector.model.PairedDevice
 import com.omar.pcconnector.ui.drawer.AppDrawer
 import com.omar.pcconnector.ui.event.ApplicationEvent
+import com.omar.pcconnector.ui.nav.Screen
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
 
@@ -50,10 +51,13 @@ fun MainApp(
             scope.launch { drawerState.close() }
         },
         onSettingsClicked = {
-            navController.navigate(SETTINGS_ROUTE)
+            navController.navigate(Screen.SettingsScreen)
             scope.launch { drawerState.close() }
         }
     ) {
+
+
+        val openDrawer: () -> Unit = { scope.launch { drawerState.open() } }
 
         NavHost(
             navController = navController,
@@ -66,12 +70,13 @@ fun MainApp(
                 defaultDeviceId = pairedDevices.first().deviceInfo.id,
                 devicesRepository = devicesRepository,
                 eventsFlow = eventsFlow,
-                onOpenDrawer = {
-                    scope.launch { drawerState.open() }
-                }
+                onOpenDrawer = openDrawer
             )
 
-            settingsScreen()
+            settingsScreen(
+                onOpenDrawer = openDrawer,
+                navController = navController
+            )
 
         }
 

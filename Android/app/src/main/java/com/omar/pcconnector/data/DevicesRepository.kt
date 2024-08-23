@@ -34,6 +34,9 @@ class DevicesRepository @Inject constructor(
         deviceDao.getDevice(id).toPairedDevice()
     }
 
+    fun deleteDevice(serverId: String) =
+        scope.launch { deviceDao.deleteById(serverId) }
+
     suspend fun storeDevice(
         pairedDevice: PairedDevice
     ) {

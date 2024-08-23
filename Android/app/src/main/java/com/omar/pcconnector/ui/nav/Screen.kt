@@ -57,9 +57,11 @@ sealed interface Screen {
      * The settings screen
      */
     @Serializable
-    object SettingsScreen : Screen
+    data object SettingsScreen : Screen
 
 
+    @Serializable
+    data class ServerSettingsScreen(val serverId: String): Screen
     /**
      * The screen shown to the user when he is not paired
      * with any server

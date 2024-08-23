@@ -21,6 +21,7 @@ import com.omar.pcconnector.operation.ListDirectoryOperation
 import com.omar.pcconnector.operation.MakeDirectoriesOperation
 import com.omar.pcconnector.operation.RenameOperation
 import com.omar.pcconnector.operation.transfer.TransfersManager
+import com.omar.pcconnector.preferences.UserPreferencesRepository
 import com.omar.pcconnector.ui.event.ApplicationEvent
 import com.omar.pcconnector.ui.event.ApplicationOperation
 import dagger.assisted.Assisted
@@ -43,6 +44,7 @@ import java.nio.file.Paths
 class FileSystemViewModel @AssistedInject constructor(
     private val transfersManager: TransfersManager,
     private val eventsFlow: MutableSharedFlow<ApplicationEvent>,
+    private val userPreferencesRepository: UserPreferencesRepository,
     @Assisted private val connectionStatusFlow: StateFlow<ConnectionStatus>,
     @Assisted private val serverId: String,
     @Assisted("token") private val token: String,
@@ -91,7 +93,14 @@ class FileSystemViewModel @AssistedInject constructor(
             }.collect {
                 val api = it.connection.retrofit.fileSystemApi()
                 val drives = GetDrivesOperation(api).start()
-                val directoryToLoad = Paths.get(drives.first(), "/")
+                val directoryToLoad =
+                    userPreferencesRepository.preferences.value.serversPreferencesList
+                        .find { it.serverId == serverId }?.startPath?.let {
+                            Paths.get(
+                                it
+                            )
+                        }
+                        ?: Paths.get(drives.first(), "/")
                 _state.value =
                     FileSystemState.Initialized.Loading(
                         directoryToLoad,

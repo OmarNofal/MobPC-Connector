@@ -89,6 +89,7 @@ class DownloadOperation(
                 .substringAfter("filename=")
                 .removeSuffix("\"")
                 .removePrefix("\"")
+                .let { Uri.decode(it) }
 
         val fileSize = response.headers()["Content-Length"]!!.toLong()
 
