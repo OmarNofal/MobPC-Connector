@@ -29,34 +29,43 @@ class UserPreferencesRepository @Inject constructor(
 
 
     fun setTheme(appTheme: AppTheme) {
-        scope.launch {
-            dataStore.updateData {
-                it.toBuilder().setAppTheme(appTheme).build()
-            }
+        updateData {
+            it.toBuilder().setAppTheme(appTheme).build()
+        }
+    }
+
+    fun setServerAsDefault(serverId: String) {
+        updateData {
+            it.toBuilder().setDefaultServerId(serverId).build()
         }
     }
 
     fun setServerStartPath(serverId: String, startPath: String) {
-        scope.launch {
-            dataStore.updateData {
+        updateData {
+            val serverPrefs =
+                it.serversPreferencesList.firstOrNull { it.serverId == serverId }
 
-                val serverPrefs =
-                    it.serversPreferencesList.firstOrNull { it.serverId == serverId }
+            val index = it.serversPreferencesList.indexOf(serverPrefs)
 
-                val index = it.serversPreferencesList.indexOf(serverPrefs)
-
-                return@updateData if (serverPrefs == null) {
-                    it.toBuilder().addServersPreferences(
-                        ServerPreferences.newBuilder().setServerId(serverId)
-                            .setStartPath(startPath).build()
-                    ).build()
-                } else {
-                    it.toBuilder().setServersPreferences(
-                        index,
-                        serverPrefs.toBuilder().setStartPath(startPath)
-                    ).build()
-                }
+            return@updateData if (serverPrefs == null) {
+                it.toBuilder().addServersPreferences(
+                    ServerPreferences.newBuilder().setServerId(serverId)
+                        .setStartPath(startPath).build()
+                ).build()
+            } else {
+                it.toBuilder().setServersPreferences(
+                    index,
+                    serverPrefs.toBuilder().setStartPath(startPath)
+                ).build()
             }
+
+        }
+    }
+
+
+    fun updateData(callback: (UserPreferences) -> UserPreferences) {
+        scope.launch {
+            dataStore.updateData(callback)
         }
     }
 

@@ -40,5 +40,8 @@ class ServerPreferencesViewModel @Inject constructor(
         devicesRepository.deleteDevice(serverId)
     }
 
+    fun setAsDefault() {
+        userPreferencesRepository.setServerAsDefault(serverId)
+    }
 
 }

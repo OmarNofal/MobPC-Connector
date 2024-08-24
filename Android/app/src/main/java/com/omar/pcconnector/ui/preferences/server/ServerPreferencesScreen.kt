@@ -27,16 +27,20 @@ import com.omar.pcconnector.ui.preferences.groupHeader
 @Composable
 fun ServerPreferencesScreen(
     serverPreferencesViewModel: ServerPreferencesViewModel = hiltViewModel(),
-    onDeviceDeleted: () -> Unit
+    onDeviceDeleted: () -> Unit,
+    onBackPressed: () -> Unit
 ) {
 
     ServerPreferencesScreen(
         serverPreferencesViewModel.pairedDevice,
-        serverPreferencesViewModel::setStartPath
-    ) {
-        serverPreferencesViewModel.deleteServer()
-        onDeviceDeleted()
-    }
+        serverPreferencesViewModel::setStartPath,
+        serverPreferencesViewModel::setAsDefault,
+        {
+            serverPreferencesViewModel.deleteServer()
+            onDeviceDeleted()
+        },
+        onBackPressed
+    )
 
 }
 
@@ -45,7 +49,9 @@ fun ServerPreferencesScreen(
 fun ServerPreferencesScreen(
     pairedDevice: PairedDevice,
     setServerStartPath: (String) -> Unit,
-    onDeleteServer: () -> Unit
+    setServerAsDefault: () -> Unit,
+    onDeleteServer: () -> Unit,
+    onBackPressed: () -> Unit
 ) {
 
 
@@ -61,7 +67,7 @@ fun ServerPreferencesScreen(
         )
 
     Scaffold(
-        topBar = { TopBar(onDelete = { isDeleteDialogShown = true }) }
+        topBar = { TopBar(goBack = onBackPressed, onDelete = { isDeleteDialogShown = true }) }
     ) {
 
         LazyColumn(
@@ -86,7 +92,8 @@ fun ServerPreferencesScreen(
 
             singleServerPreferencesGroup(
                 pairedDevice.deviceInfo.id,
-                setServerStartPath
+                setServerStartPath,
+                setServerAsDefault
             )
 
         }

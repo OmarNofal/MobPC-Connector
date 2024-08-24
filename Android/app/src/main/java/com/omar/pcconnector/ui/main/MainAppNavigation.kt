@@ -135,7 +135,7 @@ fun NavGraphBuilder.settingsScreen(
     }
 
     composable<Screen.ServerSettingsScreen> {
-        ServerPreferencesScreen(onDeviceDeleted = { navController.popBackStack() })
+        ServerPreferencesScreen(onDeviceDeleted = { navController.popBackStack() }, onBackPressed = navController::popBackStack)
     }
 
 }

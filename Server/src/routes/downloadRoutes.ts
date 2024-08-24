@@ -12,7 +12,7 @@ function handleDownloadFile(file_path: string, res: Response) {
     console.log('Downloading: ' + file_path)
 
     const fileName = path.basename(file_path)
-    res.set('Content-Disposition', `inline; filename="${fileName}"`)
+    res.set('Content-Disposition', `inline; filename="${encodeURI(fileName)}"`)
     res.sendFile(file_path)
 }
 
