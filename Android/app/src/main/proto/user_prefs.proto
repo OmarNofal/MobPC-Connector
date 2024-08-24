@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+option java_package = "com.omar.pcconnector.preferences";
+option java_multiple_files = true;
+
+message UserPreferences {
+
+    enum AppTheme {
+        SYSTEM = 0;
+        LIGHT = 1;
+        DARK = 2;
+    }
+
+    AppTheme appTheme = 1;
+
+    string defaultServerId = 2;
+
+    repeated ServerPreferences serversPreferences = 3;
+
+}
+
+message ServerPreferences {
+
+
+    string serverId = 1;
+
+    /**
+    The path to navigate to when connecting
+    to the server
+     */
+    optional string startPath = 2;
+
+
+
+}
