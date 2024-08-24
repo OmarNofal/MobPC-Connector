@@ -81,9 +81,7 @@ class FileSystemViewModel @AssistedInject constructor(
 
                     watcher = FileSystemWatcher(it.connection)
                     viewModelScope.launch {
-                        watcher.eventFlow.collectLatest {
-                            refresh()
-                        }
+                        watcher.eventFlow.collectLatest(::onWatcherNotification)
                     }
 
                     false
@@ -95,17 +93,14 @@ class FileSystemViewModel @AssistedInject constructor(
                 val drives = GetDrivesOperation(api).start()
                 val directoryToLoad =
                     userPreferencesRepository.preferences.value.serversPreferencesList
-                        .find { it.serverId == serverId }?.startPath?.let {
-                            Paths.get(
-                                it
-                            )
-                        }
+                        .find { it.serverId == serverId }?.startPath?.let(Paths::get)
                         ?: Paths.get(drives.first(), "/")
                 _state.value =
-                    FileSystemState.Initialized.Loading(
-                        directoryToLoad,
+                    FileSystemState.Loaded(
+                        INVALID_PATH,
                         drives,
-                        emptyList()
+                        emptyList(),
+                        directoryToLoad
                     )
                 loadDirectory(directoryToLoad)
             }
@@ -138,42 +133,86 @@ class FileSystemViewModel @AssistedInject constructor(
     private fun loadDirectory(path: Path) {
         assert(_state.value !is FileSystemState.Loading)
         viewModelScope.launch {
-            getConnectionOrShowError()?.retrofit?.fileSystemApi()
-                ?: return@launch
-            val state = _state.value as FileSystemState.Initialized
-            _state.value =
-                FileSystemState.Initialized.Loading(
-                    path,
-                    state.drives,
-                    state.directoryStructure
-                )
-            refresh()
-            watchCurrentDirectory()
+
+            onDirectoryLoading(path)
+            val directoryContents = getDirectoryContents(path)
+            onDirectoryLoaded(path, directoryContents)
+
+            watchDirectory(path)
         }
     }
 
-    private fun refresh() {
-        assert(_state.value !is FileSystemState.Loading)
-        viewModelScope.launch {
-            val state = _state.value as FileSystemState.Initialized
-            val currentPath = state.currentDirectory
-            try {
-                val api = getConnectionOrShowError()?.retrofit?.fileSystemApi()
-                    ?: return@launch
-                val directoryContents =
-                    ListDirectoryOperation(api, currentPath).start()
-                        .filter { !it.name.startsWith(".") }
-                _state.value =
-                    FileSystemState.Initialized.Loaded(
-                        currentPath,
-                        state.drives,
-                        directoryContents
-                    )
-            } catch (e: Exception) { // if for any reason we can't access the folder, just go to its parent
-                loadDirectory(currentPath.parent)
-            }
+    private fun onDirectoryLoading(path: Path) {
+
+        val state = _state.value as FileSystemState.Loaded
+
+        _state.value =
+            FileSystemState.Loaded(
+                state.currentDirectory,
+                state.drives,
+                state.directoryStructure,
+                path
+            )
+    }
+
+    private fun onDirectoryLoaded(
+        path: Path,
+        directoryContents: List<Resource>
+    ) {
+
+        assert(_state.value is FileSystemState.Loaded)
+
+        val oldState = _state.value as FileSystemState.Loaded
+
+        _state.value =
+            FileSystemState.Loaded(
+                path,
+                oldState.drives,
+                directoryContents,
+                null
+            )
+    }
+
+    private suspend fun getDirectoryContents(path: Path): List<Resource> {
+        return try {
+            val api = getConnectionOrShowError()?.retrofit?.fileSystemApi()
+                ?: return emptyList()
+
+            ListDirectoryOperation(api, path).start()
+                .filter { !it.name.startsWith(".") } // remove hidden folders
+        } catch (e: Exception) { // if for any reason we can't access the folder, just go to its parent
+            emptyList()
         }
     }
+    /*
+        private fun refresh() {
+            assert(_state.value !is FileSystemState.Loading)
+            viewModelScope.launch {
+
+                val state = _state.value as FileSystemState.Loaded
+                val currentPath = state.currentDirectory
+                val pathToLoad = state.currentlyLoadingDirectory ?: return@launch
+
+                try {
+                    val api = getConnectionOrShowError()?.retrofit?.fileSystemApi()
+                        ?: return@launch
+
+                    val directoryContents =
+                        ListDirectoryOperation(api, pathToLoad).start()
+                            .filter { !it.name.startsWith(".") }
+
+                    _state.value =
+                        FileSystemState.Loaded(
+                            currentPath,
+                            state.drives,
+                            directoryContents,
+                            null
+                        )
+                } catch (e: Exception) { // if for any reason we can't access the folder, just go to its parent
+                    loadDirectory(currentPath.parent)
+                }
+            }
+        }*/
 
     private val _openFileEvents = MutableSharedFlow<Pair<String, String>>()
     val openFileEvents: SharedFlow<Pair<String, String>>
@@ -207,13 +246,18 @@ class FileSystemViewModel @AssistedInject constructor(
         }
     }
 
+    private fun onWatcherNotification(event: FileSystemWatcher.Event) {
+        val currentState = _state.value as? FileSystemState.Loaded ?: return
+        loadDirectory(currentState.currentDirectory)
+    }
+
     fun onPathChanged(path: Path) {
         loadDirectory(path)
     }
 
     fun onNavigateBack() {
         assert(_state.value !is FileSystemState.Loading)
-        val state = _state.value as FileSystemState.Initialized
+        val state = _state.value as FileSystemState.Loaded
         if (state.currentDirectory.nameCount <= 1) return
         val currentPath = state.currentDirectory
         loadDirectory(currentPath.parent)
@@ -221,7 +265,7 @@ class FileSystemViewModel @AssistedInject constructor(
 
     fun mkdirs(name: String) {
         assert(_state.value !is FileSystemState.Loading)
-        val state = _state.value as FileSystemState.Initialized
+        val state = _state.value as FileSystemState.Loaded
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val api = getConnectionOrShowError()?.retrofit?.fileSystemApi()
@@ -243,7 +287,7 @@ class FileSystemViewModel @AssistedInject constructor(
         overwrite: Boolean = false
     ) {
         assert(_state.value !is FileSystemState.Loading)
-        val state = _state.value as FileSystemState.Initialized
+        val state = _state.value as FileSystemState.Loaded
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val api = getConnectionOrShowError()?.retrofit?.fileSystemApi()
@@ -259,7 +303,7 @@ class FileSystemViewModel @AssistedInject constructor(
 
     fun deleteResource(resource: Resource) {
         assert(_state.value !is FileSystemState.Loading)
-        val state = _state.value as FileSystemState.Initialized
+        val state = _state.value as FileSystemState.Loaded
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val api = getConnectionOrShowError()?.retrofit?.fileSystemApi()
@@ -275,7 +319,7 @@ class FileSystemViewModel @AssistedInject constructor(
 
     fun pasteResource() {
         assert(_state.value !is FileSystemState.Loading)
-        val state = _state.value as FileSystemState.Initialized
+        val state = _state.value as FileSystemState.Loaded
 
         viewModelScope.launch(Dispatchers.IO) {
             try {
@@ -292,11 +336,9 @@ class FileSystemViewModel @AssistedInject constructor(
         }
     }
 
-    private fun watchCurrentDirectory() {
+    private fun watchDirectory(path: Path) {
         if (!::watcher.isInitialized) return
-        val state = _state.value
-        if (state is FileSystemState.Initialized)
-            watcher.watch(state.currentDirectory)
+        watcher.watch(path)
     }
 
     fun copyResource(resource: Resource) {
@@ -318,7 +360,7 @@ class FileSystemViewModel @AssistedInject constructor(
         documents: List<DocumentFile>
     ) {
         assert(_state.value !is FileSystemState.Loading)
-        val state = _state.value as FileSystemState.Initialized
+        val state = _state.value as FileSystemState.Loaded
         transfersManager.upload(documents, serverId, state.currentDirectory)
     }
 
@@ -371,30 +413,15 @@ class FileSystemViewModel @AssistedInject constructor(
 
 sealed class FileSystemState {
 
-    object Loading : FileSystemState()
+    data object Loading : FileSystemState()
 
-
-    sealed class Initialized(
+    data class Loaded(
         val currentDirectory: Path,
         val drives: List<String>,
-        val directoryStructure: List<Resource>
-    ) : FileSystemState() {
-
-        class Loading(
-            currentDirectory: Path,
-            drives: List<String>,
-            directoryStructure: List<Resource>
-        ) : Initialized(currentDirectory, drives, directoryStructure)
-
-        class Loaded(
-            currentDirectory: Path,
-            drives: List<String>,
-            directoryStructure: List<Resource>
-        ) : Initialized(currentDirectory, drives, directoryStructure)
-
-
-    }
-
+        val directoryStructure: List<Resource>,
+        val currentlyLoadingDirectory: Path?
+    ) : FileSystemState()
 
 }
 
+val INVALID_PATH = Paths.get("")
