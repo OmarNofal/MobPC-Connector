@@ -13,6 +13,10 @@ import androidx.navigation.navArgument
 import com.omar.pcconnector.data.DevicesRepository
 import com.omar.pcconnector.getRetrofit
 import com.omar.pcconnector.ui.event.ApplicationEvent
+import com.omar.pcconnector.ui.fs.slidingEnterFromEndAnimation
+import com.omar.pcconnector.ui.fs.slidingEnterFromStartAnimation
+import com.omar.pcconnector.ui.fs.slidingExitToEndAnimation
+import com.omar.pcconnector.ui.fs.slidingExitToStartAnimation
 import com.omar.pcconnector.ui.nav.Screen
 import com.omar.pcconnector.ui.preferences.PreferencesScreen
 import com.omar.pcconnector.ui.preferences.server.ServerPreferencesScreen
@@ -128,14 +132,23 @@ fun NavGraphBuilder.settingsScreen(
     onOpenDrawer: () -> Unit
 ) {
 
-    composable<Screen.SettingsScreen> {
+    composable<Screen.SettingsScreen>(
+        exitTransition = { slidingExitToStartAnimation },
+        popEnterTransition = { slidingEnterFromStartAnimation }
+    ) {
         PreferencesScreen(openDrawer = onOpenDrawer, onDeviceClicked = {
             navController.navigate(Screen.ServerSettingsScreen(it.deviceInfo.id))
         })
     }
 
-    composable<Screen.ServerSettingsScreen> {
-        ServerPreferencesScreen(onDeviceDeleted = { navController.popBackStack() }, onBackPressed = navController::popBackStack)
+    composable<Screen.ServerSettingsScreen>(
+        enterTransition = { slidingEnterFromEndAnimation },
+        popExitTransition = { slidingExitToEndAnimation }
+        ) {
+        ServerPreferencesScreen(
+            onDeviceDeleted = { navController.popBackStack() },
+            onBackPressed = navController::popBackStack
+        )
     }
 
 }

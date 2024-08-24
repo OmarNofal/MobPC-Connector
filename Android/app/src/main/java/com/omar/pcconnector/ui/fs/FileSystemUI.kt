@@ -193,7 +193,7 @@ fun FileSystemTree(
                 }
             AnimatedContent(
                 targetState = fsState, label = "",
-                //transitionSpec = { createTransition() }
+                transitionSpec = { createTransition() }
             ) { fsState ->
 
                 val directory = fsState.content

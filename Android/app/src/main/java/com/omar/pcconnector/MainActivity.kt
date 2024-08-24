@@ -5,12 +5,12 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.core.view.WindowCompat
-import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -25,14 +25,10 @@ import com.omar.pcconnector.ui.main.MainApp
 import com.omar.pcconnector.ui.nav.EmptyScreen
 import com.omar.pcconnector.ui.nav.MainScreen
 import com.omar.pcconnector.ui.nav.PairingScreen
-import com.omar.pcconnector.ui.nav.Screen
-import com.omar.pcconnector.ui.preferences.PreferencesScreen
 import com.omar.pcconnector.ui.theme.AppTheme
 import com.omar.pcconnector.ui.theme.isDarkTheme
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 
@@ -77,45 +73,46 @@ class MainActivity : ComponentActivity() {
                     devicesRepository.getPairedDevicesFlow()
                         .collectAsState(initial = initialDevices)
 
-                    NavHost(
-                        navController = navController,
-                        startDestination = if (initialDevices.isEmpty()) EmptyScreen else MainScreen(
-                            null
-                        )
-                    ) {
+                    Surface {
+                        NavHost(
+                            navController = navController,
+                            startDestination = if (initialDevices.isEmpty()) EmptyScreen else MainScreen(
+                                null
+                            )
+                        ) {
 
-                        composable<EmptyScreen> {
+                            composable<EmptyScreen> {
 
-                            EmptyDevicesScreen(modifier = Modifier.fillMaxSize()) {
-                                navController.navigate(PairingScreen)
+                                EmptyDevicesScreen(modifier = Modifier.fillMaxSize()) {
+                                    navController.navigate(PairingScreen)
+                                }
+
+                            }
+
+                            composable<MainScreen> {
+
+                                MainApp(
+                                    modifier = Modifier.fillMaxSize(),
+                                    pairedDevices = currentDevices,
+                                    devicesRepository = devicesRepository,
+                                    eventsFlow = eventsFlow
+                                )
+
+                            }
+
+                            composable<PairingScreen> {
+
+                                PairingScreen(
+                                    onPairedWithDevice = { id ->
+                                        navController.navigate(MainScreen(id))
+                                    },
+                                    onNavigateBack = navController::popBackStack
+                                )
+
                             }
 
                         }
-
-                        composable<MainScreen> {
-
-                            MainApp(
-                                modifier = Modifier.fillMaxSize(),
-                                pairedDevices = currentDevices,
-                                devicesRepository = devicesRepository,
-                                eventsFlow = eventsFlow
-                            )
-
-                        }
-
-                        composable<PairingScreen> {
-
-                            PairingScreen(
-                                onPairedWithDevice = { id ->
-                                    navController.navigate(MainScreen(id))
-                                },
-                                onNavigateBack = navController::popBackStack
-                            )
-
-                        }
-
                     }
-
 
                 }
             }
