@@ -5,17 +5,22 @@ import AutoUnpackNativesPlugin from '@electron-forge/plugin-auto-unpack-natives'
 
 const { FusesPlugin } = require('@electron-forge/plugin-fuses')
 const { FuseV1Options, FuseVersion } = require('@electron/fuses')
+const path = require('path')
+
 
 module.exports = {
     packagerConfig: {
-        executableName: 'MobPC Connector',
+        name: 'MobPC Connector',
         asar: true,
+        icon: './logo/logo_large'
     },
     rebuildConfig: {},
     makers: [
         {
             name: '@electron-forge/maker-squirrel',
-            config: {},
+            config: {
+                setupIcon: './logo/logo_large.ico'
+            },
         },
     ],
     plugins: [
