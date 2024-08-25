@@ -13,10 +13,14 @@ import androidx.navigation.navArgument
 import com.omar.pcconnector.data.DevicesRepository
 import com.omar.pcconnector.getRetrofit
 import com.omar.pcconnector.ui.event.ApplicationEvent
+import com.omar.pcconnector.ui.fs.slidingEnterFromDown
 import com.omar.pcconnector.ui.fs.slidingEnterFromEndAnimation
 import com.omar.pcconnector.ui.fs.slidingEnterFromStartAnimation
+import com.omar.pcconnector.ui.fs.slidingEnterFromUp
+import com.omar.pcconnector.ui.fs.slidingExitToDown
 import com.omar.pcconnector.ui.fs.slidingExitToEndAnimation
 import com.omar.pcconnector.ui.fs.slidingExitToStartAnimation
+import com.omar.pcconnector.ui.fs.slidingExitToUp
 import com.omar.pcconnector.ui.nav.Screen
 import com.omar.pcconnector.ui.preferences.PreferencesScreen
 import com.omar.pcconnector.ui.preferences.server.ServerPreferencesScreen
@@ -55,7 +59,7 @@ fun NavGraphBuilder.serverNavGraph(
         /**
          * Shows the file system of the server
          */
-        composable(FS_ROUTE) { backStackEntry ->
+        composable(FS_ROUTE, popEnterTransition = { slidingEnterFromUp }, exitTransition = { slidingExitToUp }) { backStackEntry ->
 
             val id =
                 backStackEntry.arguments?.getString("id") ?: defaultDeviceId
@@ -134,7 +138,9 @@ fun NavGraphBuilder.settingsScreen(
 
     composable<Screen.SettingsScreen>(
         exitTransition = { slidingExitToStartAnimation },
-        popEnterTransition = { slidingEnterFromStartAnimation }
+        popEnterTransition = { slidingEnterFromStartAnimation },
+        enterTransition = { slidingEnterFromDown },
+        popExitTransition = { slidingExitToDown }
     ) {
         PreferencesScreen(openDrawer = onOpenDrawer, onDeviceClicked = {
             navController.navigate(Screen.ServerSettingsScreen(it.deviceInfo.id))

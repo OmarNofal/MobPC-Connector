@@ -10,8 +10,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavController
+import androidx.navigation.NavOptions
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navOptions
 import com.omar.pcconnector.data.DevicesRepository
 import com.omar.pcconnector.model.PairedDevice
 import com.omar.pcconnector.ui.drawer.AppDrawer
@@ -51,7 +53,10 @@ fun MainApp(
             scope.launch { drawerState.close() }
         },
         onSettingsClicked = {
-            navController.navigate(Screen.SettingsScreen)
+            val navOptions = navOptions {
+                launchSingleTop = true
+            }
+            navController.navigate(Screen.SettingsScreen, navOptions)
             scope.launch { drawerState.close() }
         }
     ) {
