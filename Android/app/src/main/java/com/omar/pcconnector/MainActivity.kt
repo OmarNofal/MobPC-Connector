@@ -14,6 +14,7 @@ import androidx.core.view.WindowCompat
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navOptions
 import com.omar.pcconnector.data.DevicesRepository
 import com.omar.pcconnector.model.PairedDevice
 import com.omar.pcconnector.pairing.PairingScreen
@@ -95,7 +96,8 @@ class MainActivity : ComponentActivity() {
                                     modifier = Modifier.fillMaxSize(),
                                     pairedDevices = currentDevices,
                                     devicesRepository = devicesRepository,
-                                    eventsFlow = eventsFlow
+                                    eventsFlow = eventsFlow,
+                                    onGoToPairingScreen = { navController.navigate(PairingScreen) }
                                 )
 
                             }

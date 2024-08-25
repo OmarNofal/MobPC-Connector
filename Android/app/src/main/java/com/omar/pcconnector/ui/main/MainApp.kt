@@ -10,7 +10,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavController
-import androidx.navigation.NavOptions
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navOptions
@@ -33,7 +32,8 @@ fun MainApp(
     modifier: Modifier,
     pairedDevices: List<PairedDevice>,
     devicesRepository: DevicesRepository,
-    eventsFlow: MutableSharedFlow<ApplicationEvent>
+    eventsFlow: MutableSharedFlow<ApplicationEvent>,
+    onGoToPairingScreen: () -> Unit
 ) {
 
     if (pairedDevices.isEmpty()) return
@@ -43,6 +43,10 @@ fun MainApp(
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
+    val closeDrawer: () -> Unit = remember {
+        { scope.launch { drawerState.close() } }
+    }
+
     AppDrawer(
         modifier = modifier,
         pairedDevices = pairedDevices,
@@ -50,14 +54,18 @@ fun MainApp(
         drawerState = drawerState,
         onDeviceClicked = { deviceId ->
             navController.navigate("server/$deviceId")
-            scope.launch { drawerState.close() }
+            closeDrawer()
         },
         onSettingsClicked = {
             val navOptions = navOptions {
                 launchSingleTop = true
             }
             navController.navigate(Screen.SettingsScreen, navOptions)
-            scope.launch { drawerState.close() }
+            closeDrawer()
+        },
+        onPairNewDeviceClicked = {
+            onGoToPairingScreen()
+            closeDrawer()
         }
     ) {
 

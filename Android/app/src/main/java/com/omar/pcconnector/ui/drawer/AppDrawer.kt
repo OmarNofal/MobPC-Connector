@@ -10,6 +10,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Devices
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Window
 import androidx.compose.material3.DrawerState
@@ -39,6 +40,7 @@ fun AppDrawer(
     drawerState: DrawerState,
     onDeviceClicked: (String) -> Unit,
     onSettingsClicked: () -> Unit,
+    onPairNewDeviceClicked: () -> Unit,
     content: @Composable () -> Unit
 ) {
 
@@ -97,6 +99,23 @@ fun AppDrawer(
 
                     }
                 }
+
+                HorizontalDivider()
+
+                PairDeviceButton(
+                    modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(
+                            start = 8.dp,
+                            end = 8.dp,
+                            top = 10.dp,
+                            bottom = 10.dp
+                        )
+                        .clip(RoundedCornerShape(6.dp))
+                        .clickable { onPairNewDeviceClicked() }
+                        .padding(horizontal = 8.dp, vertical = 16.dp)
+                )
 
                 HorizontalDivider()
 
@@ -179,6 +198,32 @@ fun SettingsButton(
         )
 
     }
+}
+
+@Composable
+fun PairDeviceButton(
+    modifier: Modifier
+) {
+
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+
+        Icon(
+            imageVector = Icons.Rounded.Devices,
+            contentDescription = "Pair new device"
+        )
+
+
+        Text(
+            text = "Pair a new device",
+            modifier = Modifier.padding(start = 12.dp, end = 6.dp),
+            style = MaterialTheme.typography.titleMedium,
+        )
+
+    }
+
 }
 
 @Preview
