@@ -32,14 +32,10 @@ fun ServerPreferencesScreen(
 ) {
 
     ServerPreferencesScreen(
-        serverPreferencesViewModel.pairedDevice,
-        serverPreferencesViewModel::setStartPath,
-        serverPreferencesViewModel::setAsDefault,
-        {
-            serverPreferencesViewModel.deleteServer()
-            onDeviceDeleted()
-        },
-        onBackPressed
+        pairedDevice = serverPreferencesViewModel.pairedDevice,
+        preferencesActions = serverPreferencesViewModel,
+        onDeviceDeleted = onDeviceDeleted,
+        onBackPressed = onBackPressed
     )
 
 }
@@ -48,9 +44,8 @@ fun ServerPreferencesScreen(
 @Composable
 fun ServerPreferencesScreen(
     pairedDevice: PairedDevice,
-    setServerStartPath: (String) -> Unit,
-    setServerAsDefault: () -> Unit,
-    onDeleteServer: () -> Unit,
+    preferencesActions: ServerPreferencesActions,
+    onDeviceDeleted: () -> Unit,
     onBackPressed: () -> Unit
 ) {
 
@@ -62,12 +57,16 @@ fun ServerPreferencesScreen(
     if (isDeleteDialogShown)
         DeleteServerDialog(
             serverName = pairedDevice.deviceInfo.name,
-            onDelete = { onDeleteServer() },
+            onDelete = { preferencesActions.deleteDevice(); onDeviceDeleted() },
             onDismissRequest = { isDeleteDialogShown = false }
         )
 
     Scaffold(
-        topBar = { TopBar(goBack = onBackPressed, onDelete = { isDeleteDialogShown = true }) }
+        topBar = {
+            TopBar(
+                goBack = onBackPressed,
+                onDelete = { isDeleteDialogShown = true })
+        }
     ) {
 
         LazyColumn(
@@ -92,8 +91,7 @@ fun ServerPreferencesScreen(
 
             singleServerPreferencesGroup(
                 pairedDevice.deviceInfo.id,
-                setServerStartPath,
-                setServerAsDefault
+                preferencesActions
             )
 
         }

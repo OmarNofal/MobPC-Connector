@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.omar.pcconnector.absolutePath
 import com.omar.pcconnector.fileSystemApi
 import com.omar.pcconnector.model.DirectoryResource
+import com.omar.pcconnector.model.FileResource
 import com.omar.pcconnector.model.Resource
 import com.omar.pcconnector.network.api.getExternalDownloadURL
 import com.omar.pcconnector.network.connection.Connection
@@ -21,6 +22,10 @@ import com.omar.pcconnector.operation.ListDirectoryOperation
 import com.omar.pcconnector.operation.MakeDirectoriesOperation
 import com.omar.pcconnector.operation.RenameOperation
 import com.omar.pcconnector.operation.transfer.TransfersManager
+import com.omar.pcconnector.preferences.ServerPreferences.FileSystemSortCriteria
+import com.omar.pcconnector.preferences.ServerPreferences.FoldersAndFilesSeparation.DEFAULT
+import com.omar.pcconnector.preferences.ServerPreferences.FoldersAndFilesSeparation.FILES_FIRST
+import com.omar.pcconnector.preferences.ServerPreferences.FoldersAndFilesSeparation.FOLDERS_FIRST
 import com.omar.pcconnector.preferences.UserPreferencesRepository
 import com.omar.pcconnector.ui.event.ApplicationEvent
 import com.omar.pcconnector.ui.event.ApplicationOperation
@@ -92,16 +97,12 @@ class FileSystemViewModel @AssistedInject constructor(
                 val api = it.connection.retrofit.fileSystemApi()
                 val drives = GetDrivesOperation(api).start()
                 val directoryToLoad =
-                    userPreferencesRepository.preferences.value.serversPreferencesList
-                        .find { it.serverId == serverId }?.startPath?.let(Paths::get)
-                        ?: Paths.get(drives.first(), "/")
-                _state.value =
-                    FileSystemState.Loaded(
-                        INVALID_PATH,
-                        drives,
-                        emptyList(),
-                        directoryToLoad
-                    )
+                    userPreferencesRepository.getServerPreferences(serverId).startPath?.let(
+                        Paths::get
+                    ) ?: Paths.get(drives.first(), "/")
+                _state.value = FileSystemState.Loaded(
+                    INVALID_PATH, drives, emptyList(), directoryToLoad
+                )
                 loadDirectory(directoryToLoad)
             }
         }
@@ -112,15 +113,13 @@ class FileSystemViewModel @AssistedInject constructor(
                 if (it is ConnectionStatus.Connected) {
                     eventsFlow.emit(
                         ApplicationEvent(
-                            ApplicationOperation.PING_SERVER,
-                            true
+                            ApplicationOperation.PING_SERVER, true
                         )
                     )
                 } else if ((it is ConnectionStatus.NotFound) && (previousState is ConnectionStatus.Connected)) {
                     eventsFlow.emit(
                         ApplicationEvent(
-                            ApplicationOperation.PING_SERVER,
-                            false
+                            ApplicationOperation.PING_SERVER, false
                         )
                     )
                 }
@@ -135,42 +134,77 @@ class FileSystemViewModel @AssistedInject constructor(
         viewModelScope.launch {
 
             onDirectoryLoading(path)
-            val directoryContents = getDirectoryContents(path)
-            onDirectoryLoaded(path, directoryContents)
+            val directoryContents =
+                getDirectoryContents(path).let(::performDirectoryTransformations)
+            onDirectoryLoaded(
+                path,
+                directoryContents
+            )
 
             watchDirectory(path)
         }
     }
 
+    /**
+     * Performs transformations chosen by the user
+     * in the server settings
+     */
+    private fun performDirectoryTransformations(resources: List<Resource>): List<Resource> {
+
+        val serverPreferences =
+            userPreferencesRepository.getServerPreferences(serverId)
+
+        return resources
+            .filter {
+                serverPreferences.showHiddenResources || !it.name.startsWith(".")
+            }.sortedWith { o1, o2 ->
+                when (serverPreferences.sortingCriteria) {
+                    FileSystemSortCriteria.NAME -> o1.name.compareTo(
+                        o2.name,
+                        ignoreCase = true
+                    )
+
+                    FileSystemSortCriteria.SIZE -> o1.size.compareTo(o2.size)
+                    FileSystemSortCriteria.MODIFICATION_DATE -> o1.modificationDateMs.compareTo(
+                        o2.modificationDateMs
+                    )
+
+                    else -> 0
+                }
+            }.sortedWith { o1, o2 ->
+                if (o1 is DirectoryResource && o2 is DirectoryResource) return@sortedWith 0
+                if (o1 is FileResource && o2 is FileResource) return@sortedWith 0
+                val separation = serverPreferences.foldersAndFilesSeparation
+                when (separation) {
+                    DEFAULT -> -1
+                    FOLDERS_FIRST -> if (o1 is DirectoryResource) -1 else 1
+                    FILES_FIRST -> if (o1 is FileResource) -1 else 1
+                    else -> 0
+                }
+            }
+    }
+
+
     private fun onDirectoryLoading(path: Path) {
 
         val state = _state.value as FileSystemState.Loaded
 
-        _state.value =
-            FileSystemState.Loaded(
-                state.currentDirectory,
-                state.drives,
-                state.directoryStructure,
-                path
-            )
+        _state.value = FileSystemState.Loaded(
+            state.currentDirectory, state.drives, state.directoryStructure, path
+        )
     }
 
     private fun onDirectoryLoaded(
-        path: Path,
-        directoryContents: List<Resource>
+        path: Path, directoryContents: List<Resource>
     ) {
 
         assert(_state.value is FileSystemState.Loaded)
 
         val oldState = _state.value as FileSystemState.Loaded
 
-        _state.value =
-            FileSystemState.Loaded(
-                path,
-                oldState.drives,
-                directoryContents,
-                null
-            )
+        _state.value = FileSystemState.Loaded(
+            path, oldState.drives, directoryContents, null
+        )
     }
 
     private suspend fun getDirectoryContents(path: Path): List<Resource> {
@@ -179,40 +213,10 @@ class FileSystemViewModel @AssistedInject constructor(
                 ?: return emptyList()
 
             ListDirectoryOperation(api, path).start()
-                .filter { !it.name.startsWith(".") } // remove hidden folders
         } catch (e: Exception) { // if for any reason we can't access the folder, just go to its parent
             emptyList()
         }
     }
-    /*
-        private fun refresh() {
-            assert(_state.value !is FileSystemState.Loading)
-            viewModelScope.launch {
-
-                val state = _state.value as FileSystemState.Loaded
-                val currentPath = state.currentDirectory
-                val pathToLoad = state.currentlyLoadingDirectory ?: return@launch
-
-                try {
-                    val api = getConnectionOrShowError()?.retrofit?.fileSystemApi()
-                        ?: return@launch
-
-                    val directoryContents =
-                        ListDirectoryOperation(api, pathToLoad).start()
-                            .filter { !it.name.startsWith(".") }
-
-                    _state.value =
-                        FileSystemState.Loaded(
-                            currentPath,
-                            state.drives,
-                            directoryContents,
-                            null
-                        )
-                } catch (e: Exception) { // if for any reason we can't access the folder, just go to its parent
-                    loadDirectory(currentPath.parent)
-                }
-            }
-        }*/
 
     private val _openFileEvents = MutableSharedFlow<Pair<String, String>>()
     val openFileEvents: SharedFlow<Pair<String, String>>
@@ -226,18 +230,14 @@ class FileSystemViewModel @AssistedInject constructor(
                 val connection = getConnectionOrShowError() ?: return@launch
                 val accessToken = try {
                     GetFileAccessToken(
-                        connection.retrofit.fileSystemApi(),
-                        resource.path
+                        connection.retrofit.fileSystemApi(), resource.path
                     ).start()
                 } catch (e: Exception) {
                     ""
                 }
-                val fileDownloadURL =
-                    getExternalDownloadURL(
-                        connection,
-                        resource.path.absolutePath,
-                        accessToken
-                    )
+                val fileDownloadURL = getExternalDownloadURL(
+                    connection, resource.path.absolutePath, accessToken
+                )
                 Log.i("OPEN_FILE", fileDownloadURL)
                 viewModelScope.launch {
                     _openFileEvents.emit(fileDownloadURL to resource.name)
@@ -271,9 +271,7 @@ class FileSystemViewModel @AssistedInject constructor(
                 val api = getConnectionOrShowError()?.retrofit?.fileSystemApi()
                     ?: return@launch
                 MakeDirectoriesOperation(
-                    api,
-                    state.currentDirectory,
-                    name
+                    api, state.currentDirectory, name
                 ).start()
             } catch (e: NoSuchElementException) {
                 Log.e("MKDIR", "COULD NOT MAKE DIRECTORY")
@@ -282,9 +280,7 @@ class FileSystemViewModel @AssistedInject constructor(
     }
 
     fun renameResource(
-        resource: Resource,
-        newName: String,
-        overwrite: Boolean = false
+        resource: Resource, newName: String, overwrite: Boolean = false
     ) {
         assert(_state.value !is FileSystemState.Loading)
         val state = _state.value as FileSystemState.Loaded
@@ -346,13 +342,10 @@ class FileSystemViewModel @AssistedInject constructor(
     }
 
     fun download(
-        resource: Resource,
-        destinationFolder: DocumentFile
+        resource: Resource, destinationFolder: DocumentFile
     ) {
         transfersManager.download(
-            serverId,
-            resource.path,
-            destinationFolder
+            serverId, resource.path, destinationFolder
         )
     }
 
@@ -395,9 +388,7 @@ class FileSystemViewModel @AssistedInject constructor(
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                 return factory.create(
-                    connectionStatusFlow,
-                    serverId,
-                    token
+                    connectionStatusFlow, serverId, token
                 ) as T
             }
         }
@@ -424,4 +415,4 @@ sealed class FileSystemState {
 
 }
 
-val INVALID_PATH = Paths.get("")
+val INVALID_PATH: Path = Paths.get("")

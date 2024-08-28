@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import com.omar.pcconnector.data.DevicesRepository
 import com.omar.pcconnector.model.PairedDevice
+import com.omar.pcconnector.preferences.ServerPreferences
 import com.omar.pcconnector.preferences.UserPreferencesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.runBlocking
@@ -12,10 +13,10 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ServerPreferencesViewModel @Inject constructor(
-    private val savedStateHandle: SavedStateHandle,
+    savedStateHandle: SavedStateHandle,
     private val devicesRepository: DevicesRepository,
     private val userPreferencesRepository: UserPreferencesRepository
-) : ViewModel() {
+) : ViewModel(), ServerPreferencesActions {
 
 
     val serverId = savedStateHandle.get<String>("serverId") ?: ""
@@ -32,16 +33,28 @@ class ServerPreferencesViewModel @Inject constructor(
         }
     }
 
-    fun setStartPath(startPath: String) {
-        userPreferencesRepository.setServerStartPath(serverId, startPath)
+    override fun setStartPath(path: String) {
+        userPreferencesRepository.setServerStartPath(serverId, path)
     }
 
-    fun deleteServer() {
+    override fun deleteDevice() {
         devicesRepository.deleteDevice(serverId)
     }
 
-    fun setAsDefault() {
+    override fun setAsDefault() {
         userPreferencesRepository.setServerAsDefault(serverId)
+    }
+
+    override fun toggleShowHiddenResource() {
+        userPreferencesRepository.toggleShowHiddenResource(serverId)
+    }
+
+    override fun changeFileSystemSortCriteria(displayOrder: ServerPreferences.FileSystemSortCriteria) {
+        userPreferencesRepository.changeFileSystemSortCriteria(serverId, displayOrder)
+    }
+
+    override fun changeFilesAndFoldersSeparation(value: ServerPreferences.FoldersAndFilesSeparation) {
+        userPreferencesRepository.changeFilesAndFoldersSeparation(serverId, value)
     }
 
 }

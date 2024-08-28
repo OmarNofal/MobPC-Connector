@@ -1,5 +1,6 @@
-import { Stack, Typography, FormControl, InputLabel, Select, SxProps, TextField } from '@mui/material'
+import { Stack, Typography, FormControl, InputLabel, Select, SxProps, TextField, IconButton } from '@mui/material'
 import { MenuItem } from 'electron'
+import InfoIcon from '@mui/icons-material/InfoOutlined'
 
 type PreferencesTextFieldProps = {
     sx?: SxProps
@@ -7,6 +8,8 @@ type PreferencesTextFieldProps = {
     subtitle: string
     value: string
     type: string
+    infoIcon?: boolean
+    onInfoIconClicked?: () => void
     onValueChange: (_: string) => void
 }
 
@@ -22,12 +25,30 @@ export default function PreferencesTextField(props: PreferencesTextFieldProps) {
                 display={'flex'}
                 flexDirection={'column'}
             >
-                <Typography
-                    variant='h6'
-                    sx={{ userSelect: 'none' }}
+                <Stack
+                    display='flex'
+                    flexDirection={'row'}
+                    alignItems={'center'}
                 >
-                    {props.title}
-                </Typography>
+                    <Typography
+                        variant='h6'
+                        sx={{ userSelect: 'none' }}
+                    >
+                        {props.title}
+                    </Typography>
+                    {props.infoIcon ? (
+                        <IconButton
+                            sx={{ marginLeft: '6px' }}
+                            disabled={false}
+                            onClick={props.onInfoIconClicked}
+                        >
+                            <InfoIcon />
+                        </IconButton>
+                    ) : (
+                        <></>
+                    )}
+                </Stack>
+
                 <Typography
                     variant='caption'
                     sx={{ userSelect: 'none' }}

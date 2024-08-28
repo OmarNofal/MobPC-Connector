@@ -32,19 +32,19 @@ val slidingEnterFromEndAnimation =
             slideInHorizontally(tween(250)) { it / 2 }
 
 val slidingExitToUp =
-    fadeOut(tween(200)) +
+    fadeOut(tween(500)) +
             slideOutVertically { -it / 3 }
 
 val slidingEnterFromUp =
-    fadeIn(tween(200)) +
+    fadeIn(tween(500)) +
             slideInVertically { -it / 3 }
 
 val slidingEnterFromDown =
-    fadeIn(tween(200)) +
+    fadeIn(tween(500)) +
             slideInVertically { it / 3 }
 
 val slidingExitToDown =
-    fadeOut(tween(200)) +
+    fadeOut(tween(500)) +
             slideOutVertically { it / 3 }
 
 fun AnimatedContentTransitionScope<FileSystemTreeState>.createTransition(): ContentTransform {

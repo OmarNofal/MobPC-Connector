@@ -39,6 +39,8 @@ export interface FirebaseIPServiceConfiguration {
 
     /**
      * Should we sync the IP address with firebase?
+     * 
+     * In other words, should the service be running or not
      */
     [SYNC_IP_WITH_FIREBASE]: boolean
 }

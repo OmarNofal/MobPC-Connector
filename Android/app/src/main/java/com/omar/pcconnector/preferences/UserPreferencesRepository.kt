@@ -27,6 +27,12 @@ class UserPreferencesRepository @Inject constructor(
             SharingStarted.Eagerly,
             runBlocking { dataStore.data.first() }) // this will load it synchronously
 
+    /**
+     * Returns a flow to the preferences of a server
+     */
+    fun getServerPreferences(serverId: String): ServerPreferences =
+        preferences.value.serversPreferencesList.find { it.serverId == serverId }
+            ?: ServerPreferences.getDefaultInstance()
 
     fun setTheme(appTheme: AppTheme) {
         updateData {
@@ -41,29 +47,66 @@ class UserPreferencesRepository @Inject constructor(
     }
 
     fun setServerStartPath(serverId: String, startPath: String) {
+        updateServerPreferences(serverId) {
+            it.toBuilder().setStartPath(startPath).build()
+        }
+    }
+
+
+    fun toggleShowHiddenResource(serverId: String) {
+        updateServerPreferences(serverId) {
+            it.toBuilder().setShowHiddenResources(!it.showHiddenResources)
+                .build()
+        }
+    }
+
+    fun changeFileSystemSortCriteria(
+        serverId: String,
+        displayOrder: ServerPreferences.FileSystemSortCriteria
+    ) {
+        updateServerPreferences(serverId) {
+            it.toBuilder().setSortingCriteria(displayOrder).build()
+        }
+    }
+
+    fun changeFilesAndFoldersSeparation(
+        serverId: String,
+        value: ServerPreferences.FoldersAndFilesSeparation
+    ) {
+        updateServerPreferences(serverId) {
+            it.toBuilder().setFoldersAndFilesSeparation(value).build()
+        }
+    }
+
+    /**
+     * Updates the preferences of a single server.
+     * If the server is not found, then a new entry for the server is created
+     * with default values
+     */
+    private fun updateServerPreferences(
+        serverId: String,
+        callback: (ServerPreferences) -> ServerPreferences
+    ) {
         updateData {
             val serverPrefs =
-                it.serversPreferencesList.firstOrNull { it.serverId == serverId }
+                it.serversPreferencesList.firstOrNull { serverPreferences -> serverPreferences.serverId == serverId }
 
             val index = it.serversPreferencesList.indexOf(serverPrefs)
 
             return@updateData if (serverPrefs == null) {
                 it.toBuilder().addServersPreferences(
-                    ServerPreferences.newBuilder().setServerId(serverId)
-                        .setStartPath(startPath).build()
+                    callback(ServerPreferences.newBuilder().build())
                 ).build()
             } else {
                 it.toBuilder().setServersPreferences(
                     index,
-                    serverPrefs.toBuilder().setStartPath(startPath)
+                    callback(serverPrefs)
                 ).build()
             }
-
         }
     }
 
-
-    fun updateData(callback: (UserPreferences) -> UserPreferences) {
+    private fun updateData(callback: (UserPreferences) -> UserPreferences) {
         scope.launch {
             dataStore.updateData(callback)
         }

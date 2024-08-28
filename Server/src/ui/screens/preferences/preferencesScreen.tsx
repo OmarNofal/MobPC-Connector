@@ -7,6 +7,7 @@ import PreferencesHeader from '../../components/preferences/PreferencesHeader'
 import PreferencesMultiselect from '../../components/preferences/PreferencesMultiselect'
 import {
     APP_BEHAVIOR_PREFS,
+    FIREBASE_IP_SERVICE_CONFIGURATION,
     SERVER_CONFIGURATION,
     SERVER_INFORMATION,
     THEME,
@@ -70,8 +71,11 @@ export function PreferencesScreen() {
                 <ServerConfigPreferences
                     serverInformation={prefs[SERVER_INFORMATION]}
                     serverConfiguration={prefs[SERVER_CONFIGURATION]}
+                    firebaseConfiguration={prefs[FIREBASE_IP_SERVICE_CONFIGURATION]}
                     onServerNameChange={vm.changeServerName}
                     onServerPortChange={vm.changeServerPort}
+                    onGlobalPortChange={vm.changeGlobalPort}
+                    onToggleFirebaseService={vm.toggleFirebaseService}
                 />
             </Paper>
         </Stack>

@@ -29,7 +29,7 @@ class ListDirectoryOperation(
             result = api.getDirectoryStructure(path.absolutePath).execute().body().getDataOrThrow()!!.map { it.toDomainResource(path) }
 
         }
-        return result.sortedBy { f -> f !is DirectoryResource }
+        return result
     }
 
 

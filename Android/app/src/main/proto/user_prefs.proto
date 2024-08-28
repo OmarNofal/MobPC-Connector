@@ -21,6 +21,17 @@ message UserPreferences {
 
 message ServerPreferences {
 
+    enum FileSystemSortCriteria {
+        NAME = 0;
+        SIZE = 1;
+        MODIFICATION_DATE = 2;
+    }
+
+    enum FoldersAndFilesSeparation {
+        DEFAULT = 0;
+        FOLDERS_FIRST = 1;
+        FILES_FIRST = 2;
+    }
 
     string serverId = 1;
 
@@ -30,6 +41,25 @@ message ServerPreferences {
      */
     optional string startPath = 2;
 
+    /**
+    Show or hide hidden files and folders
+     */
+    bool showHiddenResources = 3;
 
+    /**
+    The criteria by which to show resources in the file system tree
+     */
+    FileSystemSortCriteria sortingCriteria = 4;
+
+    /**
+    Whether the sort criteria is in ascending order
+     */
+    bool isSortingAscending = 5;
+
+    /**
+    How to separate the folders and files inside
+    the file system tree
+     */
+    FoldersAndFilesSeparation foldersAndFilesSeparation = 6;
 
 }

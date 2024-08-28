@@ -2,12 +2,15 @@ import { BehaviorSubject } from 'rxjs'
 import {
     APP_BEHAVIOR_PREFS,
     AppPreferences,
+    FIREBASE_IP_SERVICE_CONFIGURATION,
+    GLOBAL_PORT,
     NAME,
     PORT,
     RUN_SERVER_ON_STARTUP,
     SERVER_CONFIGURATION,
     SERVER_INFORMATION,
     START_ON_LOGIN,
+    SYNC_IP_WITH_FIREBASE,
     THEME,
     Theme,
     UI_PREFS,
@@ -58,6 +61,15 @@ export default class PreferencesScreenViewModel {
         )
     }
 
+    toggleFirebaseService = () => {
+        if (this.state.value == 'loading') return
+        window.prefs.updatePreferencesKey(
+            FIREBASE_IP_SERVICE_CONFIGURATION,
+            SYNC_IP_WITH_FIREBASE,
+            !this.state.value.preferences[FIREBASE_IP_SERVICE_CONFIGURATION][SYNC_IP_WITH_FIREBASE]
+        )
+    }
+
     changeTheme = (theme: Theme) => {
         window.prefs.updatePreferencesKey(UI_PREFS, THEME, theme)
     }
@@ -68,5 +80,9 @@ export default class PreferencesScreenViewModel {
 
     changeServerPort = (port: number) => {
         window.prefs.updatePreferencesKey(SERVER_CONFIGURATION, PORT, port)
+    }
+
+    changeGlobalPort = (globalPort: number) => {
+        window.prefs.updatePreferencesKey(FIREBASE_IP_SERVICE_CONFIGURATION, GLOBAL_PORT, globalPort)
     }
 }
