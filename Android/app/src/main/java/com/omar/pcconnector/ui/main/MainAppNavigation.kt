@@ -23,6 +23,7 @@ import com.omar.pcconnector.ui.fs.slidingExitToStartAnimation
 import com.omar.pcconnector.ui.fs.slidingExitToUp
 import com.omar.pcconnector.ui.nav.Screen
 import com.omar.pcconnector.ui.preferences.PreferencesScreen
+import com.omar.pcconnector.ui.preferences.server.NotificationsExcludedPackagesScreen
 import com.omar.pcconnector.ui.preferences.server.ServerPreferencesScreen
 import com.omar.pcconnector.ui.preview.ImagePreview
 import com.omar.pcconnector.ui.session.ServerSession
@@ -59,7 +60,10 @@ fun NavGraphBuilder.serverNavGraph(
         /**
          * Shows the file system of the server
          */
-        composable(FS_ROUTE, popEnterTransition = { slidingEnterFromUp }, exitTransition = { slidingExitToUp }) { backStackEntry ->
+        composable(
+            FS_ROUTE,
+            popEnterTransition = { slidingEnterFromUp },
+            exitTransition = { slidingExitToUp }) { backStackEntry ->
 
             val id =
                 backStackEntry.arguments?.getString("id") ?: defaultDeviceId
@@ -147,14 +151,35 @@ fun NavGraphBuilder.settingsScreen(
         })
     }
 
-    composable<Screen.ServerSettingsScreen>(
-        enterTransition = { slidingEnterFromEndAnimation },
-        popExitTransition = { slidingExitToEndAnimation }
+    navigation<Screen.ServerSettingsScreen>(
+        startDestination = Screen.MainServerPreferences
+    ) {
+
+        composable<Screen.MainServerPreferences>(
+            enterTransition = { slidingEnterFromEndAnimation },
+            popExitTransition = { slidingExitToEndAnimation }
         ) {
-        ServerPreferencesScreen(
-            onDeviceDeleted = { navController.popBackStack() },
-            onBackPressed = navController::popBackStack
-        )
+            ServerPreferencesScreen(
+                onDeviceDeleted = { navController.popBackStack() },
+                onBackPressed = navController::popBackStack,
+                onGoToNotificationsExcludedPackages = {
+                    navController.navigate(
+                        Screen.NotificationsExcludedPackagesScreen(
+                            serverId = it
+                        )
+                    )
+                }
+            )
+        }
+
+        composable<Screen.NotificationsExcludedPackagesScreen> {
+
+            NotificationsExcludedPackagesScreen(
+                onBackPressed = navController::popBackStack
+            )
+
+        }
+
     }
 
 }

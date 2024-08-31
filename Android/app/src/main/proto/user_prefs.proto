@@ -62,4 +62,16 @@ message ServerPreferences {
      */
     FoldersAndFilesSeparation foldersAndFilesSeparation = 6;
 
+    /**
+    Whether or not to send new phone notifications to the server
+    as soon as they are posted
+     */
+    bool sendPhoneNotificationsToServer = 7;
+
+    /**
+    Which packages the user doesn't want their notifications
+    to be sent to the server
+     */
+    repeated string notificationsExcludedPackages = 8;
+
 }

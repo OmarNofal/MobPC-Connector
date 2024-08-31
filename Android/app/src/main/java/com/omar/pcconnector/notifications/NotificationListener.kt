@@ -12,6 +12,7 @@ import com.omar.pcconnector.data.DevicesRepository
 import com.omar.pcconnector.getRetrofit
 import com.omar.pcconnector.network.connection.Connectivity
 import com.omar.pcconnector.pcApi
+import com.omar.pcconnector.preferences.UserPreferencesRepository
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -26,6 +27,9 @@ class NotificationListener : NotificationListenerService() {
 
     @Inject
     lateinit var devicesRepository: DevicesRepository
+
+    @Inject
+    lateinit var userPreferencesRepository: UserPreferencesRepository
 
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
@@ -52,6 +56,9 @@ class NotificationListener : NotificationListenerService() {
 
         pairedDevices.forEach {
 
+
+            if (!shouldSendNotification(it.deviceInfo.id, notificationContent.packageName)) return@forEach
+
             val device =
                 Connectivity.findDevice(it.deviceInfo.id) ?: return@forEach
 
@@ -63,7 +70,7 @@ class NotificationListener : NotificationListenerService() {
                     it.certificate
                 ).pcApi()
 
-                Log.d("Notification", "Sending to " + device)
+                Log.d("Notification", "Sending to $device")
 
                 with(notificationContent) {
                     api.sendNotification(
@@ -78,6 +85,18 @@ class NotificationListener : NotificationListenerService() {
             }
 
         }
+    }
+
+    private fun shouldSendNotification(
+        serverId: String,
+        packageName: String
+    ): Boolean {
+        val serverPreferences =
+            userPreferencesRepository.getServerPreferences(serverId)
+
+        return serverPreferences.sendPhoneNotificationsToServer && !serverPreferences.notificationsExcludedPackagesList.contains(
+            packageName
+        )
     }
 
     private fun Icon?.toBase64(): String? {
@@ -103,7 +122,7 @@ class NotificationListener : NotificationListenerService() {
             val icon = notification.getLargeIcon() ?: notification.smallIcon
             val appName = getAppNameFromPackage(this.packageName)
 
-            NotificationContent(title, text, icon, appName)
+            NotificationContent(title, text, icon, appName, this.packageName)
         } catch (e: Exception) {
             Log.e("Notification", e.stackTraceToString())
             null
@@ -129,6 +148,7 @@ class NotificationListener : NotificationListenerService() {
         val text: String,
         val icon: Icon?,
         val appName: String,
+        val packageName: String
     )
 
 }

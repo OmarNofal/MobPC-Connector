@@ -10,5 +10,6 @@ interface ServerPreferencesActions {
     fun toggleShowHiddenResource()
     fun changeFileSystemSortCriteria(displayOrder: ServerPreferences.FileSystemSortCriteria)
     fun changeFilesAndFoldersSeparation(value: ServerPreferences.FoldersAndFilesSeparation)
-
+    fun toggleSendPhoneNotificationsToServer()
+    fun setNotificationsExcludedPackages(packageName: List<String>)
 }

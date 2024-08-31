@@ -3,7 +3,6 @@ package com.omar.pcconnector.ui.nav
 import kotlinx.serialization.Serializable
 
 
-
 @Serializable
 object PairingScreen
 
@@ -61,7 +60,14 @@ sealed interface Screen {
 
 
     @Serializable
-    data class ServerSettingsScreen(val serverId: String): Screen
+    data class ServerSettingsScreen(val serverId: String) : Screen
+
+    @Serializable
+    data object MainServerPreferences : Screen
+
+    @Serializable
+    data class NotificationsExcludedPackagesScreen(val serverId: String) : Screen
+
     /**
      * The screen shown to the user when he is not paired
      * with any server

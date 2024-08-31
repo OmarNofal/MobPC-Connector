@@ -33,28 +33,39 @@ class ServerPreferencesViewModel @Inject constructor(
         }
     }
 
-    override fun setStartPath(path: String) {
+    override fun setStartPath(path: String) =
         userPreferencesRepository.setServerStartPath(serverId, path)
-    }
 
     override fun deleteDevice() {
         devicesRepository.deleteDevice(serverId)
     }
 
-    override fun setAsDefault() {
+    override fun setAsDefault() =
         userPreferencesRepository.setServerAsDefault(serverId)
-    }
 
-    override fun toggleShowHiddenResource() {
+    override fun toggleShowHiddenResource() =
         userPreferencesRepository.toggleShowHiddenResource(serverId)
-    }
 
-    override fun changeFileSystemSortCriteria(displayOrder: ServerPreferences.FileSystemSortCriteria) {
-        userPreferencesRepository.changeFileSystemSortCriteria(serverId, displayOrder)
-    }
 
-    override fun changeFilesAndFoldersSeparation(value: ServerPreferences.FoldersAndFilesSeparation) {
-        userPreferencesRepository.changeFilesAndFoldersSeparation(serverId, value)
-    }
+    override fun changeFileSystemSortCriteria(displayOrder: ServerPreferences.FileSystemSortCriteria) =
+        userPreferencesRepository.changeFileSystemSortCriteria(
+            serverId,
+            displayOrder
+        )
 
+
+    override fun changeFilesAndFoldersSeparation(value: ServerPreferences.FoldersAndFilesSeparation) =
+        userPreferencesRepository.changeFilesAndFoldersSeparation(
+            serverId,
+            value
+        )
+
+    override fun toggleSendPhoneNotificationsToServer() =
+        userPreferencesRepository.toggleSendPhoneNotifications(serverId)
+
+    override fun setNotificationsExcludedPackages(packageName: List<String>) =
+        userPreferencesRepository.setNotificationsExcludedPackages(
+            serverId,
+            packageName
+        )
 }

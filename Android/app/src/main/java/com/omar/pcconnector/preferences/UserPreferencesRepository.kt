@@ -75,6 +75,26 @@ class UserPreferencesRepository @Inject constructor(
         }
     }
 
+    fun toggleSendPhoneNotifications(
+        serverId: String
+    ) {
+        updateServerPreferences(serverId) {
+            val oldValue = it.sendPhoneNotificationsToServer
+            it.toBuilder().setSendPhoneNotificationsToServer(!oldValue).build()
+        }
+    }
+
+    fun setNotificationsExcludedPackages(
+        serverId: String,
+        packageNames: List<String>
+    ) {
+        updateServerPreferences(serverId) {
+            it.toBuilder().clearNotificationsExcludedPackages()
+                .addAllNotificationsExcludedPackages(packageNames)
+                .build()
+        }
+    }
+
     /**
      * Updates the preferences of a single server.
      * If the server is not found, then a new entry for the server is created

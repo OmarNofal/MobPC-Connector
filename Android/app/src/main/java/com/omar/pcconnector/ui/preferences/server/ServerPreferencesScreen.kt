@@ -7,6 +7,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.DeleteOutline
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -28,14 +29,16 @@ import com.omar.pcconnector.ui.preferences.groupHeader
 fun ServerPreferencesScreen(
     serverPreferencesViewModel: ServerPreferencesViewModel = hiltViewModel(),
     onDeviceDeleted: () -> Unit,
-    onBackPressed: () -> Unit
+    onBackPressed: () -> Unit,
+    onGoToNotificationsExcludedPackages: (String) -> Unit
 ) {
 
     ServerPreferencesScreen(
         pairedDevice = serverPreferencesViewModel.pairedDevice,
         preferencesActions = serverPreferencesViewModel,
         onDeviceDeleted = onDeviceDeleted,
-        onBackPressed = onBackPressed
+        onBackPressed = onBackPressed,
+        onGoToNotificationsExcludedPackages = onGoToNotificationsExcludedPackages
     )
 
 }
@@ -46,7 +49,8 @@ fun ServerPreferencesScreen(
     pairedDevice: PairedDevice,
     preferencesActions: ServerPreferencesActions,
     onDeviceDeleted: () -> Unit,
-    onBackPressed: () -> Unit
+    onBackPressed: () -> Unit,
+    onGoToNotificationsExcludedPackages: (String) -> Unit
 ) {
 
 
@@ -84,14 +88,12 @@ fun ServerPreferencesScreen(
 
             serverInfoGroup(pairedDevice)
 
-            groupHeader(
-                modifier = Modifier.padding(start = 16.dp, top = 32.dp),
-                title = "Preferences"
-            )
+            item { HorizontalDivider() }
 
             singleServerPreferencesGroup(
                 pairedDevice.deviceInfo.id,
-                preferencesActions
+                preferencesActions,
+                onGoToNotificationsExcludedPackages
             )
 
         }

@@ -57,10 +57,6 @@ class MainActivity : ComponentActivity() {
 
         Log.d("Initial Devices: ", initialDevices.toString())
 
-        val intent =
-            Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS")
-        startActivity(intent)
-
         setContent {
 
             val navController = rememberNavController()

@@ -14,7 +14,7 @@ fun LazyListScope.groupHeader(modifier: Modifier, title: String) =
 
 
 @Composable
-private fun PreferencesGroupHeader(modifier: Modifier, title: String) {
+fun PreferencesGroupHeader(modifier: Modifier, title: String) {
     Text(
         modifier = modifier,
         text = title,
