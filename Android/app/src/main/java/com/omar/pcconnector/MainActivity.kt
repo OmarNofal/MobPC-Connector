@@ -1,5 +1,6 @@
 package com.omar.pcconnector
 
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -14,7 +15,6 @@ import androidx.core.view.WindowCompat
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navOptions
 import com.omar.pcconnector.data.DevicesRepository
 import com.omar.pcconnector.model.PairedDevice
 import com.omar.pcconnector.pairing.PairingScreen
@@ -57,6 +57,9 @@ class MainActivity : ComponentActivity() {
 
         Log.d("Initial Devices: ", initialDevices.toString())
 
+        val intent =
+            Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS")
+        startActivity(intent)
 
         setContent {
 
@@ -97,7 +100,11 @@ class MainActivity : ComponentActivity() {
                                     pairedDevices = currentDevices,
                                     devicesRepository = devicesRepository,
                                     eventsFlow = eventsFlow,
-                                    onGoToPairingScreen = { navController.navigate(PairingScreen) }
+                                    onGoToPairingScreen = {
+                                        navController.navigate(
+                                            PairingScreen
+                                        )
+                                    }
                                 )
 
                             }

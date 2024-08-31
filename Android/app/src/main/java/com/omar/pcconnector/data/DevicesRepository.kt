@@ -16,26 +16,26 @@ import javax.inject.Singleton
 @Singleton
 class DevicesRepository @Inject constructor(
     private val deviceDao: DeviceDao
-) {
+    ) {
 
-    private val scope = CoroutineScope(Dispatchers.IO)
+        private val scope = CoroutineScope(Dispatchers.IO)
 
-    suspend fun getAllPairedDevices() = withContext(Dispatchers.IO) {
-        deviceDao.getAllDevices().map { it.toPairedDevice() }
-    }
+        suspend fun getAllPairedDevices() = withContext(Dispatchers.IO) {
+            deviceDao.getAllDevices().map { it.toPairedDevice() }
+        }
 
-    fun getPairedDeviceFlow(id: String) =
-        deviceDao.getDeviceFlow(id).map { it.toPairedDevice() }
+        fun getPairedDeviceFlow(id: String) =
+            deviceDao.getDeviceFlow(id).map { it.toPairedDevice() }
 
-    fun getPairedDevicesFlow() = deviceDao.getDevicesFlow()
-        .map { it.map { deviceEntity -> deviceEntity.toPairedDevice() } }
+        fun getPairedDevicesFlow() = deviceDao.getDevicesFlow()
+            .map { it.map { deviceEntity -> deviceEntity.toPairedDevice() } }
 
-    suspend fun getPairedDevice(id: String) = withContext(Dispatchers.IO) {
-        deviceDao.getDevice(id).toPairedDevice()
-    }
+        suspend fun getPairedDevice(id: String) = withContext(Dispatchers.IO) {
+            deviceDao.getDevice(id).toPairedDevice()
+        }
 
-    fun deleteDevice(serverId: String) =
-        scope.launch { deviceDao.deleteById(serverId) }
+        fun deleteDevice(serverId: String) =
+            scope.launch { deviceDao.deleteById(serverId) }
 
     suspend fun storeDevice(
         pairedDevice: PairedDevice

@@ -21,4 +21,13 @@ interface PCOperations {
     @FormUrlEncoded
     @POST("/openLink")
     fun openLink(@Field("url") url: String, @Field("incognito") incognito: Int): Call<GeneralResponse<Unit>>
+
+    @FormUrlEncoded
+    @POST("/sendNotification")
+    fun sendNotification(
+        @Field("title") title: String,
+        @Field("text") text: String,
+        @Field("icon") iconBase64: String?,
+        @Field("appName") appName: String
+    ): Call<GeneralResponse<Unit>>
 }

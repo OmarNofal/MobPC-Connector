@@ -27,9 +27,6 @@ class UserPreferencesRepository @Inject constructor(
             SharingStarted.Eagerly,
             runBlocking { dataStore.data.first() }) // this will load it synchronously
 
-    /**
-     * Returns a flow to the preferences of a server
-     */
     fun getServerPreferences(serverId: String): ServerPreferences =
         preferences.value.serversPreferencesList.find { it.serverId == serverId }
             ?: ServerPreferences.getDefaultInstance()
