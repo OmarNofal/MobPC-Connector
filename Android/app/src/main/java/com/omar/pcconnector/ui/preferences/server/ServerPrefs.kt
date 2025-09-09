@@ -1,5 +1,6 @@
 package com.omar.pcconnector.ui.preferences.server
 
+import android.util.Log
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -41,6 +42,7 @@ private fun SingleServerPreferencesGroup(
 
     val preferences = LocalUserPreferences.current
     val serverPreferences = remember(preferences) {
+        Log.d("Server prefs", preferences.serversPreferencesList.find { it.serverId == serverId }.toString())
         preferences.serversPreferencesList.find { it.serverId == serverId }
             ?: ServerPreferences.newBuilder().setServerId(serverId)
                 .setStartPath("").build()

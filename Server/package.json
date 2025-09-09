@@ -1,6 +1,7 @@
 {
     "name": "mobpc-connector",
     "displayName": "MobPC Connector",
+    "productName": "MobPC Connector",
     "version": "1.0.0",
     "description": "This application enables you to control you PC from a mobile device (Android currently)",
     "main": ".webpack/main",

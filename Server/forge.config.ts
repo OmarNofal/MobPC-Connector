@@ -2,24 +2,29 @@ import WebpackPlugin from '@electron-forge/plugin-webpack'
 import { mainWebpackConfig } from './webpack.main.config'
 import { rendererWebpackConfig } from './webpack.renderer.config'
 import AutoUnpackNativesPlugin from '@electron-forge/plugin-auto-unpack-natives'
+const {
+    utils: { fromBuildIdentifier },
+} = require('@electron-forge/core')
 
 const { FusesPlugin } = require('@electron-forge/plugin-fuses')
 const { FuseV1Options, FuseVersion } = require('@electron/fuses')
 const path = require('path')
 
-
 module.exports = {
     packagerConfig: {
         name: 'MobPC Connector',
         asar: true,
-        icon: './logo/logo_large'
+        icon: './logo/logo_large',
+        appBundleId: 'com.omar.mobpcconnector',
     },
     rebuildConfig: {},
     makers: [
         {
             name: '@electron-forge/maker-squirrel',
             config: {
-                setupIcon: './logo/logo_large.ico'
+                setupIcon: './logo/logo_large.ico',
+                iconUrl: 'https://drive.google.com/uc?export=download&id=1nzd698u_JFv2jdZmDJJj0BUHo7ZsOpbS',
+                appBundleId: 'com.omar.mobpcconnector',
             },
         },
     ],

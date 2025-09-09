@@ -1,5 +1,6 @@
 package com.omar.pcconnector.preferences
 
+import android.util.Log
 import androidx.datastore.core.DataStore
 import com.omar.pcconnector.preferences.UserPreferences.AppTheme
 import kotlinx.coroutines.CoroutineScope
@@ -55,6 +56,7 @@ class UserPreferencesRepository @Inject constructor(
             it.toBuilder().setShowHiddenResources(!it.showHiddenResources)
                 .build()
         }
+        Log.d("Server id", serverId)
     }
 
     fun changeFileSystemSortCriteria(
@@ -112,7 +114,7 @@ class UserPreferencesRepository @Inject constructor(
 
             return@updateData if (serverPrefs == null) {
                 it.toBuilder().addServersPreferences(
-                    callback(ServerPreferences.newBuilder().build())
+                    callback(ServerPreferences.newBuilder().setServerId(serverId).build())
                 ).build()
             } else {
                 it.toBuilder().setServersPreferences(

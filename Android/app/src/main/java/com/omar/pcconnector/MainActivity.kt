@@ -1,6 +1,5 @@
 package com.omar.pcconnector
 
-import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -8,6 +7,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -15,6 +15,7 @@ import androidx.core.view.WindowCompat
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navOptions
 import com.omar.pcconnector.data.DevicesRepository
 import com.omar.pcconnector.model.PairedDevice
 import com.omar.pcconnector.pairing.PairingScreen
@@ -73,6 +74,16 @@ class MainActivity : ComponentActivity() {
                     devicesRepository.getPairedDevicesFlow()
                         .collectAsState(initial = initialDevices)
 
+                    LaunchedEffect(key1 = currentDevices) {
+                        if (currentDevices.isEmpty())
+                            navController.navigate(
+                                EmptyScreen,
+                                navOptions = navOptions {
+                                    popUpTo(0) // clear everything
+                                }
+                            )
+                    }
+
                     Surface {
                         NavHost(
                             navController = navController,
@@ -94,6 +105,7 @@ class MainActivity : ComponentActivity() {
                                 MainApp(
                                     modifier = Modifier.fillMaxSize(),
                                     pairedDevices = currentDevices,
+                                    defaultServerId = initialDevices.first().deviceInfo.id,
                                     devicesRepository = devicesRepository,
                                     eventsFlow = eventsFlow,
                                     onGoToPairingScreen = {
@@ -109,7 +121,11 @@ class MainActivity : ComponentActivity() {
 
                                 PairingScreen(
                                     onPairedWithDevice = { id ->
-                                        navController.navigate(MainScreen(id))
+                                        navController.navigate(
+                                            MainScreen(id),
+                                            navOptions {
+                                                popUpTo(0)
+                                            })
                                     },
                                     onNavigateBack = navController::popBackStack
                                 )

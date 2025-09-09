@@ -33,7 +33,8 @@ fun MainApp(
     pairedDevices: List<PairedDevice>,
     devicesRepository: DevicesRepository,
     eventsFlow: MutableSharedFlow<ApplicationEvent>,
-    onGoToPairingScreen: () -> Unit
+    onGoToPairingScreen: () -> Unit,
+    defaultServerId: String
 ) {
 
     if (pairedDevices.isEmpty()) return
@@ -74,13 +75,13 @@ fun MainApp(
 
         NavHost(
             navController = navController,
-            startDestination = "server/${pairedDevices.first().deviceInfo.id}",
+            startDestination = "server/$defaultServerId",
             modifier = Modifier.fillMaxSize()
         ) {
 
             serverNavGraph(
                 navController = navController,
-                defaultDeviceId = pairedDevices.first().deviceInfo.id,
+                defaultDeviceId = defaultServerId,
                 devicesRepository = devicesRepository,
                 eventsFlow = eventsFlow,
                 onOpenDrawer = openDrawer

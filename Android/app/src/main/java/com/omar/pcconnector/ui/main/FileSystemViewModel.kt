@@ -96,10 +96,15 @@ class FileSystemViewModel @AssistedInject constructor(
             }.collect {
                 val api = it.connection.retrofit.fileSystemApi()
                 val drives = GetDrivesOperation(api).start()
+
+                val startDirectoryPreference =
+                    userPreferencesRepository.getServerPreferences(serverId).startPath
                 val directoryToLoad =
-                    userPreferencesRepository.getServerPreferences(serverId).startPath?.let(
-                        Paths::get
-                    ) ?: Paths.get(drives.first(), "/")
+                    if (startDirectoryPreference == null || startDirectoryPreference.isBlank()) Paths.get(
+                        drives.first(),
+                        "/"
+                    ) else Paths.get(startDirectoryPreference)
+
                 _state.value = FileSystemState.Loaded(
                     INVALID_PATH, drives, emptyList(), directoryToLoad
                 )

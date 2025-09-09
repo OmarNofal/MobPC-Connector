@@ -3,7 +3,6 @@ package com.omar.pcconnector.ui.fs
 import android.content.Context
 import android.icu.text.DateFormat
 import android.util.Log
-import android.widget.Toast
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Column
@@ -15,9 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Add
-import androidx.compose.material.icons.outlined.FileCopy
-import androidx.compose.material.icons.outlined.Folder
+import androidx.compose.material.icons.rounded.Folder
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -92,9 +89,6 @@ fun ResourceRow(
             .combinedClickable(
                 onLongClick = {
                     onLongPress()
-                    Toast
-                        .makeText(context, "Long pressed", Toast.LENGTH_LONG)
-                        .show()
                 }
             ) {
                 onClick()
@@ -190,7 +184,7 @@ fun ResourceIcon(
 ) {
     if (resource is DirectoryResource) {
         Icon(
-            imageVector = Icons.Outlined.Folder,
+            imageVector = Icons.Rounded.Folder,
             contentDescription = "Directory icon",
             modifier = modifier,
             tint = MaterialTheme.colorScheme.onSurface

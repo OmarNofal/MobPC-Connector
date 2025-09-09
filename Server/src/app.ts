@@ -30,7 +30,7 @@ declare const MAIN_WINDOW_WEBPACK_ENTRY: string
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string
 
 if (process.platform === 'win32') {
-    app.setAppUserModelId(app.name)
+    app.setAppUserModelId('com.omar.mobpcconnector')
 }
 if (require('electron-squirrel-startup')) app.quit()
 
@@ -107,8 +107,6 @@ export default class Application {
                 if (detectionServer.state.value == DetectionServerState.RUNNING) detectionServer.close()
                 else this.detectionServer.run()
             })
-
-            clipboard.writeText(MAIN_WINDOW_WEBPACK_ENTRY + ' ' + MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY)
 
             if (!process.argv.includes('--login')) this.showWindow()
             this.setupTray()
