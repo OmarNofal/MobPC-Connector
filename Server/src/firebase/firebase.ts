@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app'
 import { Database, getDatabase, ref, remove, set } from 'firebase/database'
-import { BehaviorSubject, distinct, distinctUntilChanged } from 'rxjs'
+import { BehaviorSubject, distinct, distinctUntilChanged, skip } from 'rxjs'
 import {
     FirebaseIPServiceConfiguration,
     GLOBAL_PORT,
@@ -74,14 +74,14 @@ export default class FirebaseIPService {
             this.serviceConfiguration,
             (conf: FirebaseIPServiceConfiguration) => conf[SYNC_IP_WITH_FIREBASE]
         )
-            .pipe(distinctUntilChanged())
+            .pipe(distinctUntilChanged(), skip(1))
             .subscribe((enabled: boolean) => {
                 if (!enabled) this.stopService()
                 else if (!this.runningInterval) this.startService()
             })
 
         mapBehaviorSubject(this.serviceConfiguration, (conf: FirebaseIPServiceConfiguration) => conf[GLOBAL_PORT])
-            .pipe(distinctUntilChanged())
+            .pipe(distinctUntilChanged(), skip(1))
             .subscribe((port: number) => {
                 console.log("Port changed to " + port)
                 if (this.runningInterval) this.firebaseRoutine()

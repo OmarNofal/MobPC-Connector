@@ -40,6 +40,7 @@ class NotificationListener : NotificationListenerService() {
 
         // Don't notify for groups this will fix some double notifications
         if ((sbn.notification.flags and Notification.FLAG_GROUP_SUMMARY) != 0) return
+        if (sbn.isOngoing) return
 
         scope.launch { handleNewNotification(sbn) }
     }

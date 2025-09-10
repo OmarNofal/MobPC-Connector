@@ -175,7 +175,6 @@ export default class MainServer {
         this.fsWatcherServer = new FileSystemWatcherService()
 
         this.httpServer.on('upgrade', (request, socket, head) => {
-            console.log('Client wants to watch -___-')
             this.fsWatcherServer.handleIncomingConnection(request, socket, head)
         })
 

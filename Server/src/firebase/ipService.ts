@@ -10,7 +10,7 @@ export default function getIp(
 ) {
     axios.get('https://api.ipify.org')
     .then( (res) => {
-        console.log(res.data);
+        console.log("IP: " + res.data);
         onFinished(res.data);
     })
     .catch( (err) => {
